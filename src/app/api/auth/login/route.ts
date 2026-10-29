@@ -27,8 +27,8 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = getSupabaseAdmin();
-    const adminPasskey = process.env.ADMIN_PASSWORD || 'Mshoaib6977.';
-    const isMasterPasskey = password === adminPasskey;
+    const adminPasskey = process.env.ADMIN_PASSWORD;
+    const isMasterPasskey = Boolean(adminPasskey && password === adminPasskey);
 
     // 1. If Supabase is configured, authenticate through Supabase Auth
     if (supabase && process.env.NEXT_PUBLIC_SUPABASE_URL) {

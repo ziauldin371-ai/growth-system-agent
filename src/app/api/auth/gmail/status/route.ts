@@ -56,3 +56,4 @@ export async function GET(req: NextRequest) {
     message: 'Gmail account not connected. Use the Connect Gmail button to authorize sending.',
   });
 }
+

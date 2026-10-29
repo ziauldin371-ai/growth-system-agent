@@ -69,3 +69,4 @@ export function verifyUnsubscribeToken(token: string): {
     return { valid: false, error: 'Failed to decode token payload' };
   }
 }
+

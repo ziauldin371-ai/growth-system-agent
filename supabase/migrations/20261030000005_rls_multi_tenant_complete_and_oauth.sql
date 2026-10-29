@@ -134,3 +134,4 @@ CREATE POLICY "Users can read org campaign leads" ON campaign_leads
 
 CREATE POLICY "Users can insert org campaign leads" ON campaign_leads
     FOR INSERT WITH CHECK (campaign_id IN (SELECT id FROM campaigns WHERE organization_id IN (SELECT get_user_org_ids())));
+

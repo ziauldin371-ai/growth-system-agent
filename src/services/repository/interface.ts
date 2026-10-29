@@ -94,3 +94,4 @@ export interface IDataStore {
   getLastSchedulerRun(): any | null | Promise<any | null>;
   getPlatformStats(): any | Promise<any>;
 }
+

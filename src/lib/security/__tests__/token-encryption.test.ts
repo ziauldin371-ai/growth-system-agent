@@ -3,7 +3,7 @@ import { encryptToken, decryptToken } from '../token-encryption';
 
 describe('Token Encryption (AES-256-GCM)', () => {
   it('encrypts and successfully decrypts a plaintext token', () => {
-    const originalToken = 'ya29.a0ARrdaM8randomGoogleOAuthRefreshTokenString12345';
+    const originalToken = 'mock_sample_google_oauth_refresh_token_string_12345';
     const encrypted = encryptToken(originalToken);
 
     expect(encrypted.cipherText).toBeDefined();
@@ -38,3 +38,4 @@ describe('Token Encryption (AES-256-GCM)', () => {
     }).toThrow();
   });
 });
+

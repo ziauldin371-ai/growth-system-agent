@@ -53,3 +53,4 @@ export function decryptToken(cipherText: string, ivHex: string, authTagHex: stri
 
   return decrypted;
 }
+
