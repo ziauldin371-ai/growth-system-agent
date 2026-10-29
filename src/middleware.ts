@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { verifySessionToken } from '@/lib/security/session';
 
 // Whitelist of public routes accessible without an active admin session
 const PUBLIC_PATHS = [
@@ -10,9 +11,10 @@ const PUBLIC_PATHS = [
   '/api/compliance/unsubscribe',
   '/api/webhooks/resend',
   '/api/cron/scheduled-run',
+  '/api/auth/gmail/callback',
 ];
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // 1. Allow static assets and Next.js internal paths
@@ -33,11 +35,16 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // 3. Check for authenticated session token
+  // 3. Cryptographically verify session token (HMAC-SHA256 / JWT)
   const sessionCookie = req.cookies.get('growth_agent_session')?.value;
-  const sbAccessToken = req.cookies.get('sb-access-token')?.value;
+  let isAuthenticated = false;
 
-  const isAuthenticated = Boolean(sessionCookie || sbAccessToken);
+  if (sessionCookie) {
+    const verification = await verifySessionToken(sessionCookie);
+    if (verification.valid) {
+      isAuthenticated = true;
+    }
+  }
 
   if (!isAuthenticated) {
     // If requesting an API route, return 401 JSON
@@ -45,7 +52,7 @@ export function middleware(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Unauthorized: Growth System Agent is private. Authentication required.',
+          error: 'Unauthorized: Growth System Agent is private. Cryptographically verified authentication required.',
         },
         { status: 401 }
       );

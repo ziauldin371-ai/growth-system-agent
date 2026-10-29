@@ -2,14 +2,14 @@
 
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Lock, ShieldCheck, Sparkles, ArrowRight, AlertCircle } from 'lucide-react';
+import { Lock, ArrowRight, AlertCircle, Shield } from 'lucide-react';
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextDestination = searchParams.get('next') || '/';
 
-  const [email, setEmail] = useState('ziauldin371@gmail.com');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +42,7 @@ function LoginForm() {
   };
 
   return (
-    <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl shadow-black/40 space-y-6">
+    <div className="bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl shadow-black/40 space-y-6">
       {error && (
         <div className="p-3.5 rounded-lg bg-rose-500/10 border border-rose-500/30 flex items-start gap-2.5 text-rose-300 text-xs">
           <AlertCircle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
@@ -61,8 +61,9 @@ function LoginForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              autoComplete="email"
               className="w-full px-3.5 py-2.5 rounded-lg bg-slate-950/80 border border-slate-800 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-              placeholder="ziauldin371@gmail.com"
+              placeholder="operator@domain.com"
             />
           </div>
         </div>
@@ -70,13 +71,14 @@ function LoginForm() {
         <div>
           <label className="block text-xs font-medium text-slate-300 mb-1.5 flex justify-between">
             <span>Account Password</span>
-            <span className="text-slate-500 text-[11px] font-normal">Optional in local dev</span>
           </label>
           <div className="relative">
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              required
+              autoComplete="current-password"
               className="w-full px-3.5 py-2.5 rounded-lg bg-slate-950/80 border border-slate-800 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
               placeholder="••••••••••••"
             />
@@ -92,17 +94,19 @@ function LoginForm() {
             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           ) : (
             <>
-              <span>Sign In as Zia Ul Din</span>
+              <span>Sign In</span>
               <ArrowRight className="w-4 h-4" />
             </>
           )}
         </button>
       </form>
 
-      <div className="pt-4 border-t border-slate-800 text-center">
-        <p className="text-[11px] text-slate-500 leading-relaxed">
-          This application is strictly restricted to Zia Ul Din. Unauthorized access attempts, API probing, and credential stuffing are blocked and logged.
-        </p>
+      <div className="pt-4 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500">
+        <span className="flex items-center gap-1.5">
+          <Shield className="w-3.5 h-3.5 text-indigo-400" />
+          Zero-Trust Boundary
+        </span>
+        <span>Rate-limited access</span>
       </div>
     </div>
   );
@@ -110,43 +114,30 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Background glow effects */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-screen w-full flex items-center justify-center bg-slate-950 px-4 py-12 relative overflow-hidden">
+      {/* Background radial glow */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="w-full max-w-md space-y-8 relative z-10">
-        {/* Brand header */}
-        <div className="text-center space-y-3">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 shadow-xl shadow-indigo-500/20 mb-2">
-            <Sparkles className="w-7 h-7 text-white" />
+      <div className="w-full max-w-md space-y-6 relative z-10">
+        <div className="text-center space-y-2">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 mb-2">
+            <Lock className="w-6 h-6" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-white">
-            Growth System <span className="text-indigo-400">Agent</span>
+            Growth System Agent
           </h1>
           <p className="text-sm text-slate-400">
-            Autonomous B2B Lead Generation & Outreach Engine
+            Sign in with authorized administrator credentials
           </p>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs text-slate-300">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Private Administrator Portal</span>
-          </div>
         </div>
 
         <Suspense fallback={
-          <div className="p-12 text-center text-slate-500 text-sm bg-slate-900/60 rounded-2xl border border-slate-800">
-            <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-            Loading portal session...
+          <div className="p-8 text-center text-sm text-slate-500 bg-slate-900/50 rounded-2xl border border-slate-800">
+            Loading authentication portal...
           </div>
         }>
           <LoginForm />
         </Suspense>
-
-        {/* Security badge */}
-        <div className="flex items-center justify-center gap-2 text-xs text-slate-500">
-          <Lock className="w-3.5 h-3.5 text-slate-400" />
-          <span>Secured via Supabase Auth & HTTP-Only Encrypted Sessions</span>
-        </div>
       </div>
     </div>
   );

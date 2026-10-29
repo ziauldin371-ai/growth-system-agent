@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { middleware } from '@/middleware';
 import { NextRequest } from 'next/server';
+import { createSessionToken } from '@/lib/security/session';
 
 describe('Unauthenticated API Lockdown & Zero-Trust Boundary Audit (Request 5)', () => {
   const protectedApiRoutes = [
@@ -46,7 +47,7 @@ describe('Unauthenticated API Lockdown & Zero-Trust Boundary Audit (Request 5)',
       const body = await response.json();
       expect(body.success).toBe(false);
       expect(body.error).toContain('Unauthorized');
-      expect(body.error).toContain('Authentication required');
+      expect(body.error.toLowerCase()).toContain('authentication required');
     }
   });
 
@@ -83,12 +84,18 @@ describe('Unauthenticated API Lockdown & Zero-Trust Boundary Audit (Request 5)',
     }
   });
 
-  it('allows authenticated requests carrying valid admin session cookie', async () => {
+  it('allows authenticated requests carrying valid signed admin session cookie', async () => {
+    const signedToken = await createSessionToken({
+      email: 'ziauldin371@gmail.com',
+      name: 'Zia Ul Din',
+      role: 'owner',
+    });
+
     const req = new NextRequest('http://localhost:3000/api/leads', {
       method: 'GET',
       headers: {
         'Host': 'localhost:3000',
-        'Cookie': 'growth_agent_session=mock_valid_operator_session_token;',
+        'Cookie': `growth_agent_session=${signedToken};`,
       },
     });
 
@@ -96,4 +103,3 @@ describe('Unauthenticated API Lockdown & Zero-Trust Boundary Audit (Request 5)',
     expect(response.status).toBe(200);
   });
 });
-

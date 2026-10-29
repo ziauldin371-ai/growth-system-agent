@@ -1,12 +1,33 @@
-node_modules
-.next
-out
-dist
-coverage
+# Dependencies
+node_modules/
+
+# Next.js build and outputs
+.next/
+out/
+dist/
+build/
+
+# Testing & Coverage
+coverage/
+test-results/
+playwright-report/
+
+# Environment files
+.env
 .env.local
 .env.*.local
+!.env.example
+
+# Credentials & Private Keys
+*.key
+*.pem
+credentials.json
+token.json
+
+# Logs & temp files
 *.log
 *.tsbuildinfo
 .DS_Store
-.data
-supabase/.temp
+.data/
+supabase/.temp/
+*.zip
