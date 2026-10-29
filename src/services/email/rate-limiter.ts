@@ -5,15 +5,52 @@ export class RateLimiter {
     dateString: new Date().toISOString().slice(0, 10),
   };
 
+  private totalBounces: number = 0;
+  private totalComplaints: number = 0;
+
   private readonly MAX_PER_DOMAIN_DAILY = 3;
   private readonly DEFAULT_DAILY_MAX = 50;
+
+  public recordBounce(): void {
+    this.totalBounces++;
+  }
+
+  public recordComplaint(): void {
+    this.totalComplaints++;
+  }
+
+  public getDeliverabilityStats() {
+    const sends = Math.max(1, this.dailyTotalSends.count);
+    const bounceRate = Number(((this.totalBounces / sends) * 100).toFixed(2));
+    const isThrottled = bounceRate > 3.0;
+    const isEmergencyPause = bounceRate > 5.0 || this.totalComplaints > 0;
+
+    return {
+      totalSends: this.dailyTotalSends.count,
+      totalBounces: this.totalBounces,
+      totalComplaints: this.totalComplaints,
+      bounceRate,
+      isThrottled,
+      isEmergencyPause,
+      effectiveDailyCap: isThrottled ? Math.floor(this.DEFAULT_DAILY_MAX / 2) : this.DEFAULT_DAILY_MAX,
+    };
+  }
 
   public checkRateLimit(
     recipientEmail: string,
     customDailyCap?: number
   ): { allowed: boolean; reason?: string } {
     const today = new Date().toISOString().slice(0, 10);
-    const maxDaily = customDailyCap || this.DEFAULT_DAILY_MAX;
+    const stats = this.getDeliverabilityStats();
+
+    if (stats.isEmergencyPause) {
+      return {
+        allowed: false,
+        reason: `Auto-Throttle Emergency Pause Active: Bounce rate (${stats.bounceRate}%) exceeds safety ceiling or complaint received. Outreach paused to safeguard sender domain reputation.`,
+      };
+    }
+
+    const maxDaily = stats.isThrottled ? stats.effectiveDailyCap : (customDailyCap || this.DEFAULT_DAILY_MAX);
 
     // 1. Reset daily count on new day
     if (this.dailyTotalSends.dateString !== today) {

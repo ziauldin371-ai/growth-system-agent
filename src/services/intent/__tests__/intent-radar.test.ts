@@ -99,3 +99,4 @@ describe('Add-On 3 — Intent-Based Lead Radar & Classification Engine', () => {
     expect(manualLead.fitScore).toBeGreaterThanOrEqual(60);
   });
 });
+

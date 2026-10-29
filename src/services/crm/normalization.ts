@@ -108,21 +108,49 @@ export function stringSimilarity(a: string, b: string): number {
  * Determines whether two business entities represent the same company.
  */
 export function isDuplicateBusiness(
-  a: { normalizedName: string; normalizedDomain?: string | null; phone?: string | null; city?: string | null },
-  b: { normalizedName: string; normalizedDomain?: string | null; phone?: string | null; city?: string | null }
+  a: { 
+    normalizedName: string; 
+    normalizedDomain?: string | null; 
+    phone?: string | null; 
+    city?: string | null;
+    address?: string | null;
+    email?: string | null;
+  },
+  b: { 
+    normalizedName: string; 
+    normalizedDomain?: string | null; 
+    phone?: string | null; 
+    city?: string | null;
+    address?: string | null;
+    email?: string | null;
+  }
 ): boolean {
-  // If both have domains, domain match is definitive
-  if (a.normalizedDomain && b.normalizedDomain) {
-    if (a.normalizedDomain === b.normalizedDomain) return true;
+  // 1. Email match is definitive
+  if (a.email && b.email) {
+    const normEmailA = normalizeEmail(a.email);
+    const normEmailB = normalizeEmail(b.email);
+    if (normEmailA && normEmailB && normEmailA === normEmailB) return true;
   }
 
-  // Exact normalized name match within same city or phone
+  // 2. Domain match is definitive
+  if (a.normalizedDomain && b.normalizedDomain) {
+    if (a.normalizedDomain.toLowerCase() === b.normalizedDomain.toLowerCase()) return true;
+  }
+
+  // 3. Phone match is definitive
+  if (a.phone && b.phone) {
+    const cleanPhoneA = a.phone.replace(/\D/g, '');
+    const cleanPhoneB = b.phone.replace(/\D/g, '');
+    if (cleanPhoneA.length >= 7 && cleanPhoneA === cleanPhoneB) return true;
+  }
+
+  // 4. Exact normalized name match within same city or phone or address
   if (a.normalizedName === b.normalizedName) {
     if (a.city && b.city && a.city.toLowerCase() === b.city.toLowerCase()) return true;
-    if (a.phone && b.phone && a.phone.replace(/\D/g, '') === b.phone.replace(/\D/g, '')) return true;
+    if (a.address && b.address && a.address.toLowerCase().slice(0, 15) === b.address.toLowerCase().slice(0, 15)) return true;
   }
 
-  // Fuzzy name similarity > 0.85 within same city
+  // 5. Fuzzy name similarity > 0.85 within same city
   if (a.city && b.city && a.city.toLowerCase() === b.city.toLowerCase()) {
     const sim = stringSimilarity(a.normalizedName, b.normalizedName);
     if (sim >= 0.85) return true;

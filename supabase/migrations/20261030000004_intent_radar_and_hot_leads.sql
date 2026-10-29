@@ -85,3 +85,4 @@ ALTER TABLE community_pitch_rules ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow read on intent opportunities" ON intent_opportunities FOR SELECT USING (true);
 CREATE POLICY "Allow modify on intent opportunities" ON intent_opportunities FOR ALL USING (true);
 CREATE POLICY "Allow read on community rules" ON community_pitch_rules FOR SELECT USING (true);
+

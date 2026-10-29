@@ -44,3 +44,4 @@ export class RemoteFeedsAdapter {
     return results;
   }
 }
+

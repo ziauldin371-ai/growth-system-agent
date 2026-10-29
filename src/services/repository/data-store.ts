@@ -856,6 +856,11 @@ ziauldin371@gmail.com`,
       notes: 'User unsubscribed via automated footer link.',
       createdAt: new Date().toISOString(),
     });
+
+    // Label all initial sandbox seed records
+    for (const b of Array.from(this.businesses.values())) {
+      b.isSandboxData = true;
+    }
   }
 
   // --- Businesses ---

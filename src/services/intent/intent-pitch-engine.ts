@@ -123,3 +123,4 @@ ziauldin371@gmail.com`;
     suggestedAction: pitchMode === 'marketplace_proposal' ? 'Paste into marketplace proposal submission' : 'Post reply or send direct message manually',
   };
 }
+

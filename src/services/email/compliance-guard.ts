@@ -3,6 +3,7 @@ import { normalizeEmail } from '../crm/normalization';
 export interface ComplianceCheckOptions {
   recipientEmail: string;
   isExplicitlyApproved: boolean;
+  isSandboxData?: boolean;
   sendingWindowStart?: number; // 0-23
   sendingWindowEnd?: number;   // 0-23
   currentHour?: number;        // 0-23 (for test injection)
@@ -48,6 +49,22 @@ export class ComplianceGuard {
         allowed: false,
         code: 'NOT_APPROVED',
         reason: 'Outreach email has not received explicit authenticated administrator approval. GrowthSignal AI operates in strict draft-only mode by default.',
+      };
+    }
+
+    // 2b. Sandbox / Demo Data Isolation Gate
+    const isSyntheticDomain = 
+      recipientEmail.endsWith('.internal') ||
+      recipientEmail.includes('@example.') ||
+      recipientEmail.includes('@targetcorp.com') ||
+      recipientEmail.includes('@testdental.') ||
+      options.isSandboxData === true;
+
+    if (isSyntheticDomain && process.env.NODE_ENV === 'production' && process.env.ALLOW_SANDBOX_SEND !== 'true') {
+      return {
+        allowed: false,
+        code: 'COMPLIANCE_RESTRICTION',
+        reason: `Sandbox/Demo recipient "${recipientEmail}" cannot receive outgoing dispatches in production.`,
       };
     }
 

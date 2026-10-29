@@ -67,6 +67,7 @@ export interface BusinessEntity {
   sourceProvider: string;
   sourceIdentifier?: string | null;
   isArchived: boolean;
+  isSandboxData?: boolean;
   fetchedAt?: string;
   rawPayloadRef?: Record<string, any>;
   lastVerifiedAt?: string | null;
