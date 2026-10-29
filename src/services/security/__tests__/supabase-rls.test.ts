@@ -52,3 +52,4 @@ describe('Supabase Database RLS & Security Schema Audit', () => {
     expect(clientContent).toContain('NEXT_PUBLIC_SUPABASE_ANON_KEY');
   });
 });
+

@@ -4,8 +4,8 @@ import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
 
 export const metadata: Metadata = {
-  title: 'GrowthSignal AI — Autonomous B2B Opportunity Pipeline',
-  description: 'Grounded B2B intelligence, website verification, and personalized outreach for AI Engineers & Full-Stack Developers.',
+  title: 'Growth System Agent — Autonomous Lead Generation Platform',
+  description: 'Automated B2B discovery, website verification, and personalized outreach for Zia Ul Din (Full Stack AI Developer & Automation Architect).',
 };
 
 export default function RootLayout({

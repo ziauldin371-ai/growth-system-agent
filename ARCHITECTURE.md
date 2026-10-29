@@ -1,50 +1,73 @@
-# GrowthSignal AI — System Architecture & Design Specification
+# Growth System Agent — System Architecture & Design Specification
+
+> **Platform**: Growth System Agent  
+> **Architect & Owner**: Zia Ul Din (`ziauldin371@gmail.com`)  
+> **Identity**: Full Stack AI Developer & Automation Architect | LLMs & Python | Data Science  
+> **Repository**: [github.com/ziauldin371-ai/growth-system-agent](https://github.com/ziauldin371-ai/growth-system-agent)  
+> **Deployment Target**: Vercel (Next.js App Router) + Supabase (PostgreSQL with RLS)  
+
+---
 
 ## 1. Architectural Overview
 
-GrowthSignal AI is designed with a layered, decoupled service architecture where external providers (search APIs, web probers, LLMs, and email dispatchers) are isolated behind typed domain adapters.
+**Growth System Agent** is built with a layered, decoupled service architecture. External dependencies (search APIs, web probers, LLMs, and email dispatchers) are isolated behind typed domain adapters, supporting both live production providers and deterministic in-memory mock implementations for automated testing and offline development.
 
-```
-┌────────────────────────────────────────────────────────┐
-│               Next.js App Router (UI)                  │
-│  Overview • Pipelines A/B • Dossier • Approvals • Jobs │
-└──────────────────────────┬─────────────────────────────┘
-                           │ HTTP / JSON
-┌──────────────────────────▼─────────────────────────────┐
-│                 Next.js API Handlers                   │
-│   /api/discovery • /api/businesses • /api/outreach     │
-│   /api/campaigns • /api/compliance • /api/jobs         │
-└──────────────────────────┬─────────────────────────────┘
-                           │
-┌──────────────────────────▼─────────────────────────────┐
-│                 Domain Services Layer                  │
-│                                                        │
-│  ┌──────────────────┐  ┌─────────────────────────────┐ │
-│  │ Discovery Engine │  │ SSRF-Protected Web Verifier │ │
-│  └────────┬─────────┘  └──────────────┬──────────────┘ │
-│           │                           │                │
-│  ┌────────▼───────────────────────────▼──────────────┐ │
-│  │   Explainable ICP & Multi-Pipeline Scorer         │ │
-│  │   (Pipeline A: Web Dev | Pipeline B: AI/Software) │ │
-│  └────────────────────┬──────────────────────────────┘ │
-│                       │                                │
-│  ┌────────────────────▼──────────────────────────────┐ │
-│  │   AI Outreach Studio & Prompt Injection Guard     │ │
-│  └────────────────────┬──────────────────────────────┘ │
-│                       │                                │
-│  ┌────────────────────▼──────────────────────────────┐ │
-│  │   Compliance Guard & Email Dispatch Service       │ │
-│  └────────────────────┬──────────────────────────────┘ │
-│                       │                                │
-│  ┌────────────────────▼──────────────────────────────┐ │
-│  │   Durable Transactional Job Queue & Workers       │ │
-│  └───────────────────────────────────────────────────┘ │
-└──────────────────────────┬─────────────────────────────┘
-                           │
-┌──────────────────────────▼─────────────────────────────┐
-│             Data Layer / Persistence                   │
-│    Supabase PostgreSQL (RLS) + In-Memory Fallback      │
-└────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph UI ["Frontend / Presentation Layer (Next.js 14 App Router)"]
+        Dashboard["Overview & Live Analytics"]
+        ApprovalQueue["Human-in-the-Loop Review Queue"]
+        PipelineViews["Pipeline A (Web) & Pipeline B (AI/Tech)"]
+        DossierView["Dossier & Evidence Provenance"]
+        JobMonitor["Background Job Monitor"]
+        Controls["Mode Switcher & Emergency Stop"]
+    end
+
+    subgraph API ["Next.js API Handlers (REST & Webhooks)"]
+        CronEndpoint["/api/cron/scheduled-run (Vercel Cron / GitHub Actions)"]
+        ControlsEndpoint["/api/automation/controls"]
+        LeadEndpoints["/api/discovery • /api/businesses • /api/outreach"]
+        EmailEndpoints["/api/campaigns • /api/webhooks/resend"]
+        ComplianceEndpoints["/api/compliance/suppression • /api/compliance/unsubscribe"]
+    end
+
+    subgraph CoreEngine ["Autonomous Processing & Orchestration Engine"]
+        Scheduler["AutomationRunner (Twice-Daily: 09:00 & 17:00 PKT)"]
+        DistLock["Distributed Lock (scheduler_global_run_lock)"]
+        Discovery["Multi-Market Discovery Service"]
+        SSRFVerifier["SSRF-Protected Website Verifier"]
+        ICPEngine["Explainable ICP & Multi-Pipeline Scorer"]
+        AIStudio["AI Outreach Studio (Gemini 1.5 Pro + Prompt Injection Shield)"]
+        EmailEngine["Email Service & Velocity Rate Limiter"]
+    end
+
+    subgraph Dispatchers ["Provider Layer (Typed Adapters)"]
+        GmailAdapter["Gmail REST API (OAuth2 Refresh Token)"]
+        ResendAdapter["Resend API"]
+        MockAdapter["Deterministic Test Dispatcher"]
+        GeminiAdapter["Google Gemini 1.5 Pro / Flash"]
+    end
+
+    subgraph Persistence ["Persistence Layer"]
+        Supabase["Supabase PostgreSQL (17 Tables with RLS)"]
+        DataStore["DataStore Repository (Hybrid Supabase / In-Memory Fallback)"]
+    end
+
+    UI --> API
+    CronEndpoint --> Scheduler
+    ControlsEndpoint --> Scheduler
+    Scheduler --> DistLock
+    Scheduler --> Discovery
+    Discovery --> SSRFVerifier
+    SSRFVerifier --> ICPEngine
+    ICPEngine --> AIStudio
+    AIStudio --> EmailEngine
+    EmailEngine --> GmailAdapter
+    EmailEngine --> ResendAdapter
+    EmailEngine --> MockAdapter
+    AIStudio --> GeminiAdapter
+    CoreEngine --> DataStore
+    DataStore --> Supabase
 ```
 
 ---
@@ -52,7 +75,7 @@ GrowthSignal AI is designed with a layered, decoupled service architecture where
 ## 2. The Two Core Pipelines
 
 ### Pipeline A — Website Opportunities
-*Target Audience*: Local commercial establishments, HVAC, plumbing, dental clinics, specialty trade, retail commerce.
+*Target Audience*: Local commercial establishments, HVAC, plumbing, dental clinics, specialty trade, retail commerce across US, UK, CA, AU.
 - **Criteria**:
   1. Business must show verified evidence of commercial activity (active state/provincial registrations, positive customer reviews, or active physical location).
   2. Website status check resolves to `apparently_absent`, `social_only`, `parked`, or `broken`.
@@ -86,23 +109,38 @@ $$\text{Overall Score} = \sum (\text{Dimension Score} \times \text{Weight})$$
 
 ---
 
-## 4. Durable Job Queue State Machine
+## 4. Scheduling & Distributed Execution Engine
 
-```mermaid
-stateDiagram-v2
-    [*] --> Pending: Job Enqueued (Idempotency Key Checked)
-    Pending --> Running: Worker Claims Job & Locks
-    Running --> Completed: Execution Success
-    Running --> Pending: Transient Failure (Retry Count < Max, Exp Backoff + Jitter)
-    Running --> DeadLetter: Retry Count >= Max Retries
-    Completed --> [*]
-    DeadLetter --> [*]
-```
+### Execution Rhythm
+- **Twice Daily**: 09:00 PKT (04:00 UTC) and 17:00 PKT (12:00 UTC)
+- **Vercel Cron**: Configured via `vercel.json` to hit `/api/cron/scheduled-run`.
+- **GitHub Actions Fallback**: Template provided in `templates/workflows/scheduled-run.yml` to trigger the cron endpoint with `CRON_SECRET` for free-tier resilience.
+- **Anti-Overlap Distributed Lock**: `acquireLock('scheduler_global_run_lock', 600000)` prevents duplicate runs.
+- **State Controls**:
+  - `isAutomationPaused()`: Global pause switch evaluated before every step.
+  - `getOperatingMode()`: Evaluates mode (`research`, `approval`, `auto_send`).
 
 ---
 
-## 5. Security & Isolation Boundaries
+## 5. Security & Compliance Architecture
 
-1. **Untrusted External Data**: All text harvested from third-party sites is treated as passive, untrusted input. It is sanitized to remove prompt injection tokens and wrapped in `<UNTRUSTED_EXTERNAL_DATA nonce="...">` boundaries.
-2. **Network Isolation**: Outgoing HTTP probes to candidate domains are subject to strict SSRF pre-flight validation. Hostnames resolving to private subnets (RFC 1918), loopback, link-local, cloud metadata, or multicast are terminated before the socket connects.
-3. **Draft-Only Gate**: Outreach emails cannot be sent directly from an AI prompt. They must be materialized as database drafts and explicitly signed off by an administrator before campaign dispatch.
+1. **SSRF and DNS Rebinding Defense**:
+   - Every outbound URL is resolved to raw IP addresses.
+   - Private IPs (RFC 1918), loopback (`127.0.0.1`), link-local (`169.254.0.0/16`), and multicast addresses are rejected.
+   - Validation occurs on the initial URL and on **every HTTP redirect hop**.
+2. **Prompt Injection Boundary Protection**:
+   - External text and third-party notes are treated as untrusted data.
+   - Wrapped in cryptographically unique delimiter tags with nonces: `<<<UNTRUSTED_EVIDENCE_{NONCE}>>>`.
+   - Explicit LLM instructions reject instruction overrides from untrusted content.
+3. **Email Velocity Rate Limiting**:
+   - Hard maximum limit of **3 emails per recipient domain per 24 hours**.
+   - Dispatches outside 09:00–17:00 local business hours are blocked by `ComplianceGuard`.
+4. **Gmail OAuth2 REST API**:
+   - Personal `@gmail.com` addresses use official OAuth2 tokens (`GOOGLE_REFRESH_TOKEN`).
+   - No plaintext passwords or app passwords are ever stored.
+   - RFC 2822 multipart MIME structure (`plainText` + `htmlText`) base64url-encoded.
+5. **CSV Formula Injection Neutralization**:
+   - Spreadsheet formula triggers (`=`, `+`, `-`, `@`, `\t`, `\r`) are sanitized with single-quote escaping prior to CSV export.
+6. **Supabase Row Level Security (RLS)**:
+   - 17 tables secured with organization-scoped RLS policies.
+   - Anonymous access is strictly prohibited for sensitive lead and email records.

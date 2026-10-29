@@ -2,6 +2,8 @@
  * GrowthSignal AI — Core Domain Type Definitions
  */
 
+export type OperatingMode = 'research' | 'approval' | 'auto_send';
+
 export type PipelineType = 
   | 'website_opportunities' 
   | 'ai_software_opportunities' 
@@ -166,6 +168,7 @@ export interface EmailDraftEntity {
   subjectLines: [string, string, string];
   selectedSubject: string;
   emailBody: string;
+  htmlBody?: string;
   callToAction: string;
   serviceOffer: string;
   researchSummary: string;

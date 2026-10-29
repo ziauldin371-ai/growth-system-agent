@@ -216,14 +216,29 @@ export default function ApprovalQueuePage() {
                   </div>
                 </div>
 
-                {/* Email Body Preview */}
+                {/* Email Body Preview with Format Switcher */}
                 <div>
-                  <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                    Message Body (Rendered with Grounded Rationale):
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                      Message Body (Plain-Text & HTML Preview):
+                    </span>
+                    <span className="text-[10px] text-indigo-400 font-mono">
+                      Sender: ziauldin371@gmail.com
+                    </span>
                   </div>
                   <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200 font-sans whitespace-pre-wrap leading-relaxed">
                     {draft.emailBody}
                   </div>
+                  {draft.htmlBody && (
+                    <details className="mt-2 text-xs">
+                      <summary className="text-[11px] text-indigo-400 cursor-pointer font-semibold hover:underline">
+                        View Rendered HTML Source
+                      </summary>
+                      <pre className="mt-2 p-3 rounded-lg bg-slate-950 border border-slate-800 text-[10px] text-slate-400 font-mono overflow-x-auto">
+                        {draft.htmlBody}
+                      </pre>
+                    </details>
+                  )}
                 </div>
 
                 {/* Grounding & Evidence Footnote */}

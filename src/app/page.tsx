@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { dataStore } from '@/services/repository/data-store';
+import { DashboardControls } from '@/components/dashboard/dashboard-controls';
 import { 
   Globe, 
   Cpu, 
@@ -22,13 +23,17 @@ export default function OverviewPage() {
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
       {/* Top Banner */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
+          <div className="inline-flex items-center space-x-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 mb-2">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Zia Ul Din • Production Lead Engine</span>
+          </div>
           <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-            GrowthSignal AI Command Center
+            Growth System Agent Command Center
           </h1>
-          <p className="text-sm text-slate-400 mt-1">
-            Autonomous multi-market B2B intelligence calibrated for Senior Full-Stack AI & Automation Engineering.
+          <p className="text-xs text-slate-400 mt-1 max-w-3xl leading-relaxed">
+            Autonomous multi-market B2B discovery & outreach calibrated for <strong>Full Stack AI Developer & Automation Architect</strong> services: LLMs, Python engineering, RAG architectures, workflow automation, APIs, and data science pipelines.
           </p>
         </div>
         <div className="flex items-center space-x-3">
@@ -37,10 +42,13 @@ export default function OverviewPage() {
             className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold hover:bg-amber-500/20 transition-colors"
           >
             <AlertTriangle className="w-4 h-4 text-amber-400" />
-            <span>{pendingApprovals.length} Drafts Awaiting Admin Approval</span>
+            <span>{pendingApprovals.length} Drafts Awaiting Approval</span>
           </Link>
         </div>
       </div>
+
+      {/* Interactive Controls & Policy Bar */}
+      <DashboardControls />
 
       {/* KPI Metric Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

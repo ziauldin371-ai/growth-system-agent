@@ -40,7 +40,7 @@ export function Sidebar() {
           </div>
           <div>
             <div className="font-bold text-base tracking-tight text-white flex items-center gap-1.5">
-              GrowthSignal <span className="text-xs px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-semibold border border-indigo-500/30">AI</span>
+              Growth System <span className="text-xs px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-semibold border border-indigo-500/30">Agent</span>
             </div>
             <div className="text-[11px] text-slate-400">Autonomous B2B Pipeline</div>
           </div>
@@ -86,13 +86,14 @@ export function Sidebar() {
       {/* Operator Profile Banner */}
       <div className="p-4 m-3 rounded-xl bg-slate-950/60 border border-slate-800/80">
         <div className="text-[11px] uppercase tracking-wider font-semibold text-indigo-400 mb-1">
-          Active Operator
+          Owner & Operator
         </div>
-        <div className="text-xs font-medium text-slate-200 truncate">Full Stack AI Developer</div>
-        <div className="text-[11px] text-slate-400 truncate">LLMs • Python • Automation</div>
+        <div className="text-xs font-bold text-slate-100 truncate">Zia Ul Din</div>
+        <div className="text-[11px] text-slate-300 truncate">Full Stack AI Developer</div>
+        <div className="text-[10px] text-slate-500 font-mono truncate mt-0.5">ziauldin371@gmail.com</div>
         <div className="mt-2.5 flex items-center space-x-2">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-[11px] text-emerald-400 font-medium">Safe Mode (Draft-Only)</span>
+          <span className="text-[11px] text-emerald-400 font-medium">Twice-Daily (09:00, 17:00 PKT)</span>
         </div>
       </div>
     </aside>

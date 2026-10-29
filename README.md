@@ -1,144 +1,162 @@
-# GrowthSignal AI
+# Growth System Agent
 
-> **Autonomous B2B Opportunity Pipeline & Grounded Outreach Engine**  
-> Tailored for Full Stack AI Developers & Automation Architects specializing in LLMs, Python, Data Science, AI Agents, Workflow Automation, Custom APIs, and Full-Stack SaaS Engineering.
+> **Autonomous Lead Generation & B2B Opportunity Pipeline Engine**  
+> Custom-built for **Zia Ul Din** — Full Stack AI Developer & Automation Architect | LLMs & Python | Data Science  
+> Sender Identity: `Zia Ul Din | AI & Automation Solutions <ziauldin371@gmail.com>`  
+> Repository: [github.com/ziauldin371-ai/growth-system-agent](https://github.com/ziauldin371-ai/growth-system-agent)  
+> Deployment Target: **Vercel** + **Supabase**
 
 ---
 
 ## Executive Summary
 
-GrowthSignal AI is an autonomous, production-oriented B2B discovery, verification, and outreach platform. It systematically finds businesses across the US, UK, Canada, Australia, and international markets, analyzes verified operational evidence, and routes qualified prospective clients into two distinct pipelines:
+**Growth System Agent** is an autonomous, production-oriented B2B discovery, verification, qualification, and outreach platform. Designed specifically to showcase and win client engagements for Zia Ul Din's technical development services, the system operates two dedicated client acquisition pipelines:
 
 1. **Pipeline A — Website Opportunities**  
-   Identifies active commercial businesses (local trades, commercial services, clinics) that possess verified transactional activity, steady customer review velocity, or corporate registrations, but **lack a verified functional website** (apparently absent, parked, or operating solely through social channels). Qualifies them for custom web platforms, automated appointment booking, and local search presence.
+   Discovers legitimate, active, growing businesses across the United States, United Kingdom, Canada, Australia, and international markets that have verified commercial transactions, customer reviews, or business registrations, but **lack a verified functional website** (apparently absent, broken, or operating solely via social media). Qualifies them for custom modern web development, online booking workflows, and local digital presence.
 
 2. **Pipeline B — AI & Software Opportunities**  
-   Identifies startups, SaaS companies, and digital agencies showing verified demand for **LLM integrations, RAG systems, Python data pipelines, automation workflows, custom APIs, and full-stack software engineering**. Qualifies them through documented public hiring signals, tech stack changes, or stated manual bottlenecks.
+   Discovers startups, SaaS companies, and digital agencies showing verified demand for **AI automation, LLM integrations, RAG systems, AI agents, Python data pipelines, data science, custom APIs, and full-stack software development**. Qualifies them through verified technical signals, job postings, or workflow bottlenecks.
 
 ---
 
-## Architectural Principles & Guardrails
+## Core Operating Modes & Safety Architecture
 
-- **Zero Hallucination Policy**: The system never invents revenue figures, funding sums, employee counts, customer numbers, or software needs. Inaccessible data is marked as unknown rather than evidence of growth or inactivity.
-- **SSRF & DNS Rebinding Defense**: Every website verification probe re-resolves destination hostnames and re-validates target IP addresses against private (RFC 1918), loopback, link-local, cloud metadata (`169.254.169.254`), and multicast ranges **on every redirect hop**.
-- **Prompt Injection Defense**: Scraped external text and third-party notes are treated as untrusted data. They are sanitized, wrapped in cryptographic boundary tags with random nonces, and paired with strict directives prohibiting command execution.
-- **Strict Draft-Only Approval Gate**: The platform operates in draft-only mode by default. Real email delivery requires explicit authenticated administrator approval.
-- **Statutory Compliance**: Enforces CAN-SPAM (15 U.S.C. 7704), UK PECR, and GDPR rules. Includes automated physical mailing office disclosures, one-click unsubscribe links, sending windows (09:00–17:00), daily send caps, and permanent suppression registers.
-- **CSV Formula Injection Sanitization**: All CSV export fields starting with `=`, `+`, `-`, `@`, `\t`, or `\r` are neutralized to prevent arbitrary command execution in Excel/Google Sheets.
+The system features three distinct operational modes, configurable in real time via the dashboard:
+
+| Operating Mode | Behavior & Safeguards | Default Status |
+| :--- | :--- | :--- |
+| **`approval`** | **Human-in-the-Loop Mode**: System runs discovery, SSRF website verification, ICP scoring, and AI draft generation. All generated emails are held in the Approval Queue for manual review before sending. | **DEFAULT ACTIVE MODE** |
+| **`research`** | **Silent Intelligence Mode**: System discovers and qualifies leads, logs evidence, but suppresses all AI drafting and sending. Ideal for market exploration. | Configurable |
+| **`auto_send`** | **Autonomous Controlled Mode**: System autonomously approves and dispatches outreach to verified leads, strictly governed by domain rate limits, quiet business hours, and suppression lists. | Admin Opt-In Only |
+
+### Critical Safety Guardrails
+- **Zero Hallucination Policy**: Revenue, employee headcount, and business needs are never invented. Unverified fields are strictly marked unknown.
+- **SSRF & DNS Rebinding Defense**: Every website verification check re-resolves DNS and validates destination IPs against RFC 1918 private, loopback, link-local, and cloud metadata (`169.254.169.254`) ranges on every single redirect hop.
+- **Prompt Injection Defense**: Untrusted external evidence is sanitized and enclosed in randomized boundary nonces (`<<<UNTRUSTED_EVIDENCE_{NONCE}>>>`) with explicit directives prohibiting instruction overrides.
+- **Strict Domain Velocity Limits**: Hard limit of **maximum 3 emails per domain per day** to eliminate spam risk and preserve sender reputation.
+- **Statutory Compliance**: Automated physical mailing address disclosure, instant one-click unsubscribe links, permanent suppression register, CAN-SPAM and GDPR alignment.
+- **Global Emergency Stop**: One-click dashboard kill-switch and `EMERGENCY_STOP=true` environment variable to immediately halt all campaign dispatches.
+
+---
+
+## Twice-Daily Automated Scheduling (PKT & UTC)
+
+The Growth System Agent is configured to run autonomously twice per day:
+- **Morning Run**: 09:00 PKT (04:00 UTC)
+- **Evening Run**: 17:00 PKT (12:00 UTC)
+
+### Dual-Layer Cron Architecture:
+1. **Vercel Cron (`vercel.json`)**:
+   ```json
+   {
+     "crons": [
+       {
+         "path": "/api/cron/scheduled-run",
+         "schedule": "0 4,12 * * *"
+       }
+     ]
+   }
+   ```
+2. **GitHub Actions Workflow Fallback (`templates/workflows/scheduled-run.yml`)**:
+   Provided as an automated fallback (ensuring twice-daily execution even on free/hobby Vercel accounts) triggering `/api/cron/scheduled-run` with `CRON_SECRET` authentication. Copy to `.github/workflows/scheduled-run.yml` to activate on GitHub.
+3. **Anti-Overlap Distributed Locking**:
+   Uses `scheduler_global_run_lock` with a 10-minute TTL to ensure duplicate scheduled invocations never run concurrently.
+
+---
+
+## Email Dispatch Architecture (Official Gmail REST API)
+
+For personal `@gmail.com` accounts, Google deprecated insecure application passwords in favor of Google OAuth2 client credentials. Growth System Agent includes a dedicated, production-ready **Gmail API Provider** (`GmailProvider`):
+
+- **Sender Address**: `ziauldin371@gmail.com`
+- **Sender Name**: `Zia Ul Din | AI & Automation Solutions`
+- **OAuth2 Token Refresh**: Automatically exchanges `GOOGLE_REFRESH_TOKEN` with Google's OAuth endpoint (`https://oauth2.googleapis.com/token`) for short-lived access tokens.
+- **MIME Multipart RFC 2822 Encoding**: Formats messages with both clean plain-text and responsive HTML bodies, URL-safe base64-encoded to `users/me/messages/send`.
+- **Fallback Providers**: Automatically cascades from Gmail API -> Resend -> Safe Mock Provider (for offline development/testing).
 
 ---
 
 ## Technology Stack
 
-- **Frontend / Dashboard**: Next.js 14 App Router, React 18, TypeScript, Tailwind CSS, Lucide Icons.
-- **Backend Architecture**: Next.js Route Handlers (`src/app/api/...`) backed by modular domain services (`src/services/...`).
-- **Database & Persistence**: Supabase PostgreSQL with Row Level Security (RLS), multi-tenant isolation, and a high-speed In-Memory fallback store for zero-credential development and offline testing.
-- **Runtime Validation**: Zod runtime schema validation on all API requests, provider outputs, and environment variables.
-- **Job Reliability**: Durable background job queue with worker concurrency limits, exponential backoff, jitter, and dead-letter queueing.
-- **Testing**: Vitest for unit & integration testing (37 passing tests); Playwright for end-to-end browser flows.
-
----
-
-## Repository Structure
-
-```
-├── e2e/                             # Playwright browser end-to-end test specs
-├── scripts/                         # Database seeding and migration utilities
-│   └── seed.mjs
-├── src/
-│   ├── app/                         # Next.js App Router (UI & API endpoints)
-│   │   ├── api/                     # REST API Route Handlers
-│   │   │   ├── analytics/           # Overview KPI stats & provider status
-│   │   │   ├── businesses/          # Leads search, single dossier, CSV export
-│   │   │   ├── campaigns/           # Campaign creation & batch dispatch
-│   │   │   ├── compliance/          # Suppression list & public unsubscribe
-│   │   │   ├── discovery/           # Multi-market discovery crawl triggers
-│   │   │   ├── jobs/                # Durable job queue status & triggers
-│   │   │   └── outreach/            # AI draft generation & approval gate
-│   │   ├── approval-queue/          # Human-in-the-loop review station
-│   │   ├── businesses/[id]/         # Detailed Business Dossier & Provenance
-│   │   ├── campaigns/               # Campaign Dispatcher & Telemetry
-│   │   ├── compliance/              # Compliance & Suppression Center
-│   │   ├── discovery/               # Lead Discovery Hub
-│   │   ├── jobs/                    # Live Background Job Queue Monitor
-│   │   ├── pipeline-a/              # Pipeline A: Website Opportunities
-│   │   ├── pipeline-b/              # Pipeline B: AI & Software Opportunities
-│   │   ├── settings/                # Integrations & Safety Guardrails
-│   │   ├── globals.css              # Dark-mode styling and gradients
-│   │   ├── layout.tsx               # Root SaaS shell layout
-│   │   └── page.tsx                 # Overview & Pipeline Analytics Command Center
-│   ├── components/layout/           # Responsive Sidebar & Header components
-│   ├── lib/
-│   │   ├── supabase/                # Browser, server, and service-role admin clients
-│   │   └── validation/schemas.ts    # Zod schemas for all domain entities
-│   ├── services/
-│   │   ├── ai/                      # Outreach Studio, Prompt Defense, Gemini/Mock LLMs
-│   │   ├── crm/                     # Normalization, Deduplication, Safe CSV Exporter
-│   │   ├── discovery/               # Multi-market provider adapters (Places, UK CH, Mock)
-│   │   ├── email/                   # Compliance Guard, Resend & Safe Mock Email Dispatchers
-│   │   ├── queue/                   # Durable Job Queue with workers, retries & dead-letter
-│   │   ├── repository/              # Data Store (Supabase + In-Memory Fallback)
-│   │   ├── scoring/                 # ICP Engine & Explainable scoring algorithm
-│   │   └── website/                 # SSRF-protected DNS and HTTP website verifier
-│   └── types/index.ts               # Core TypeScript domain entities and interfaces
-├── supabase/
-│   └── migrations/                  # 15 PostgreSQL relational schemas and RLS policies
-├── .env.example                     # Environment configuration template
-├── package.json
-├── playwright.config.ts
-├── tailwind.config.ts
-├── tsconfig.json
-└── vitest.config.ts
-```
+- **Framework**: Next.js 14 App Router, React 18, TypeScript (Strict Mode).
+- **Styling**: Tailwind CSS, Lucide Icons, Responsive Mobile-Friendly Dashboard.
+- **Database & Auth**: Supabase PostgreSQL with 17 relational tables, Row Level Security (RLS), and in-memory mock fallback.
+- **Validation**: Zod runtime schema validation for all endpoints, LLM outputs, and payloads.
+- **AI Engine**: Google Gemini 1.5 Pro / Flash with structured JSON output and prompt injection firewalls; deterministic mock fallback for zero-cost testing.
+- **Testing**: Vitest (58 passing unit and integration tests across 16 test suites) and Playwright for browser e2e testing.
 
 ---
 
 ## Quickstart & Local Setup
 
-### 1. Install Dependencies
+### 1. Clone & Install Dependencies
 ```bash
+git clone https://github.com/ziauldin371-ai/growth-system-agent.git
+cd growth-system-agent
 npm install
 ```
 
-### 2. Configure Environment
-Copy the environment template:
+### 2. Configure Environment Variables
+Copy `.env.example` to `.env.local`:
 ```bash
 cp .env.example .env.local
 ```
-*(Note: GrowthSignal AI runs immediately out-of-the-box in sandbox mode with zero external credentials required. All discovery, scoring, website verification, AI drafting, and email dispatch operate via safe, deterministic local mock adapters.)*
+*(The system works immediately out-of-the-box with zero credentials required; mock adapters provide safe deterministic behavior.)*
 
-### 3. Run Automated Tests
+### 3. Run Verification Tests & Quality Gates
 ```bash
-# Run Vitest test suite (37 unit & integration tests)
+# Run Vitest test suite (58 passing unit & integration tests)
 npm test
 
-# Run strict TypeScript type check
+# Run strict TypeScript type verification
 npm run typecheck
+
+# Run Next.js production linter
+npm run lint
+
+# Run production build
+npm run build
 ```
 
-### 4. Run Development Server
+### 4. Start Local Development Server
 ```bash
 npm run dev
 ```
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-### 5. Build for Production
-```bash
-npm run build
-npm start
-```
+Open [http://localhost:3000](http://localhost:3000) to view the Growth System Agent Dashboard.
 
 ---
 
-## External Credential Dependencies
+## External Credentials & Production Setup Checklist
 
-When you are ready to connect live external APIs in production, configure the following keys in `.env.local`:
+To enable live production integrations on Vercel:
 
-| Provider | Environment Variable | Purpose | Fallback when Unconfigured |
-| :--- | :--- | :--- | :--- |
-| **Supabase** | `NEXT_PUBLIC_SUPABASE_URL`<br/>`SUPABASE_SERVICE_ROLE_KEY` | Relational Postgres, RLS, audit logs | In-Memory / Local data repository |
-| **Google Gemini** | `GEMINI_API_KEY` | Structured AI outreach generation | Grounded Deterministic Mock Engine |
-| **Google Places** | `GOOGLE_PLACES_API_KEY` | Live local business discovery (US, CA, AU) | Licensed B2B Sandbox Adapter |
-| **UK Companies House** | `COMPANIES_HOUSE_API_KEY` | Official UK statutory corporate search | Licensed B2B Sandbox Adapter |
-| **Resend** | `RESEND_API_KEY` | Real email delivery | Safe Mock Dispatcher (In-Memory log) |
-| **Redis** *(Optional)* | `REDIS_URL` | Distributed queue backend | Built-in durable transactional queue |
+| Provider | Variable(s) | Description / Acquisition Guide |
+| :--- | :--- | :--- |
+| **Gmail API** | `GOOGLE_CLIENT_ID`<br/>`GOOGLE_CLIENT_SECRET`<br/>`GOOGLE_REFRESH_TOKEN` | Enable Gmail API in Google Cloud Console, create OAuth 2.0 Web Client credentials, and authorize with `https://www.googleapis.com/auth/gmail.send`. |
+| **Sender Email** | `OUTREACH_SENDER_EMAIL`<br/>`OUTREACH_SENDER_NAME` | Defaults to `ziauldin371@gmail.com` and `Zia Ul Din \| AI & Automation Solutions`. |
+| **Scheduler Secret** | `CRON_SECRET` | Generate a strong random token (`openssl rand -hex 32`) to secure `/api/cron/scheduled-run`. |
+| **Supabase** | `NEXT_PUBLIC_SUPABASE_URL`<br/>`NEXT_PUBLIC_SUPABASE_ANON_KEY`<br/>`SUPABASE_SERVICE_ROLE_KEY` | Create a free Supabase project and execute `supabase/migrations/*.sql`. |
+| **Google Gemini** | `GEMINI_API_KEY` | Obtain from Google AI Studio (`aistudio.google.com`). |
+| **Discovery APIs** | `GOOGLE_PLACES_API_KEY`<br/>`COMPANIES_HOUSE_API_KEY` | Optional APIs for live US/UK corporate directory searches. |
+
+---
+
+## Vercel Deployment Guide
+
+1. **Push Code to GitHub**:
+   Ensure all commits are pushed to `origin master`.
+2. **Import Repository in Vercel**:
+   Go to [vercel.com/new](https://vercel.com/new) and select `growth-system-agent`.
+3. **Configure Environment Variables**:
+   Add all variables from `.env.example` in the Vercel Project Settings.
+4. **Deploy**:
+   Click **Deploy**. Vercel will automatically detect Next.js App Router and activate `vercel.json` cron jobs.
+5. **Add GitHub Actions Secret**:
+   In your GitHub repository settings (`Settings -> Secrets and variables -> Actions`), add `APP_BASE_URL` (your Vercel production URL) and `CRON_SECRET` to enable the scheduled fallback workflow.
+
+---
+
+## License
+
+Built and maintained by **Zia Ul Din**. All rights reserved.

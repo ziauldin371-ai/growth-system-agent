@@ -53,6 +53,7 @@ export const AIOutreachOutputSchema = z.object({
   ]),
   selectedSubject: z.string().min(5).max(100),
   emailBody: z.string().min(50, 'Email body must be professional, human, and concise'),
+  htmlBody: z.string().optional(),
   callToAction: z.string().min(10).max(150),
   serviceOffer: z.string().min(10),
   confidenceRating: z.number().min(0).max(1),

@@ -9,7 +9,8 @@ import {
   SuppressionEntry, 
   AutomationJobEntity,
   PipelineType,
-  WebsiteStatus
+  WebsiteStatus,
+  OperatingMode
 } from '@/types';
 import { normalizeBusinessName, normalizeEmail } from '../crm/normalization';
 import { normalizeDomain } from '../website/verifier';
@@ -26,8 +27,30 @@ export class DataStore {
   private suppression: Map<string, SuppressionEntry> = new Map(); // value -> entry
   private jobs: Map<string, AutomationJobEntity> = new Map(); // jobId -> job
   private auditLogs: Array<any> = [];
+  private operatingMode: OperatingMode = 'approval'; // 'research' | 'approval' | 'auto_send'
+  private automationPaused: boolean = false;
+  private distributedLocks: Map<string, number> = new Map(); // lockName -> expiresAt
+  private schedulerRuns: Array<any> = [];
 
   constructor() {
+    this.seedInitialData();
+  }
+
+  public resetToSeedData(): void {
+    this.businesses.clear();
+    this.evidence.clear();
+    this.websiteChecks.clear();
+    this.contacts.clear();
+    this.scores.clear();
+    this.drafts.clear();
+    this.campaigns.clear();
+    this.suppression.clear();
+    this.jobs.clear();
+    this.auditLogs = [];
+    this.operatingMode = 'approval';
+    this.automationPaused = false;
+    this.distributedLocks.clear();
+    this.schedulerRuns = [];
     this.seedInitialData();
   }
 
@@ -503,6 +526,60 @@ LLMs, RAG, Data Pipelines & Full-Stack Systems`,
     return updated;
   }
 
+  // --- Operating Modes & Safety Switches ---
+  public getOperatingMode(): OperatingMode {
+    return this.operatingMode;
+  }
+
+  public setOperatingMode(mode: OperatingMode): void {
+    this.operatingMode = mode;
+  }
+
+  public isAutomationPaused(): boolean {
+    return this.automationPaused;
+  }
+
+  public setAutomationPaused(paused: boolean): void {
+    this.automationPaused = paused;
+  }
+
+  // --- Distributed Scheduler Lock (Anti-Overlap) ---
+  public acquireLock(name: string, ttlMs: number = 600000): boolean {
+    const now = Date.now();
+    const existingExpiresAt = this.distributedLocks.get(name);
+
+    if (existingExpiresAt && existingExpiresAt > now) {
+      return false; // Lock active; prevents overlapping execution
+    }
+
+    this.distributedLocks.set(name, now + ttlMs);
+    return true;
+  }
+
+  public releaseLock(name: string): void {
+    this.distributedLocks.delete(name);
+  }
+
+  // --- Scheduler Runs History ---
+  public recordSchedulerRun(run: any): void {
+    this.schedulerRuns.unshift({
+      id: `run_${Date.now()}`,
+      executedAt: new Date().toISOString(),
+      ...run,
+    });
+    if (this.schedulerRuns.length > 50) {
+      this.schedulerRuns.pop();
+    }
+  }
+
+  public getSchedulerRuns(): any[] {
+    return this.schedulerRuns;
+  }
+
+  public getLastSchedulerRun(): any | null {
+    return this.schedulerRuns.length > 0 ? this.schedulerRuns[0] : null;
+  }
+
   // --- Analytics & Stats ---
   public getPlatformStats() {
     const allBiz = Array.from(this.businesses.values());
@@ -523,6 +600,9 @@ LLMs, RAG, Data Pipelines & Full-Stack Systems`,
       sentCount: sentDrafts.length,
       suppressionCount,
       activeCampaigns: Array.from(this.campaigns.values()).filter(c => c.status === 'running' || c.status === 'scheduled').length,
+      operatingMode: this.operatingMode,
+      automationPaused: this.automationPaused,
+      lastSchedulerRun: this.getLastSchedulerRun(),
     };
   }
 }

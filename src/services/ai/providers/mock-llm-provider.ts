@@ -186,6 +186,12 @@ ${senderProfile.title}
 ${senderProfile.specialization}`;
     }
 
+    const htmlBody = `
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; line-height: 1.6; font-size: 15px;">
+  ${emailBody.split('\n\n').map(p => `<p style="margin: 0 0 16px 0;">${p.replace(/\n/g, '<br/>')}</p>`).join('')}
+</div>
+`.trim();
+
     const output: AIOutreachOutput = {
       researchSummary,
       observations,
@@ -194,6 +200,7 @@ ${senderProfile.specialization}`;
       subjectLines,
       selectedSubject,
       emailBody,
+      htmlBody,
       callToAction,
       serviceOffer,
       confidenceRating: 0.90,

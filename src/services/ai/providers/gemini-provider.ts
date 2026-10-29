@@ -89,6 +89,9 @@ OUTPUT FORMAT: Return raw valid JSON conforming to the requested schema.
     }
 
     const parsedJson = JSON.parse(candidateText);
+    if (!parsedJson.htmlBody && parsedJson.emailBody) {
+      parsedJson.htmlBody = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;color:#1e293b;line-height:1.6;font-size:15px;">${parsedJson.emailBody.split('\n\n').map((p: string) => `<p style="margin:0 0 16px 0;">${p.replace(/\n/g, '<br/>')}</p>`).join('')}</div>`;
+    }
     return AIOutreachOutputSchema.parse(parsedJson);
   }
 }

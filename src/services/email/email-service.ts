@@ -1,6 +1,7 @@
 import { IEmailProvider, SendEmailPayload, SendEmailResponse } from './types';
 import { MockEmailProvider } from './providers/mock-email-provider';
 import { ResendProvider } from './providers/resend-provider';
+import { GmailProvider } from './providers/gmail-provider';
 import { complianceGuard } from './compliance-guard';
 import { rateLimiter } from './rate-limiter';
 
@@ -19,10 +20,13 @@ export class EmailService {
   private providers: Map<string, IEmailProvider> = new Map();
   private processedIdempotencyKeys: Set<string> = new Set();
   public mockProvider: MockEmailProvider;
+  public gmailProvider: GmailProvider;
 
   constructor() {
     this.mockProvider = new MockEmailProvider();
+    this.gmailProvider = new GmailProvider();
     this.registerProvider(this.mockProvider);
+    this.registerProvider(this.gmailProvider);
     this.registerProvider(new ResendProvider());
   }
 
@@ -85,13 +89,28 @@ export class EmailService {
 
     // 4. Append Statutory Compliance Footer
     const finalBody = complianceGuard.appendComplianceFooter(payload.body, payload.to);
+    const defaultSenderEmail = process.env.OUTREACH_SENDER_EMAIL || 'ziauldin371@gmail.com';
+    const defaultSenderName = process.env.OUTREACH_SENDER_NAME || 'Zia Ul Din | AI & Automation Solutions';
+
     const finalPayload: SendEmailPayload = {
       ...payload,
+      fromEmail: payload.fromEmail || defaultSenderEmail,
+      fromName: payload.fromName || defaultSenderName,
       body: finalBody,
     };
 
-    // 5. Select Email Provider (Default to mock unless RESEND_API_KEY is configured and EMAIL_PROVIDER=resend)
-    const preferredId = process.env.EMAIL_PROVIDER || 'mock';
+    // 5. Select Email Provider (Gmail API > Resend > Mock)
+    let preferredId = process.env.EMAIL_PROVIDER;
+    if (!preferredId) {
+      if (this.providers.get('gmail')?.isConfigured()) {
+        preferredId = 'gmail';
+      } else if (this.providers.get('resend')?.isConfigured()) {
+        preferredId = 'resend';
+      } else {
+        preferredId = 'mock';
+      }
+    }
+
     let provider = this.providers.get(preferredId);
     if (!provider || !provider.isConfigured()) {
       provider = this.mockProvider;

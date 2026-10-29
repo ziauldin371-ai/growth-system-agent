@@ -42,3 +42,4 @@ describe('Rate Limiter & Domain Velocity Throttling', () => {
     expect(check.reason).toContain('Daily sending limit reached (2/2 emails sent today)');
   });
 });
+
