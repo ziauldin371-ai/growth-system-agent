@@ -1,4 +1,5 @@
 import { IEmailProvider, SendEmailPayload, SendEmailResponse } from '../types';
+import { tokenStore } from '../../repository/token-store';
 
 /**
  * Gmail API Provider Adapter
@@ -13,6 +14,10 @@ export class GmailProvider implements IEmailProvider {
   public readonly senderName = 'Zia Ul Din | AI & Automation Solutions';
 
   public isConfigured(): boolean {
+    const raw = tokenStore.getRawRecord(this.senderEmail, 'gmail');
+    if (raw && raw.status === 'active') {
+      return true;
+    }
     return Boolean(
       process.env.GOOGLE_CLIENT_ID &&
       process.env.GOOGLE_CLIENT_SECRET &&
@@ -22,11 +27,31 @@ export class GmailProvider implements IEmailProvider {
 
   /**
    * Refreshes OAuth2 access token using client credentials and stored refresh token.
+   * Handles revoked tokens automatically by marking status and throwing a clean error.
    */
   private async getAccessToken(): Promise<string> {
-    const clientId = process.env.GOOGLE_CLIENT_ID!;
-    const clientSecret = process.env.GOOGLE_CLIENT_SECRET!;
-    const refreshToken = process.env.GOOGLE_REFRESH_TOKEN!;
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
+    if (!clientId || !clientSecret) {
+      throw new Error('Google OAuth Client ID and Secret are required.');
+    }
+
+    let refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+
+    const stored = await tokenStore.getToken(this.senderEmail, 'gmail');
+    if (stored) {
+      if (stored.status === 'revoked') {
+        throw new Error('Gmail OAuth token has been revoked. Please reconnect via the application dashboard.');
+      }
+      if (stored.refreshToken) {
+        refreshToken = stored.refreshToken;
+      }
+    }
+
+    if (!refreshToken) {
+      throw new Error('No active Google OAuth refresh token found. Connect Gmail in settings.');
+    }
 
     const response = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
@@ -41,6 +66,10 @@ export class GmailProvider implements IEmailProvider {
 
     if (!response.ok) {
       const errText = await response.text();
+      if (errText.includes('invalid_grant') || response.status === 400) {
+        await tokenStore.markTokenRevoked(this.senderEmail, 'gmail', 'invalid_grant: Token expired or revoked by Google');
+        throw new Error('Google OAuth token has been revoked by Google. Stored credentials marked as revoked.');
+      }
       throw new Error(`Google OAuth token refresh failed: ${response.status} ${errText}`);
     }
 

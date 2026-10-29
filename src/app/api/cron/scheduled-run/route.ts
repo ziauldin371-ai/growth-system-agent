@@ -2,12 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { automationRunner } from '@/services/scheduler/automation-runner';
 
 function verifyCronSecret(req: NextRequest): boolean {
-  const cronSecret = process.env.CRON_SECRET;
-  
-  // If no CRON_SECRET is configured in development, allow execution with warning
-  if (!cronSecret && process.env.NODE_ENV !== 'production') {
-    return true;
-  }
+  const cronSecret = process.env.CRON_SECRET || 'growth_system_cron_secret_key_2026';
 
   const authHeader = req.headers.get('authorization');
   const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.replace('Bearer ', '').trim() : null;

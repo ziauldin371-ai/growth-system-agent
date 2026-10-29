@@ -56,10 +56,32 @@ export class EmailService {
       };
     }
 
-    // 2. Compliance and Approval Verification
+    // 2. Select Email Provider (Gmail API > Resend > Mock)
+    let preferredId = process.env.EMAIL_PROVIDER;
+    if (!preferredId) {
+      if (this.providers.get('gmail')?.isConfigured()) {
+        preferredId = 'gmail';
+      } else if (this.providers.get('resend')?.isConfigured()) {
+        preferredId = 'resend';
+      } else {
+        preferredId = 'mock';
+      }
+    }
+
+    let provider = this.providers.get(preferredId);
+    if (!provider || !provider.isConfigured()) {
+      provider = this.mockProvider;
+    }
+
+    const isRealGmailActive = provider.id === 'gmail';
+
+    // 3. Compliance and Approval Verification (Sandbox Guard, Window, Opt-outs)
     const complianceCheck = complianceGuard.verifySendEligibility({
       recipientEmail: payload.to,
       isExplicitlyApproved,
+      isSandboxData: payload.metadata?.isSandboxData ?? (options as any)?.isSandboxData,
+      sourceProvider: payload.metadata?.sourceProvider ?? (options as any)?.sourceProvider,
+      isRealGmailActive,
       suppressedEmails,
       suppressedDomains,
       sendingWindowStart,
@@ -76,7 +98,7 @@ export class EmailService {
       };
     }
 
-    // 3. Rate Limit Verification (Domain velocity & daily cap)
+    // 4. Rate Limit Verification (Domain velocity & daily cap)
     const rateCheck = rateLimiter.checkRateLimit(payload.to, options.customDailyCap);
     if (!rateCheck.allowed) {
       return {
@@ -87,7 +109,7 @@ export class EmailService {
       };
     }
 
-    // 4. Append Statutory Compliance Footer
+    // 5. Append Statutory Compliance Footer
     const finalBody = complianceGuard.appendComplianceFooter(payload.body, payload.to);
     const defaultSenderEmail = process.env.OUTREACH_SENDER_EMAIL || 'ziauldin371@gmail.com';
     const defaultSenderName = process.env.OUTREACH_SENDER_NAME || 'Zia Ul Din | AI & Automation Solutions';
@@ -98,23 +120,6 @@ export class EmailService {
       fromName: payload.fromName || defaultSenderName,
       body: finalBody,
     };
-
-    // 5. Select Email Provider (Gmail API > Resend > Mock)
-    let preferredId = process.env.EMAIL_PROVIDER;
-    if (!preferredId) {
-      if (this.providers.get('gmail')?.isConfigured()) {
-        preferredId = 'gmail';
-      } else if (this.providers.get('resend')?.isConfigured()) {
-        preferredId = 'resend';
-      } else {
-        preferredId = 'mock';
-      }
-    }
-
-    let provider = this.providers.get(preferredId);
-    if (!provider || !provider.isConfigured()) {
-      provider = this.mockProvider;
-    }
 
     // 6. Execute Send
     const result = await provider.send(finalPayload);

@@ -1,9 +1,22 @@
 import { normalizeEmail } from '../crm/normalization';
 
+export const ALLOWED_REAL_SOURCES = new Set([
+  'google_places',
+  'companies_house',
+  'reddit',
+  'hacker_news',
+  'remotive',
+  'us_registry',
+  'manual_verified',
+  'verified_b2b_discovery',
+]);
+
 export interface ComplianceCheckOptions {
   recipientEmail: string;
   isExplicitlyApproved: boolean;
   isSandboxData?: boolean;
+  isRealGmailActive?: boolean;
+  sourceProvider?: string;
   sendingWindowStart?: number; // 0-23
   sendingWindowEnd?: number;   // 0-23
   currentHour?: number;        // 0-23 (for test injection)
@@ -32,6 +45,8 @@ export class ComplianceGuard {
       currentHour = new Date().getHours(),
       suppressedEmails = new Set(),
       suppressedDomains = new Set(),
+      isRealGmailActive = false,
+      sourceProvider,
     } = options;
 
     // 1. Emergency Stop Kill-Switch
@@ -52,14 +67,45 @@ export class ComplianceGuard {
       };
     }
 
-    // 2b. Sandbox / Demo Data Isolation Gate
+    // 2b. Strict Sandbox Guard & Live Source Verification
     const isSyntheticDomain = 
       recipientEmail.endsWith('.internal') ||
+      recipientEmail.endsWith('.mock') ||
       recipientEmail.includes('@example.') ||
       recipientEmail.includes('@targetcorp.com') ||
       recipientEmail.includes('@testdental.') ||
+      recipientEmail.includes('vanguardhvac.mock') ||
+      recipientEmail.includes('docusynclogistics.io') || // demo seed domain
       options.isSandboxData === true;
 
+    // Strict Rule: When real Gmail provider is active, block ALL demo/sandbox data regardless of NODE_ENV
+    if (isRealGmailActive) {
+      if (options.isSandboxData === true) {
+        return {
+          allowed: false,
+          code: 'COMPLIANCE_RESTRICTION',
+          reason: `Sandbox Guard: Demo/sandbox lead "${recipientEmail}" cannot be emailed via the live Gmail provider (blocked in all environments).`,
+        };
+      }
+
+      if (isSyntheticDomain) {
+        return {
+          allowed: false,
+          code: 'COMPLIANCE_RESTRICTION',
+          reason: `Sandbox Guard: Synthetic/mock domain recipient "${recipientEmail}" cannot receive live emails via Gmail API.`,
+        };
+      }
+
+      if (sourceProvider && !ALLOWED_REAL_SOURCES.has(sourceProvider)) {
+        return {
+          allowed: false,
+          code: 'COMPLIANCE_RESTRICTION',
+          reason: `Sandbox Guard: Source provider "${sourceProvider}" is not in the verified live source allowlist. Live sending blocked.`,
+        };
+      }
+    }
+
+    // Secondary safety: Production sandbox block
     if (isSyntheticDomain && process.env.NODE_ENV === 'production' && process.env.ALLOW_SANDBOX_SEND !== 'true') {
       return {
         allowed: false,

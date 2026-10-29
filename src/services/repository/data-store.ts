@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { 
   BusinessEntity, 
   GrowthEvidenceEntity, 
@@ -15,11 +17,13 @@ import {
   AlternativeChannelStatus,
   SchedulerRunHistoryEntity
 } from '@/types';
+import { IDataStore } from './interface';
 import { normalizeBusinessName, normalizeEmail } from '../crm/normalization';
 import { normalizeDomain } from '../website/verifier';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
-export class DataStore {
+export class DataStore implements IDataStore {
+  private persistenceFilePath: string;
   private businesses: Map<string, BusinessEntity> = new Map();
   private evidence: Map<string, GrowthEvidenceEntity[]> = new Map(); // businessId -> evidence[]
   private websiteChecks: Map<string, WebsiteCheckEntity> = new Map(); // businessId -> check
@@ -36,11 +40,94 @@ export class DataStore {
   private distributedLocks: Map<string, number> = new Map(); // lockName -> expiresAt
   private schedulerRuns: Array<SchedulerRunHistoryEntity> = [];
 
-  constructor() {
+  constructor(customPersistencePath?: string) {
+    const dataDir = path.join(process.cwd(), '.data');
+    if (!fs.existsSync(dataDir)) {
+      try {
+        fs.mkdirSync(dataDir, { recursive: true });
+      } catch {
+        // ignore in readonly env
+      }
+    }
+    this.persistenceFilePath = customPersistencePath || path.join(dataDir, 'data_store_persistence.json');
     this.seedInitialData();
+    this.loadPersistedState();
+  }
+
+  private loadPersistedState(): void {
+    try {
+      if (fs.existsSync(this.persistenceFilePath)) {
+        const raw = fs.readFileSync(this.persistenceFilePath, 'utf8');
+        const state = JSON.parse(raw);
+        if (state.suppression && Array.isArray(state.suppression)) {
+          for (const s of state.suppression) {
+            this.suppression.set(s.value.toLowerCase(), s);
+          }
+        }
+        if (state.businesses && Array.isArray(state.businesses)) {
+          for (const b of state.businesses) {
+            this.businesses.set(b.id, b);
+          }
+        }
+        if (state.drafts && Array.isArray(state.drafts)) {
+          for (const d of state.drafts) {
+            this.drafts.set(d.id, d);
+          }
+        }
+        if (state.jobs && Array.isArray(state.jobs)) {
+          for (const j of state.jobs) {
+            this.jobs.set(j.id, j);
+          }
+        }
+        if (state.alternativeChannels && Array.isArray(state.alternativeChannels)) {
+          for (const c of state.alternativeChannels) {
+            this.alternativeChannels.set(c.id, c);
+          }
+        }
+        if (state.schedulerRuns && Array.isArray(state.schedulerRuns)) {
+          this.schedulerRuns = state.schedulerRuns;
+        }
+        if (state.operatingMode) {
+          this.operatingMode = state.operatingMode;
+        }
+        if (typeof state.automationPaused === 'boolean') {
+          this.automationPaused = state.automationPaused;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load persisted data store state from disk:', e);
+    }
+  }
+
+  public persistState(): void {
+    try {
+      const state = {
+        suppression: Array.from(this.suppression.values()),
+        businesses: Array.from(this.businesses.values()),
+        drafts: Array.from(this.drafts.values()),
+        jobs: Array.from(this.jobs.values()),
+        alternativeChannels: Array.from(this.alternativeChannels.values()),
+        schedulerRuns: this.schedulerRuns,
+        operatingMode: this.operatingMode,
+        automationPaused: this.automationPaused,
+      };
+      const dir = path.dirname(this.persistenceFilePath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(this.persistenceFilePath, JSON.stringify(state, null, 2), 'utf8');
+    } catch (e) {
+      console.warn('Failed to persist data store state to disk:', e);
+    }
   }
 
   public resetToSeedData(): void {
+    try {
+      if (fs.existsSync(this.persistenceFilePath)) {
+        fs.unlinkSync(this.persistenceFilePath);
+      }
+    } catch {}
+
     this.businesses.clear();
     this.evidence.clear();
     this.websiteChecks.clear();
@@ -922,6 +1009,7 @@ ziauldin371@gmail.com`,
 
   public saveBusiness(b: BusinessEntity): void {
     this.businesses.set(b.id, b);
+    this.persistState();
   }
 
   public saveEvidence(businessId: string, ev: GrowthEvidenceEntity[]): void {
@@ -961,6 +1049,7 @@ ziauldin371@gmail.com`,
 
   public saveDraft(draft: EmailDraftEntity): void {
     this.drafts.set(draft.id, draft);
+    this.persistState();
   }
 
   public updateDraftStatus(
@@ -978,6 +1067,7 @@ ziauldin371@gmail.com`,
     }
     draft.updatedAt = new Date().toISOString();
     this.drafts.set(id, draft);
+    this.persistState();
     return draft;
   }
 
@@ -1001,6 +1091,7 @@ ziauldin371@gmail.com`,
 
   public addSuppression(entry: SuppressionEntry): void {
     this.suppression.set(entry.value.toLowerCase(), entry);
+    this.persistState();
   }
 
   public isSuppressed(emailOrDomain: string): boolean {
@@ -1024,6 +1115,7 @@ ziauldin371@gmail.com`,
 
   public saveJob(job: AutomationJobEntity): void {
     this.jobs.set(job.id, job);
+    this.persistState();
   }
 
   public updateJob(id: string, updates: Partial<AutomationJobEntity>): AutomationJobEntity | null {
@@ -1031,6 +1123,7 @@ ziauldin371@gmail.com`,
     if (!j) return null;
     const updated = { ...j, ...updates, updatedAt: new Date().toISOString() };
     this.jobs.set(id, updated);
+    this.persistState();
     return updated;
   }
 
@@ -1041,6 +1134,7 @@ ziauldin371@gmail.com`,
 
   public setOperatingMode(mode: OperatingMode): void {
     this.operatingMode = mode;
+    this.persistState();
   }
 
   public isAutomationPaused(): boolean {
@@ -1049,11 +1143,13 @@ ziauldin371@gmail.com`,
 
   public setAutomationPaused(paused: boolean): void {
     this.automationPaused = paused;
+    this.persistState();
   }
 
   // --- Alternative Outreach Channels ---
   public saveAlternativeChannel(channel: AlternativeChannelEntity): void {
     this.alternativeChannels.set(channel.id, channel);
+    this.persistState();
   }
 
   public getAlternativeChannels(businessId?: string): AlternativeChannelEntity[] {
@@ -1083,6 +1179,7 @@ ziauldin371@gmail.com`,
     if (customPitch !== undefined) ch.customPitch = customPitch;
     ch.updatedAt = new Date().toISOString();
     this.alternativeChannels.set(channelId, ch);
+    this.persistState();
     return true;
   }
 
@@ -1378,6 +1475,7 @@ ziauldin371@gmail.com`,
     if (this.schedulerRuns.length > 50) {
       this.schedulerRuns.pop();
     }
+    this.persistState();
   }
 
   public getSchedulerRuns(): any[] {

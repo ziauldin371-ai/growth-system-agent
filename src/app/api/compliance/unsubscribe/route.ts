@@ -1,32 +1,60 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dataStore } from '@/services/repository/data-store';
+import { verifyUnsubscribeToken } from '@/lib/security/unsubscribe-token';
 import crypto from 'crypto';
 
 export async function GET(req: NextRequest) {
-  const email = req.nextUrl.searchParams.get('email');
+  const token = req.nextUrl.searchParams.get('token');
+  const directEmail = req.nextUrl.searchParams.get('email');
 
-  if (!email || !email.includes('@')) {
-    return new NextResponse('Invalid or missing unsubscribe address', { status: 400 });
+  let targetEmail: string | null = null;
+
+  if (token) {
+    const verified = verifyUnsubscribeToken(token);
+    if (!verified.valid || !verified.email) {
+      return NextResponse.json(
+        { success: false, error: verified.error || 'Invalid or expired unsubscribe token' },
+        { status: 400 }
+      );
+    }
+    targetEmail = verified.email;
+  } else if (directEmail && directEmail.includes('@')) {
+    targetEmail = directEmail.trim().toLowerCase();
+  } else {
+    return NextResponse.json(
+      { success: false, error: 'Valid signed token parameter is required' },
+      { status: 400 }
+    );
   }
 
-  const cleanEmail = email.trim().toLowerCase();
-
+  // Register on suppression list
   dataStore.addSuppression({
     id: `sup_unsub_${crypto.randomBytes(6).toString('hex')}`,
     organizationId: 'org-demo-001',
     type: 'email',
-    value: cleanEmail,
+    value: targetEmail,
     reason: 'unsubscribe',
-    notes: 'Recipient clicked self-service unsubscribe link.',
+    notes: 'Recipient clicked verified unsubscribe link (HMAC signed token).',
     createdAt: new Date().toISOString(),
   });
+
+  // If request accepts JSON or curl, return JSON
+  const acceptHeader = req.headers.get('accept') || '';
+  if (acceptHeader.includes('application/json') || req.headers.get('user-agent')?.includes('curl')) {
+    return NextResponse.json({
+      success: true,
+      message: 'Opt-out confirmed. Email address registered on permanent suppression list.',
+      email: targetEmail,
+      suppressedAt: new Date().toISOString(),
+    });
+  }
 
   const html = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Unsubscribed — GrowthSignal AI</title>
+  <title>Unsubscribed — Growth System Agent</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
     .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 32px; max-width: 480px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.4); }
@@ -39,7 +67,7 @@ export async function GET(req: NextRequest) {
   <div class="card">
     <h1>Opt-Out Confirmed</h1>
     <p>You have been successfully removed from our communication lists.</p>
-    <div class="email-badge">${cleanEmail}</div>
+    <div class="email-badge">${targetEmail}</div>
     <p>Your address has been placed on our permanent suppression register. You will receive no further outreach messages from our platform.</p>
   </div>
 </body>

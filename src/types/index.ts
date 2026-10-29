@@ -402,13 +402,15 @@ export interface InboxPlacementTestEntity {
   templateName: string;
   testResults: Array<{
     provider: 'Gmail' | 'Outlook' | 'Yahoo' | 'Workspace';
-    placement: 'Primary' | 'Promotions' | 'Spam';
+    placement: 'Primary' | 'Promotions' | 'Spam' | 'Dispatched' | 'Not measured';
     timestamp: string;
+    messageId?: string;
   }>;
-  primaryRate: number;
-  spamRate: number;
-  overallResult: 'pass' | 'warning' | 'fail';
+  primaryRate: number | null;
+  spamRate: number | null;
+  overallResult: 'pass' | 'warning' | 'fail' | 'not_measured';
   testedAt: string;
+  notes?: string;
 }
 
 export type IntentPlatform = 

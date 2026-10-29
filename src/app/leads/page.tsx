@@ -212,7 +212,14 @@ export default function WorldwideLeadsPage() {
                   return (
                     <tr key={lead.id} className="hover:bg-slate-800/30 transition-colors">
                       <td className="py-3 px-4">
-                        <div className="font-semibold text-slate-100">{lead.name}</div>
+                        <div className="font-semibold text-slate-100 flex items-center gap-2">
+                          <span>{lead.name}</span>
+                          {lead.isSandboxData && (
+                            <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] font-bold">
+                              DEMO
+                            </span>
+                          )}
+                        </div>
                         <div className="text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5">
                           <span className="px-1.5 py-0.2 rounded bg-slate-800 font-mono text-[10px] text-slate-300">
                             {lead.country}

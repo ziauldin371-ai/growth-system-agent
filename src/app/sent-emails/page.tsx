@@ -131,6 +131,11 @@ export default function SentEmailsPage() {
                       <td className="py-3 px-4">
                         <div className="font-semibold text-slate-100 flex items-center gap-1.5">
                           <span>{item.businessName}</span>
+                          {(item.recipientEmail?.includes('.mock') || item.recipientEmail?.includes('.internal') || (item as any).isSandboxData) && (
+                            <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] font-bold">
+                              DEMO
+                            </span>
+                          )}
                           <span className="px-1.5 py-0.2 rounded bg-slate-800 text-[10px] font-mono text-slate-400">
                             {item.country}
                           </span>

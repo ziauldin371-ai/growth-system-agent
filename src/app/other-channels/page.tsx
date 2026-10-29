@@ -148,6 +148,11 @@ export default function OtherOutreachPage() {
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-lg text-slate-100">{business.name}</span>
+                      {business.isSandboxData && (
+                        <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] font-bold">
+                          DEMO
+                        </span>
+                      )}
                       <span className="px-2 py-0.5 rounded bg-slate-800 text-xs font-mono text-slate-300">
                         {business.country}
                       </span>
