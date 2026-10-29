@@ -133,7 +133,7 @@ export default function ApprovalQueuePage() {
           <MailCheck className="w-8 h-8 text-slate-500 mx-auto mb-3" />
           <h3 className="text-sm font-bold text-white">No drafts found in this category</h3>
           <p className="text-xs text-slate-500 mt-1">
-            Navigate to Pipeline A or Pipeline B and click "Generate Outreach Draft" on any qualified lead.
+            Navigate to Pipeline A or Pipeline B and click &quot;Generate Outreach Draft&quot; on any qualified lead.
           </p>
         </div>
       ) : (

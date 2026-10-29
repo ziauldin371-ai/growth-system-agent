@@ -2,6 +2,7 @@ import { IEmailProvider, SendEmailPayload, SendEmailResponse } from './types';
 import { MockEmailProvider } from './providers/mock-email-provider';
 import { ResendProvider } from './providers/resend-provider';
 import { complianceGuard } from './compliance-guard';
+import { rateLimiter } from './rate-limiter';
 
 export interface DispatchEmailOptions {
   payload: SendEmailPayload;
@@ -11,6 +12,7 @@ export interface DispatchEmailOptions {
   sendingWindowStart?: number;
   sendingWindowEnd?: number;
   currentHour?: number;
+  customDailyCap?: number;
 }
 
 export class EmailService {
@@ -70,25 +72,37 @@ export class EmailService {
       };
     }
 
-    // 3. Append Statutory Compliance Footer
+    // 3. Rate Limit Verification (Domain velocity & daily cap)
+    const rateCheck = rateLimiter.checkRateLimit(payload.to, options.customDailyCap);
+    if (!rateCheck.allowed) {
+      return {
+        success: false,
+        provider: 'rate_limiter',
+        status: 'rejected_compliance',
+        error: `[RATE_LIMIT_EXCEEDED] ${rateCheck.reason}`,
+      };
+    }
+
+    // 4. Append Statutory Compliance Footer
     const finalBody = complianceGuard.appendComplianceFooter(payload.body, payload.to);
     const finalPayload: SendEmailPayload = {
       ...payload,
       body: finalBody,
     };
 
-    // 4. Select Email Provider (Default to mock unless RESEND_API_KEY is configured and EMAIL_PROVIDER=resend)
+    // 5. Select Email Provider (Default to mock unless RESEND_API_KEY is configured and EMAIL_PROVIDER=resend)
     const preferredId = process.env.EMAIL_PROVIDER || 'mock';
     let provider = this.providers.get(preferredId);
     if (!provider || !provider.isConfigured()) {
       provider = this.mockProvider;
     }
 
-    // 5. Execute Send
+    // 6. Execute Send
     const result = await provider.send(finalPayload);
 
     if (result.success) {
       this.processedIdempotencyKeys.add(payload.idempotencyKey);
+      rateLimiter.recordSend(payload.to);
     }
 
     return result;
