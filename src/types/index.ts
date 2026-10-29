@@ -409,3 +409,84 @@ export interface InboxPlacementTestEntity {
   overallResult: 'pass' | 'warning' | 'fail';
   testedAt: string;
 }
+
+export type IntentPlatform = 
+  | 'hacker_news' 
+  | 'reddit' 
+  | 'remote_ok' 
+  | 'remotive' 
+  | 'github' 
+  | 'upwork_manual' 
+  | 'linkedin_manual' 
+  | 'x_twitter' 
+  | 'tender' 
+  | 'other_manual';
+
+export type IntentType = 
+  | 'explicit_hire_request' 
+  | 'job_posting' 
+  | 'recommendation_request' 
+  | 'tender' 
+  | 'pain_point_complaint' 
+  | 'partnership_request' 
+  | 'not_relevant';
+
+export type ReplyRoute = 
+  | 'email' 
+  | 'dm' 
+  | 'public_comment' 
+  | 'marketplace_proposal' 
+  | 'apply_link' 
+  | 'manual_reachout';
+
+export interface IntentOpportunityEntity {
+  id: string;
+  sourcePlatform: IntentPlatform;
+  sourceUrl: string;
+  sourceIdentifier?: string | null;
+  title: string;
+  rawContent: string;
+  sanitizedSummary: string;
+  posterIdentity?: string | null;
+  posterContactInfo?: {
+    email?: string;
+    handle?: string;
+    applyUrl?: string;
+    profileUrl?: string;
+  };
+  intentType: IntentType;
+  neededSkills: string[];
+  statedBudget?: string | null;
+  urgency?: string | null;
+  locationOrTz?: string | null;
+  contractType?: string | null;
+  fitScore: number; // 0 - 100
+  fitReasoning: string;
+  legitimacyScore: number; // 0 - 100
+  isLegitimate: boolean;
+  scamWarningFlags: string[];
+  replyRoute: ReplyRoute;
+  tailoredPitch?: string | null;
+  pitchWordCount?: number;
+  status: 'new' | 'pitched' | 'replied' | 'call_booked' | 'won' | 'lost' | 'dismissed';
+  postedAt: string;
+  fetchedAt: string;
+  contactedAt?: string | null;
+  reminderDate?: string | null;
+  respondWithinHours?: number;
+  isManualImport: boolean;
+  metadata?: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CommunityPitchRuleEntity {
+  id: string;
+  platform: string;
+  communityName: string;
+  ruleNotes: string;
+  maxWords: number;
+  allowDirectLinks: boolean;
+  toneGuidance?: string;
+  createdAt: string;
+}

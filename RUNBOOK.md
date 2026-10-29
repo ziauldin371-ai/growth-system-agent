@@ -176,11 +176,35 @@ psql -h db.your-project.supabase.co -U postgres -d postgres -f backup_file.sql
 
 ---
 
-## 7. Verification & Quality Gates
+## 7. Intent-Based Lead Radar ("People Looking for My Skills Right Now")
+
+### A. Live Intent Sources & Polling
+* **Hacker News (Algolia API)**: Automatically polls "Ask HN: Who is hiring?", "Seeking freelancer", and keyword queries for Python automation, RAG, and LLM development.
+* **Reddit Developer Subreddits**: Queries public JSON endpoints on `r/forhire`, `r/hiring`, `r/LocalLLaMA`, `r/startups`, and `r/automation`.
+* **Remote Feeds**: Direct API integration with Remotive and RemoteOK for active contract/freelance software engineering roles.
+* **Manual Quick Add**: Allows pasting raw post URLs and text from LinkedIn, Upwork, Discord, Facebook, or Telegram via the modal on `/hot-opportunities` or `POST /api/intent/quick-add`.
+
+### B. Classification & Anti-Scam Verification
+* Every raw lead is processed through `classifyRawIntentPost()`:
+  - Validates `intent_type`: `explicit_hire_request`, `job_posting`, `recommendation_request`, `partnership_request`.
+  - Matches skills against Zia's specializations (AI Agents, LLM/RAG, Python automation, Data Science, Full-Stack SaaS, Websites).
+  - Scam & Fraud Filter: Automatically flags advance-fee traps, crypto pump-and-dump schemes, multi-week unpaid trials, and off-platform payment lures. Posts with legitimacy score $< 60$ are hidden.
+  - Computes `fit_score` (0–100) with 0–48 hour hot-window priority.
+
+### C. Community Rules & Pitch Modes
+* Tailored pitch generator (`generateIntentPitch()`):
+  - **Reddit / HN Public Reply**: 40–90 words, addresses the problem first, zero boilerplate marketing, includes 1 clarifying technical question.
+  - **Marketplace Proposal (Upwork/Contra)**: 120–180 words, 3-step structured sprint roadmap (Days 1–3, Days 4–8, Days 9–10), includes timeline and deliverables.
+  - **Direct Email**: Under 110 words with soft ask.
+* Action buttons on each card: **Copy Pitch**, **Open Thread / Job Post**, **Mark as Contacted**, **Dismiss**.
+
+---
+
+## 8. Verification & Quality Gates
 
 Run these commands before any deployment or pull request:
 ```bash
-# Unit & integration tests (80 passing tests across 22 test suites)
+# Unit & integration tests (85 passing tests across 23 test suites)
 npm test
 
 # Strict TypeScript type check

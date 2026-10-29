@@ -20,12 +20,14 @@ import {
   Layers,
   HelpCircle,
   History,
-  LogOut
+  LogOut,
+  Flame
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Overview & Analytics', icon: LayoutDashboard },
+  { href: '/hot-opportunities', label: 'Hot Intent Radar', icon: Flame, badge: 'Warm Leads' },
   { href: '/leads', label: 'Worldwide Leads', icon: Users, badge: 'All Sources' },
   { href: '/ready-for-email', label: 'Ready for Email', icon: CheckCircle2, badge: 'Eligible' },
   { href: '/sent-emails', label: 'Sent Emails', icon: Mail, badge: 'Gmail Sent' },
