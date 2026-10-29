@@ -96,3 +96,4 @@ describe('Unauthenticated API Lockdown & Zero-Trust Boundary Audit (Request 5)',
     expect(response.status).toBe(200);
   });
 });
+
