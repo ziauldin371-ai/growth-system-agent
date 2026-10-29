@@ -113,8 +113,8 @@ $$\text{Overall Score} = \sum (\text{Dimension Score} \times \text{Weight})$$
 
 ### Execution Rhythm
 - **Twice Daily**: 09:00 PKT (04:00 UTC) and 17:00 PKT (12:00 UTC)
-- **Vercel Cron**: Configured via `vercel.json` to hit `/api/cron/scheduled-run`.
-- **GitHub Actions Fallback**: Template provided in `templates/workflows/scheduled-run.yml` to trigger the cron endpoint with `CRON_SECRET` for free-tier resilience.
+- **Vercel Cron**: Configured via `vercel.json` (`0 4 * * *`) for free Hobby plan compliance.
+- **GitHub Actions Fallback**: Template provided in `templates/workflows/scheduled-run.yml` (`0 4,12 * * *`) to trigger the cron endpoint with `CRON_SECRET` for free-tier twice-daily scheduling.
 - **Anti-Overlap Distributed Lock**: `acquireLock('scheduler_global_run_lock', 600000)` prevents duplicate runs.
 - **State Controls**:
   - `isAutomationPaused()`: Global pause switch evaluated before every step.

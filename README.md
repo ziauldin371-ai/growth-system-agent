@@ -48,18 +48,19 @@ The Growth System Agent is configured to run autonomously twice per day:
 
 ### Dual-Layer Cron Architecture:
 1. **Vercel Cron (`vercel.json`)**:
+   Configured for once-daily execution at 09:00 PKT (04:00 UTC) to comply with Vercel's Hobby plan limit:
    ```json
    {
      "crons": [
        {
          "path": "/api/cron/scheduled-run",
-         "schedule": "0 4,12 * * *"
+         "schedule": "0 4 * * *"
        }
      ]
    }
    ```
-2. **GitHub Actions Workflow Fallback (`templates/workflows/scheduled-run.yml`)**:
-   Provided as an automated fallback (ensuring twice-daily execution even on free/hobby Vercel accounts) triggering `/api/cron/scheduled-run` with `CRON_SECRET` authentication. Copy to `.github/workflows/scheduled-run.yml` to activate on GitHub.
+2. **GitHub Actions Workflow (`templates/workflows/scheduled-run.yml`)**:
+   Runs twice daily without restriction (`0 4,12 * * *` at 09:00 & 17:00 PKT) triggering `/api/cron/scheduled-run` with `CRON_SECRET`. Copy to `.github/workflows/scheduled-run.yml` to run the evening schedule for free.
 3. **Anti-Overlap Distributed Locking**:
    Uses `scheduler_global_run_lock` with a 10-minute TTL to ensure duplicate scheduled invocations never run concurrently.
 
