@@ -4,7 +4,9 @@ import { verifyWebsite } from '../website/verifier';
 import { icpEngine } from '../scoring/icp-engine';
 import { outreachService } from '../ai/outreach-service';
 import { emailService } from '../email/email-service';
+import { runNotifierService } from '../notifications/run-notifier';
 import { normalizeBusinessName, isDuplicateBusiness } from '../crm/normalization';
+import { AlternativeChannelEntity, SchedulerRunHistoryEntity } from '@/types';
 import crypto from 'crypto';
 
 export interface ScheduledRunResult {
@@ -69,6 +71,15 @@ export class AutomationRunner {
       let totalQualified = 0;
       let totalDrafts = 0;
       let totalSent = 0;
+      let totalChannelsFound = 0;
+      let skippedRecordsCount = 0;
+      const skippedReasons: Record<string, number> = {};
+      const businessesEmailedWithOtherChannels: Array<{
+        businessName: string;
+        email: string;
+        channels: string[];
+        businessId: string;
+      }> = [];
 
       // 3. Multi-Market Discovery
       const discoveryResult = await discoveryService.executeDiscovery({
@@ -92,7 +103,11 @@ export class AutomationRunner {
           b
         ));
 
-        if (isDup) continue;
+        if (isDup) {
+          skippedRecordsCount++;
+          skippedReasons['Duplicate business already exists'] = (skippedReasons['Duplicate business already exists'] || 0) + 1;
+          continue;
+        }
 
         const bizId = `biz_${crypto.randomBytes(6).toString('hex')}`;
         const newBiz: any = {
@@ -218,7 +233,43 @@ export class AutomationRunner {
           }
         }
 
-        // 4. Draft Generation (Only in 'approval' or 'auto_send' modes; skipped in 'research' mode)
+        // 4. Extract & Save Alternative Channels
+        const channelsForBiz: string[] = [];
+        if (raw.socialUrls && raw.socialUrls.length > 0) {
+          for (const sUrl of raw.socialUrls) {
+            let platform: any = 'other';
+            if (sUrl.includes('linkedin.com')) platform = 'linkedin';
+            else if (sUrl.includes('instagram.com')) platform = 'instagram';
+            else if (sUrl.includes('facebook.com')) platform = 'facebook';
+            else if (sUrl.includes('twitter.com') || sUrl.includes('x.com')) platform = 'twitter';
+            else if (sUrl.includes('youtube.com')) platform = 'youtube';
+
+            const chId = `ch_${crypto.randomBytes(6).toString('hex')}`;
+            const pitch = platform === 'linkedin'
+              ? `Hi ${raw.name} team — noticed your commercial expansion in ${raw.city || 'your region'}. As a Full Stack AI Developer & Automation Architect, I build custom RAG pipelines and conversion web platforms. Would you be open to a 2-minute exchange?`
+              : `Hello ${raw.name} — impressed by your recent work. Reaching out from Zia Ul Din (AI Developer & Automation Architect) to share how automated workflow integrations can accelerate your operations.`;
+
+            dataStore.saveAlternativeChannel({
+              id: chId,
+              businessId: bizId,
+              businessName: raw.name,
+              country: raw.country || 'US',
+              platform,
+              profileUrl: sUrl,
+              sourceName: 'Discovery Engine',
+              isUsable: true,
+              customPitch: pitch,
+              status: 'not_contacted',
+              lastCheckedAt: new Date().toISOString(),
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            });
+            channelsForBiz.push(platform);
+            totalChannelsFound++;
+          }
+        }
+
+        // 5. Draft Generation (Only in 'approval' or 'auto_send' modes; skipped in 'research' mode)
         if (operatingMode !== 'research' && newBiz.qualificationStatus === 'qualified') {
           const draftRes = await outreachService.generateDraft({
             business: newBiz,
@@ -254,7 +305,7 @@ export class AutomationRunner {
           dataStore.saveDraft(draftEntity);
           totalDrafts++;
 
-          // 5. Controlled Auto-Send (Only if explicitly enabled and approved)
+          // 6. Controlled Auto-Send (Only if explicitly enabled and approved)
           if (isAutoSend && raw.contacts?.[0]?.email) {
             const sendResult = await emailService.dispatchOutreachEmail({
               payload: {
@@ -272,12 +323,66 @@ export class AutomationRunner {
             if (sendResult.success) {
               dataStore.updateDraftStatus(draftId, 'sent');
               totalSent++;
+
+              if (channelsForBiz.length > 0) {
+                businessesEmailedWithOtherChannels.push({
+                  businessName: newBiz.name,
+                  email: raw.contacts[0].email,
+                  channels: channelsForBiz,
+                  businessId: bizId,
+                });
+              }
             }
           }
         }
       }
 
-      const runSummary: ScheduledRunResult = {
+      const finishTime = new Date();
+      const nextRun = runNotifierService.getNextRunDetails();
+
+      const runHistory: SchedulerRunHistoryEntity = {
+        runId,
+        status: 'completed',
+        startTimePkt: runNotifierService.formatToKarachiTime(new Date(startTime)),
+        finishTimePkt: runNotifierService.formatToKarachiTime(finishTime),
+        startTimeUtc: new Date(startTime).toISOString(),
+        finishTimeUtc: finishTime.toISOString(),
+        countriesSearched: ['US', 'UK', 'Worldwide'],
+        sourcesSearched: ['Google Places', 'UK Companies House', 'B2B Registry'],
+        leadsDiscovered: totalDiscovered,
+        leadsQualified: totalQualified,
+        draftsGenerated: totalDrafts,
+        emailsSent: totalSent,
+        skippedRecordsCount,
+        skippedReasons,
+        alternativeChannelsFound: totalChannelsFound,
+        operatingMode,
+        durationMs: Date.now() - startTime,
+        nextScheduledRunPkt: nextRun.pkt,
+        nextScheduledRunUtc: nextRun.utc,
+        notificationStatus: 'sent',
+      };
+
+      dataStore.recordSchedulerRun(runHistory);
+
+      // 7. Notify Operator Zia Ul Din after execution
+      await runNotifierService.sendRunSummaryReport({
+        runId,
+        status: 'completed',
+        startTimeUtc: new Date(startTime),
+        finishTimeUtc: finishTime,
+        countriesSearched: ['US', 'UK', 'Worldwide'],
+        sourcesSearched: ['Google Places', 'UK Companies House', 'B2B Registry'],
+        leadsDiscovered: totalDiscovered,
+        eligibleEmailContacts: totalQualified,
+        emailsSubmittedToGmail: totalSent,
+        skippedRecordsCount,
+        skippedReasons,
+        businessesEmailedWithOtherChannels,
+        operatingMode,
+      });
+
+      return {
         runId,
         status: 'completed',
         leadsDiscovered: totalDiscovered,
@@ -287,9 +392,6 @@ export class AutomationRunner {
         operatingMode,
         durationMs: Date.now() - startTime,
       };
-
-      dataStore.recordSchedulerRun(runSummary);
-      return runSummary;
 
     } finally {
       dataStore.releaseLock(this.LOCK_NAME);

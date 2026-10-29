@@ -1,0 +1,19 @@
+import { NextResponse } from 'next/server';
+import { dataStore } from '@/services/repository/data-store';
+
+export async function GET() {
+  try {
+    const readyLeads = dataStore.getReadyForEmailLeads();
+    return NextResponse.json({
+      success: true,
+      total: readyLeads.length,
+      leads: readyLeads,
+    });
+  } catch (err: any) {
+    return NextResponse.json(
+      { success: false, error: err.message || 'Failed to fetch ready leads' },
+      { status: 500 }
+    );
+  }
+}
+

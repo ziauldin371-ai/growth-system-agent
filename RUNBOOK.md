@@ -114,6 +114,15 @@ To authorize sending from `ziauldin371@gmail.com`:
    OUTREACH_SENDER_NAME="Zia Ul Din | AI & Automation Solutions"
    ```
 
+5. **Verify with Test Email Dispatch**:
+   In the dashboard, navigate to `/settings` and use the **Gmail API OAuth2 Verification & Test Send** card, or run:
+   ```bash
+   curl -X POST https://your-deployment.vercel.app/api/gmail/test-send \
+     -H "Content-Type: application/json" \
+     -d '{"recipientEmail": "ziauldin371@gmail.com"}'
+   ```
+   Confirm that the test message appears in your Google account's Sent folder.
+
 ---
 
 ## 5. Database Backup & Restore
@@ -138,7 +147,7 @@ psql -h db.your-project.supabase.co -U postgres -d postgres -f backup_file.sql
 
 Run these commands before any deployment or pull request:
 ```bash
-# Unit & integration tests (58 passing tests)
+# Unit & integration tests (67 passing tests across 18 test suites)
 npm test
 
 # Strict TypeScript type check

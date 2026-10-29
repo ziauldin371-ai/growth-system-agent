@@ -24,6 +24,8 @@ export class MockEmailProvider implements IEmailProvider {
       success: true,
       provider: this.id,
       messageId,
+      threadId: `${messageId}_th`,
+      gmailUrl: `https://mail.google.com/mail/u/0/#sent/${messageId}`,
       status: 'mock_delivered',
     };
   }

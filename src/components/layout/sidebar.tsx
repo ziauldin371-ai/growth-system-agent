@@ -12,23 +12,48 @@ import {
   ShieldAlert, 
   Activity, 
   Settings,
-  Sparkles
+  Sparkles,
+  Users,
+  CheckCircle2,
+  Mail,
+  Share2,
+  Layers,
+  HelpCircle,
+  History,
+  LogOut
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Overview & Analytics', icon: LayoutDashboard },
-  { href: '/discovery', label: 'Lead Discovery Hub', icon: Search },
-  { href: '/pipeline-a', label: 'Pipeline A: Web Dev', icon: Globe, badge: 'High Intent' },
-  { href: '/pipeline-b', label: 'Pipeline B: AI & Software', icon: Cpu, badge: 'Tech Signals' },
-  { href: '/approval-queue', label: 'Outreach & Approval', icon: MailCheck, badge: 'Draft Only' },
-  { href: '/campaigns', label: 'Campaign Dispatcher', icon: Send },
+  { href: '/leads', label: 'Worldwide Leads', icon: Users, badge: 'All Sources' },
+  { href: '/ready-for-email', label: 'Ready for Email', icon: CheckCircle2, badge: 'Eligible' },
+  { href: '/sent-emails', label: 'Sent Emails', icon: Mail, badge: 'Gmail Sent' },
+  { href: '/other-channels', label: 'Other Outreach Channels', icon: Share2, badge: 'Social/Forms' },
+  { href: '/email-sent-plus-channels', label: 'Email Sent + Other Channels', icon: Layers, badge: 'Multi-Touch' },
+  { href: '/no-email', label: 'No Email Available', icon: HelpCircle, badge: 'Channels Only' },
+  { href: '/pipeline-a', label: 'Pipeline A: Web Dev', icon: Globe },
+  { href: '/pipeline-b', label: 'Pipeline B: AI & Software', icon: Cpu },
+  { href: '/approval-queue', label: 'Outreach & Approval', icon: MailCheck, badge: 'Review' },
+  { href: '/campaigns', label: 'Campaigns & Automation', icon: Send },
+  { href: '/history', label: 'Run History & Errors', icon: History },
   { href: '/compliance', label: 'Compliance & Suppression', icon: ShieldAlert },
-  { href: '/jobs', label: 'Durable Job Queue', icon: Activity },
   { href: '/settings', label: 'Integrations & Safety', icon: Settings },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      router.push('/login');
+      router.refresh();
+    } catch (e) {
+      router.push('/login');
+    }
+  };
 
   return (
     <aside className="w-64 bg-slate-900/80 backdrop-blur-xl border-r border-slate-800 flex flex-col shrink-0">
@@ -95,6 +120,13 @@ export function Sidebar() {
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           <span className="text-[11px] text-emerald-400 font-medium">Twice-Daily (09:00, 17:00 PKT)</span>
         </div>
+        <button
+          onClick={handleLogout}
+          className="mt-3 w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[11px] text-slate-400 hover:text-slate-200 transition-colors"
+        >
+          <LogOut className="w-3 h-3" />
+          <span>Sign Out</span>
+        </button>
       </div>
     </aside>
   );

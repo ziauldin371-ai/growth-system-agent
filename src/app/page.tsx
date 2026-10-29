@@ -51,62 +51,66 @@ export default function OverviewPage() {
       <DashboardControls />
 
       {/* KPI Metric Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {/* Total Leads */}
-        <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800 backdrop-blur-sm relative overflow-hidden">
+        <Link href="/leads" className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition-all block">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400">Total Commercial Leads</span>
-            <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
-              <TrendingUp className="w-4 h-4" />
-            </div>
+            <span className="text-[11px] font-medium text-slate-400">Total Leads</span>
+            <Globe className="w-3.5 h-3.5 text-indigo-400" />
           </div>
-          <div className="text-3xl font-extrabold text-white mt-3">{stats.totalBusinesses}</div>
-          <div className="text-xs text-slate-400 mt-1 flex items-center gap-1">
-            <span className="text-emerald-400 font-semibold">{stats.qualifiedTotal} qualified</span> across US, UK, CA, AU
-          </div>
-        </div>
+          <div className="text-2xl font-extrabold text-white mt-2">{stats.totalBusinesses}</div>
+          <div className="text-[10px] text-emerald-400 mt-1">{stats.qualifiedTotal} qualified</div>
+        </Link>
 
-        {/* Pipeline A (Web Gaps) */}
-        <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800 backdrop-blur-sm relative overflow-hidden">
+        {/* Ready for Email */}
+        <Link href="/ready-for-email" className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-emerald-500/40 transition-all block">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400">Pipeline A: Website Gaps</span>
-            <div className="p-2 rounded-lg bg-cyan-500/10 text-cyan-400">
-              <Globe className="w-4 h-4" />
-            </div>
+            <span className="text-[11px] font-medium text-slate-400">Ready for Email</span>
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
           </div>
-          <div className="text-3xl font-extrabold text-white mt-3">{stats.pipelineAOpportunities}</div>
-          <div className="text-xs text-slate-400 mt-1">
-            Active businesses without verified functional websites
-          </div>
-        </div>
+          <div className="text-2xl font-extrabold text-emerald-400 mt-2">{stats.eligibleEmailContacts}</div>
+          <div className="text-[10px] text-slate-400 mt-1">100% compliant</div>
+        </Link>
 
-        {/* Pipeline B (AI & Software) */}
-        <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800 backdrop-blur-sm relative overflow-hidden">
+        {/* Sent to Gmail */}
+        <Link href="/sent-emails" className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-indigo-500/40 transition-all block">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400">Pipeline B: AI & Software</span>
-            <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400">
-              <Cpu className="w-4 h-4" />
-            </div>
+            <span className="text-[11px] font-medium text-slate-400">Sent to Gmail</span>
+            <Send className="w-3.5 h-3.5 text-indigo-400" />
           </div>
-          <div className="text-3xl font-extrabold text-white mt-3">{stats.pipelineBOpportunities}</div>
-          <div className="text-xs text-slate-400 mt-1">
-            Startups & agencies showing LLM, RAG, or Python signals
-          </div>
-        </div>
+          <div className="text-2xl font-extrabold text-white mt-2">{stats.sentCount}</div>
+          <div className="text-[10px] text-indigo-300 mt-1">{stats.confirmedDeliveries} delivered</div>
+        </Link>
 
-        {/* Safety & Compliance */}
-        <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800 backdrop-blur-sm relative overflow-hidden">
+        {/* Multi-Touch Targets */}
+        <Link href="/email-sent-plus-channels" className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-purple-500/40 transition-all block">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400">Approved Dispatched</span>
-            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
-              <ShieldCheck className="w-4 h-4" />
-            </div>
+            <span className="text-[11px] font-medium text-slate-400">Sent + Channels</span>
+            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
           </div>
-          <div className="text-3xl font-extrabold text-white mt-3">{stats.sentCount}</div>
-          <div className="text-xs text-slate-400 mt-1">
-            <span className="text-emerald-400 font-semibold">{stats.suppressionCount} entries</span> on suppression list
+          <div className="text-2xl font-extrabold text-purple-400 mt-2">{stats.emailSentPlusChannelsCount}</div>
+          <div className="text-[10px] text-slate-400 mt-1">Multi-touch follow-up</div>
+        </Link>
+
+        {/* Other Channels */}
+        <Link href="/other-channels" className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-cyan-500/40 transition-all block">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-slate-400">Other Channels</span>
+            <TrendingUp className="w-3.5 h-3.5 text-cyan-400" />
           </div>
-        </div>
+          <div className="text-2xl font-extrabold text-cyan-400 mt-2">{stats.alternativeChannelsCount}</div>
+          <div className="text-[10px] text-slate-400 mt-1">LinkedIn, X, Forms</div>
+        </Link>
+
+        {/* No Email Available */}
+        <Link href="/no-email" className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-amber-500/40 transition-all block">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-slate-400">No Email Found</span>
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+          </div>
+          <div className="text-2xl font-extrabold text-amber-400 mt-2">{stats.noEmailCount}</div>
+          <div className="text-[10px] text-slate-400 mt-1">Channels only</div>
+        </Link>
       </div>
 
       {/* Two Pipeline Highlights */}

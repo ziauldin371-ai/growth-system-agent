@@ -78,14 +78,30 @@ For personal `@gmail.com` accounts, Google deprecated insecure application passw
 
 ---
 
+## Core Dashboard Sections
+
+The dashboard is structured into dedicated operational command views:
+
+1. **Overview & Analytics (`/`)**: Real-time KPI counters (discovered leads, eligible email contacts, sent messages, multi-channel targets, confirmed deliveries, replies) and manual controls.
+2. **Worldwide Leads (`/leads`)**: Multi-dimensional directory with filters for Country/Region (US, UK, CA, AU, EU, Worldwide), Industry, Pipeline (Pipeline A vs B), Lead Score, and Email Availability.
+3. **Ready for Email (`/ready-for-email`)**: High-intent contacts satisfying 100% of sending criteria with detailed explainability badges.
+4. **Sent Emails (`/sent-emails`)**: Audit log of messages submitted through the Gmail REST API, including Gmail message IDs and direct links to view the email inside your Google account's Sent mailbox (`https://mail.google.com/mail/u/0/#sent/...`).
+5. **Other Outreach Opportunities (`/other-channels`)**: Businesses with discovered alternative professional channels (LinkedIn, X, Instagram, Web Contact Forms), featuring platform-tailored pitches and 1-click &ldquo;Copy Pitch&rdquo; buttons.
+6. **Email Sent + Other Channels (`/email-sent-plus-channels`)**: Dedicated multi-touch follow-up center for businesses that have already received an email and have other verified channels, complete with follow-up pitches and reminder pickers.
+7. **No Email Available (`/no-email`)**: Preserves businesses without usable direct emails so high-value opportunities can be contacted manually via form or social profiles.
+8. **Run History & Errors (`/history`)**: Execution telemetry displaying start/finish times in **Asia/Karachi time**, sources processed, leads discovered, emails queued, and filtered reasons.
+9. **Private Operator Authentication (`/login`)**: Protected by server-side middleware and encrypted HTTP-only session cookies restricted to `ziauldin371@gmail.com`.
+
+---
+
 ## Technology Stack
 
 - **Framework**: Next.js 14 App Router, React 18, TypeScript (Strict Mode).
 - **Styling**: Tailwind CSS, Lucide Icons, Responsive Mobile-Friendly Dashboard.
-- **Database & Auth**: Supabase PostgreSQL with 17 relational tables, Row Level Security (RLS), and in-memory mock fallback.
+- **Database & Auth**: Supabase PostgreSQL with 18 relational tables, Row Level Security (RLS), and in-memory mock fallback.
 - **Validation**: Zod runtime schema validation for all endpoints, LLM outputs, and payloads.
 - **AI Engine**: Google Gemini 1.5 Pro / Flash with structured JSON output and prompt injection firewalls; deterministic mock fallback for zero-cost testing.
-- **Testing**: Vitest (58 passing unit and integration tests across 16 test suites) and Playwright for browser e2e testing.
+- **Testing**: Vitest (67 passing unit and integration tests across 18 test suites) and Playwright for browser e2e testing.
 
 ---
 
@@ -107,7 +123,7 @@ cp .env.example .env.local
 
 ### 3. Run Verification Tests & Quality Gates
 ```bash
-# Run Vitest test suite (58 passing unit & integration tests)
+# Run Vitest test suite (67 passing unit & integration tests across 18 test suites)
 npm test
 
 # Run strict TypeScript type verification

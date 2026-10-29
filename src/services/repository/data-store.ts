@@ -10,7 +10,10 @@ import {
   AutomationJobEntity,
   PipelineType,
   WebsiteStatus,
-  OperatingMode
+  OperatingMode,
+  AlternativeChannelEntity,
+  AlternativeChannelStatus,
+  SchedulerRunHistoryEntity
 } from '@/types';
 import { normalizeBusinessName, normalizeEmail } from '../crm/normalization';
 import { normalizeDomain } from '../website/verifier';
@@ -26,11 +29,12 @@ export class DataStore {
   private campaigns: Map<string, CampaignEntity> = new Map(); // campaignId -> campaign
   private suppression: Map<string, SuppressionEntry> = new Map(); // value -> entry
   private jobs: Map<string, AutomationJobEntity> = new Map(); // jobId -> job
+  private alternativeChannels: Map<string, AlternativeChannelEntity> = new Map(); // channelId -> channel
   private auditLogs: Array<any> = [];
   private operatingMode: OperatingMode = 'approval'; // 'research' | 'approval' | 'auto_send'
   private automationPaused: boolean = false;
   private distributedLocks: Map<string, number> = new Map(); // lockName -> expiresAt
-  private schedulerRuns: Array<any> = [];
+  private schedulerRuns: Array<SchedulerRunHistoryEntity> = [];
 
   constructor() {
     this.seedInitialData();
@@ -46,6 +50,7 @@ export class DataStore {
     this.campaigns.clear();
     this.suppression.clear();
     this.jobs.clear();
+    this.alternativeChannels.clear();
     this.auditLogs = [];
     this.operatingMode = 'approval';
     this.automationPaused = false;
@@ -343,6 +348,504 @@ LLMs, RAG, Data Pipelines & Full-Stack Systems`,
       updatedAt: new Date().toISOString(),
     });
 
+    // Seed sample alternative channels for Lead 1
+    const ch1Id = 'ch-001-vanguard-linkedin';
+    this.alternativeChannels.set(ch1Id, {
+      id: ch1Id,
+      businessId: b1Id,
+      businessName: 'Vanguard Precision HVAC & Plumbing',
+      country: 'US',
+      platform: 'linkedin',
+      profileUrl: 'https://linkedin.com/company/vanguard-precision-hvac',
+      handleOrIdentifier: 'vanguard-precision-hvac',
+      sourceName: 'LinkedIn Corporate Search',
+      isUsable: true,
+      customPitch: 'Hi Marcus, noticed Vanguard HVAC\'s steady growth in Travis County. As an AI & Web Developer, I build automated quote-intake and booking portals that convert local searchers into booked commercial HVAC contracts without manual scheduling friction. Would you be open to seeing a 2-minute demo?',
+      status: 'not_contacted',
+      lastCheckedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    // Lead 3: Pipeline A (UK - Website Opportunity)
+    const b3Id = 'biz-003-mayfair-dental';
+    const b3: BusinessEntity = {
+      id: b3Id,
+      organizationId: 'org-demo-001',
+      name: 'Mayfair Specialist Periodontics & Dental Studio',
+      normalizedName: normalizeBusinessName('Mayfair Specialist Periodontics & Dental Studio'),
+      domain: null,
+      normalizedDomain: null,
+      country: 'UK',
+      region: 'Greater London',
+      city: 'London',
+      postalCode: 'W1K 2TH',
+      address: '42 Berkeley Square, London W1K 2TH',
+      phone: '+44 20 7946 0192',
+      industry: 'Healthcare & Specialized Dental Surgery',
+      companyType: 'Private Limited Company',
+      employeeCountRange: '10-20',
+      annualRevenueRange: '£1.5M - £3.5M',
+      pipelineType: 'website_opportunities',
+      qualificationStatus: 'qualified',
+      sourceProvider: 'companies_house',
+      sourceIdentifier: 'ch_12984712',
+      isArchived: false,
+      createdAt: new Date(Date.now() - 4 * 86400000).toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    this.businesses.set(b3Id, b3);
+
+    this.evidence.set(b3Id, [
+      {
+        id: 'ev-003-a',
+        businessId: b3Id,
+        sourceName: 'UK Companies House Registry',
+        sourceUrl: 'https://find-and-update.company-information.service.gov.uk/company/12984712',
+        observationTime: new Date(Date.now() - 10 * 86400000).toISOString(),
+        evidenceType: 'official_registration',
+        summary: 'Active incorporation with General Dental Council (GDC) specialist registration; audited filings indicate active private clinic operations.',
+        isFactual: true,
+        confidence: 0.98,
+        freshnessScore: 1.0,
+        createdAt: new Date().toISOString(),
+      },
+    ]);
+
+    this.websiteChecks.set(b3Id, {
+      id: 'wc-003',
+      businessId: b3Id,
+      domain: null,
+      status: 'apparently_absent',
+      isPrivateIp: false,
+      checkedAt: new Date().toISOString(),
+      errorDetails: 'No active web portal or domain found; relying strictly on London clinic directories.',
+    });
+
+    this.contacts.set(b3Id, [
+      {
+        id: 'c-003',
+        businessId: b3Id,
+        fullName: 'Dr. Arthur Pendleton',
+        firstName: 'Arthur',
+        lastName: 'Pendleton',
+        title: 'Clinical Director & Principal Surgeon',
+        email: 'dr.arthur.pendleton@mayfair-dental-london.co.uk',
+        normalizedEmail: 'dr.arthur.pendleton@mayfair-dental-london.co.uk',
+        phone: '+44 20 7946 0192',
+        confidence: 0.91,
+        verificationStatus: 'verified',
+        isPrimary: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    ]);
+
+    this.scores.set(b3Id, {
+      id: 'sc-003',
+      businessId: b3Id,
+      overallScore: 89,
+      activityScore: 88,
+      serviceFitScore: 92,
+      websiteOpportunityScore: 96,
+      aiOpportunityScore: 15,
+      contactQualityScore: 88,
+      confidenceScore: 0.94,
+      reasoning: 'High-priority UK website opportunity. Active private specialist practice in Mayfair with strong NHS/private patient demand but lacking an official responsive portal and online appointment booking engine.',
+      scoreBreakdown: {
+        ukCompaniesHouseActive: true,
+        verifiedDirectEmail: true,
+        missingWebsite: true,
+      },
+      scoredAt: new Date().toISOString(),
+    });
+
+    const ch3Id = 'ch-003-mayfair-instagram';
+    this.alternativeChannels.set(ch3Id, {
+      id: ch3Id,
+      businessId: b3Id,
+      businessName: b3.name,
+      country: 'UK',
+      platform: 'instagram',
+      profileUrl: 'https://instagram.com/mayfairdentalstudio',
+      handleOrIdentifier: '@mayfairdentalstudio',
+      sourceName: 'Instagram Business Profile',
+      isUsable: true,
+      customPitch: 'Hello Dr. Pendleton & Team, love the patient smile transformations highlighted on your Instagram page! As a Full Stack Web Architect, I create sleek, patient-friendly consultation booking web apps for London healthcare clinics. Would you be open to exploring a dedicated portal for Mayfair Dental?',
+      status: 'not_contacted',
+      lastCheckedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    // Lead 4: Pipeline B (UK - AI & Software Opportunities) [ALREADY EMAILED + GMAIL SENT LINK]
+    const b4Id = 'biz-004-finflow-ai';
+    const b4: BusinessEntity = {
+      id: b4Id,
+      organizationId: 'org-demo-001',
+      name: 'FinFlow Compliance AI',
+      normalizedName: normalizeBusinessName('FinFlow Compliance AI'),
+      domain: 'finflow-compliance.co.uk',
+      normalizedDomain: 'finflow-compliance.co.uk',
+      country: 'UK',
+      region: 'England',
+      city: 'London',
+      postalCode: 'EC2V 7AY',
+      address: '100 Cheapside, London EC2V 7AY',
+      phone: '+44 20 7946 0881',
+      industry: 'FinTech & Regulatory Compliance SaaS',
+      companyType: 'B2B SaaS Scaleup',
+      employeeCountRange: '25-50',
+      annualRevenueRange: '£3M - £7M',
+      pipelineType: 'ai_software_opportunities',
+      qualificationStatus: 'contacted',
+      sourceProvider: 'uk_tech_registry',
+      sourceIdentifier: 'finflow_uk',
+      isArchived: false,
+      createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    this.businesses.set(b4Id, b4);
+
+    this.contacts.set(b4Id, [
+      {
+        id: 'c-004',
+        businessId: b4Id,
+        fullName: 'Sarah Jenkins',
+        firstName: 'Sarah',
+        lastName: 'Jenkins',
+        title: 'Head of AI Engineering',
+        email: 'sarah.jenkins@finflow-compliance.co.uk',
+        normalizedEmail: 'sarah.jenkins@finflow-compliance.co.uk',
+        phone: '+44 20 7946 0881',
+        linkedinUrl: 'https://linkedin.com/in/sarah-jenkins-fintech-ai',
+        confidence: 0.96,
+        verificationStatus: 'verified',
+        isPrimary: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    ]);
+
+    this.scores.set(b4Id, {
+      id: 'sc-004',
+      businessId: b4Id,
+      overallScore: 94,
+      activityScore: 92,
+      serviceFitScore: 96,
+      websiteOpportunityScore: 5,
+      aiOpportunityScore: 98,
+      contactQualityScore: 95,
+      confidenceScore: 0.97,
+      reasoning: 'Prime candidate for AI automation & RAG architectures. Company published public requirements for automated FCA compliance parsing with Python LLM microservices.',
+      scoreBreakdown: {
+        aiRelevance: 'Exceptional',
+        techSignals: ['python', 'llm', 'rag', 'fastapi', 'fca_compliance'],
+      },
+      scoredAt: new Date().toISOString(),
+    });
+
+    // Seed Sent Email Draft with real Gmail reference
+    const draft4Id = 'draft-004-finflow-sent';
+    const sentMsgId = '1928374a5b6c7d8e';
+    this.drafts.set(draft4Id, {
+      id: draft4Id,
+      businessId: b4Id,
+      contactId: 'c-004',
+      campaignId: campId,
+      strategy: 'rag_systems',
+      subjectLines: [
+        'Scaling FCA Compliance Intelligence for FinFlow Compliance AI',
+        'Python RAG microservices for FinFlow Compliance AI',
+        'AI Automation & LLM architecture for Sarah Jenkins',
+      ],
+      selectedSubject: 'Scaling FCA Compliance Intelligence for FinFlow Compliance AI',
+      emailBody: `Hi Sarah,
+
+Noticed FinFlow's recent technical expansion in automated regulatory reporting across UK financial institutions.
+
+Parsing dense regulatory handbooks with standard LLM approaches frequently encounters hallucination traps and vector retrieval latency. As a Full Stack AI Developer & Automation Architect, I build deterministic RAG systems with strict source grounding and high-throughput Python/FastAPI microservices.
+
+Are you available for a brief 15-minute technical exchange this Thursday at 14:00 GMT?
+
+Best regards,
+Zia Ul Din
+Full Stack AI Developer & Automation Architect
+ziauldin371@gmail.com`,
+      recipientEmail: 'sarah.jenkins@finflow-compliance.co.uk',
+      callToAction: 'Are you available for a brief 15-minute technical exchange this Thursday at 14:00 GMT?',
+      serviceOffer: 'Deterministic RAG pipelines, FastAPI microservices, and LLM evaluation architectures for financial regulations.',
+      researchSummary: 'Verified active hiring for Senior Python LLM Engineer and expansion into automated FCA compliance document extraction.',
+      observations: [
+        {
+          fact: 'Actively scaling AI engineering team for automated regulatory handbook extraction.',
+          source: 'LinkedIn Technical Jobs UK',
+          isVerified: true,
+        },
+      ],
+      rationale: 'Perfect alignment with Zia Ul Din\'s Python and LLM development capabilities.',
+      warnings: [],
+      confidenceRating: 0.98,
+      version: 1,
+      status: 'sent',
+      approvedBy: 'ziauldin371@gmail.com',
+      approvedAt: new Date(Date.now() - 24 * 3600000).toISOString(),
+      gmailMessageId: sentMsgId,
+      gmailThreadId: '1928374a5b6c7d8e_th',
+      gmailUrl: `https://mail.google.com/mail/u/0/#sent/${sentMsgId}`,
+      sentAt: new Date(Date.now() - 24 * 3600000).toISOString(),
+      deliveryStatus: 'delivered',
+      createdAt: new Date(Date.now() - 26 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 24 * 3600000).toISOString(),
+    });
+
+    // Alternative channels for FinFlow AI (For "Email Sent + Other Channels" view!)
+    const ch4aId = 'ch-004-finflow-linkedin';
+    this.alternativeChannels.set(ch4aId, {
+      id: ch4aId,
+      businessId: b4Id,
+      businessName: b4.name,
+      country: 'UK',
+      platform: 'linkedin',
+      profileUrl: 'https://linkedin.com/in/sarah-jenkins-fintech-ai',
+      handleOrIdentifier: 'sarah-jenkins-fintech-ai',
+      sourceName: 'LinkedIn Profile',
+      isUsable: true,
+      customPitch: 'Hi Sarah — dropped a brief email to your inbox regarding FinFlow\'s automated FCA regulatory processing. Reaching out here on LinkedIn as well in case you prefer connecting here. Would love to share our architecture notes on hallucination-resistant RAG for financial compliance!',
+      status: 'not_contacted',
+      lastCheckedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    const ch4bId = 'ch-004-finflow-twitter';
+    this.alternativeChannels.set(ch4bId, {
+      id: ch4bId,
+      businessId: b4Id,
+      businessName: b4.name,
+      country: 'UK',
+      platform: 'twitter',
+      profileUrl: 'https://x.com/FinFlowAI',
+      handleOrIdentifier: '@FinFlowAI',
+      sourceName: 'Official X Profile',
+      isUsable: true,
+      customPitch: 'Hi @FinFlowAI team, following your recent work on automated compliance intelligence. Sent Sarah Jenkins an email regarding specialized Python RAG architectures. Happy to connect!',
+      status: 'not_contacted',
+      lastCheckedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    // Lead 5: Pipeline A (US - NO EMAIL AVAILABLE! Alternative Channels Only)
+    const b5Id = 'biz-005-blueridge-fab';
+    const b5: BusinessEntity = {
+      id: b5Id,
+      organizationId: 'org-demo-001',
+      name: 'Blue Ridge Precision Fabrication LLC',
+      normalizedName: normalizeBusinessName('Blue Ridge Precision Fabrication LLC'),
+      domain: null,
+      normalizedDomain: null,
+      country: 'US',
+      region: 'Colorado',
+      city: 'Denver',
+      postalCode: '80204',
+      address: '1100 W 5th Ave, Denver, CO 80204',
+      phone: '+1-303-555-0177',
+      industry: 'Custom CNC Machining & Industrial Fabrication',
+      companyType: 'Industrial LLC',
+      employeeCountRange: '15-30',
+      annualRevenueRange: '$2M - $4M',
+      pipelineType: 'website_opportunities',
+      qualificationStatus: 'qualified',
+      sourceProvider: 'google_places',
+      sourceIdentifier: 'gplace_blueridge_denver',
+      isArchived: false,
+      createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    this.businesses.set(b5Id, b5);
+
+    this.evidence.set(b5Id, [
+      {
+        id: 'ev-005-a',
+        businessId: b5Id,
+        sourceName: 'Google Business Profile Reviews',
+        sourceUrl: 'https://maps.google.com/?cid=998877665544',
+        observationTime: new Date(Date.now() - 1 * 86400000).toISOString(),
+        evidenceType: 'customer_review_velocity',
+        summary: '84 verified 5-star customer reviews across Colorado construction contractors; high active commercial machining volume.',
+        isFactual: true,
+        confidence: 0.95,
+        freshnessScore: 1.0,
+        createdAt: new Date().toISOString(),
+      },
+    ]);
+
+    this.websiteChecks.set(b5Id, {
+      id: 'wc-005',
+      businessId: b5Id,
+      domain: null,
+      status: 'apparently_absent',
+      isPrivateIp: false,
+      checkedAt: new Date().toISOString(),
+      errorDetails: 'No official domain registered. Relies exclusively on Google Business & Formstack contact form.',
+    });
+
+    // Notice: NO EMAIL CONTACT! Phone and contact form only.
+    this.contacts.set(b5Id, [
+      {
+        id: 'c-005',
+        businessId: b5Id,
+        fullName: 'Blue Ridge Estimating Desk',
+        phone: '+1-303-555-0177',
+        confidence: 0.85,
+        verificationStatus: 'verified',
+        isPrimary: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    ]);
+
+    this.scores.set(b5Id, {
+      id: 'sc-005',
+      businessId: b5Id,
+      overallScore: 82,
+      activityScore: 90,
+      serviceFitScore: 85,
+      websiteOpportunityScore: 95,
+      aiOpportunityScore: 20,
+      contactQualityScore: 50, // lower because no email
+      confidenceScore: 0.90,
+      reasoning: 'Strong candidate for Pipeline A website development. High transactional volume and pristine local reputation in Denver, but no website exists. No public email found, so routed to alternative outreach channels (Contact Form & LinkedIn).',
+      scoreBreakdown: {
+        noEmailAvailable: true,
+        alternativeChannelsFound: 2,
+      },
+      scoredAt: new Date().toISOString(),
+    });
+
+    // Alternative channels for Blue Ridge (Form & LinkedIn)
+    const ch5aId = 'ch-005-blueridge-form';
+    this.alternativeChannels.set(ch5aId, {
+      id: ch5aId,
+      businessId: b5Id,
+      businessName: b5.name,
+      country: 'US',
+      platform: 'contact_form',
+      profileUrl: 'https://blueridge-precision.formstack.com/forms/rfq_quote',
+      handleOrIdentifier: 'RFQ Quote Intake Form',
+      sourceName: 'Formstack Hosted Portal',
+      isUsable: true,
+      customPitch: 'Hi Blue Ridge Fabrication Team — Noticed your outstanding 5-star reputation for CNC machining in Denver. I develop modern, mobile-friendly web portals with automated CAD file upload and instant RFQ estimators. Would you be interested in upgrading from third-party forms to an official branded web platform that captures high-value fabrication contracts?',
+      status: 'not_contacted',
+      lastCheckedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    const ch5bId = 'ch-005-blueridge-linkedin';
+    this.alternativeChannels.set(ch5bId, {
+      id: ch5bId,
+      businessId: b5Id,
+      businessName: b5.name,
+      country: 'US',
+      platform: 'linkedin',
+      profileUrl: 'https://linkedin.com/company/blue-ridge-precision-fab',
+      handleOrIdentifier: 'blue-ridge-precision-fab',
+      sourceName: 'LinkedIn Directory',
+      isUsable: true,
+      customPitch: 'Hi Blue Ridge Precision team — impressed by your industrial machining work in Colorado. Reaching out to see if you\'ve considered building an official online portal to showcase your CNC capabilities and streamline customer intake. Would love to share some relevant web architectures we\'ve built for industrial suppliers.',
+      status: 'not_contacted',
+      lastCheckedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    // Lead 6: Pipeline B (Canada - AI Automation & Data Science)
+    const b6Id = 'biz-006-nordic-dispatch';
+    const b6: BusinessEntity = {
+      id: b6Id,
+      organizationId: 'org-demo-001',
+      name: 'Nordic Autonomous Dispatch Inc.',
+      normalizedName: normalizeBusinessName('Nordic Autonomous Dispatch Inc.'),
+      domain: 'nordicdispatch.ca',
+      normalizedDomain: 'nordicdispatch.ca',
+      country: 'CA',
+      region: 'Ontario',
+      city: 'Toronto',
+      postalCode: 'M5J 2H7',
+      address: '200 Bay St, Toronto, ON M5J 2H7',
+      phone: '+1-416-555-0149',
+      industry: 'Smart Logistics & Fleet AI',
+      companyType: 'Canadian Corporation',
+      employeeCountRange: '20-45',
+      annualRevenueRange: '$3M - $6M',
+      pipelineType: 'ai_software_opportunities',
+      qualificationStatus: 'qualified',
+      sourceProvider: 'canada_corp_db',
+      sourceIdentifier: 'nordic_ca_01',
+      isArchived: false,
+      createdAt: new Date(Date.now() - 1 * 86400000).toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    this.businesses.set(b6Id, b6);
+
+    this.contacts.set(b6Id, [
+      {
+        id: 'c-006',
+        businessId: b6Id,
+        fullName: 'Elena Rostova',
+        firstName: 'Elena',
+        lastName: 'Rostova',
+        title: 'Director of Machine Learning',
+        email: 'elena.rostova@nordicdispatch.ca',
+        normalizedEmail: 'elena.rostova@nordicdispatch.ca',
+        phone: '+1-416-555-0149',
+        linkedinUrl: 'https://linkedin.com/in/elena-rostova-ml',
+        confidence: 0.94,
+        verificationStatus: 'verified',
+        isPrimary: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    ]);
+
+    this.scores.set(b6Id, {
+      id: 'sc-006',
+      businessId: b6Id,
+      overallScore: 91,
+      activityScore: 89,
+      serviceFitScore: 95,
+      websiteOpportunityScore: 10,
+      aiOpportunityScore: 94,
+      contactQualityScore: 94,
+      confidenceScore: 0.95,
+      reasoning: 'Strong fit for Python data pipelines and AI agent engineering. Fleet dispatch optimization requires reliable real-time ingestion and LLM routing assistants.',
+      scoreBreakdown: {
+        fleetAiRelevance: 'High',
+        pythonPipelineNeeded: true,
+      },
+      scoredAt: new Date().toISOString(),
+    });
+
+    const ch6Id = 'ch-006-nordic-linkedin';
+    this.alternativeChannels.set(ch6Id, {
+      id: ch6Id,
+      businessId: b6Id,
+      businessName: b6.name,
+      country: 'CA',
+      platform: 'linkedin',
+      profileUrl: 'https://linkedin.com/in/elena-rostova-ml',
+      handleOrIdentifier: 'elena-rostova-ml',
+      sourceName: 'LinkedIn Profile',
+      isUsable: true,
+      customPitch: 'Hi Elena — saw Nordic\'s smart fleet dispatch initiatives in Ontario. As an AI Automation Architect and Python Developer, I engineer high-velocity data pipelines and agentic workflows that optimize fleet scheduling. Would love to connect and exchange technical ideas!',
+      status: 'not_contacted',
+      lastCheckedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
     // Seed Sample Suppression
     this.suppression.set('optout@competitor.com', {
       id: 'sup-001',
@@ -543,6 +1046,246 @@ LLMs, RAG, Data Pipelines & Full-Stack Systems`,
     this.automationPaused = paused;
   }
 
+  // --- Alternative Outreach Channels ---
+  public saveAlternativeChannel(channel: AlternativeChannelEntity): void {
+    this.alternativeChannels.set(channel.id, channel);
+  }
+
+  public getAlternativeChannels(businessId?: string): AlternativeChannelEntity[] {
+    const all = Array.from(this.alternativeChannels.values());
+    if (businessId) {
+      return all.filter(c => c.businessId === businessId);
+    }
+    return all;
+  }
+
+  public getAlternativeChannelById(id: string): AlternativeChannelEntity | null {
+    return this.alternativeChannels.get(id) || null;
+  }
+
+  public updateAlternativeChannelStatus(
+    channelId: string, 
+    status?: AlternativeChannelStatus, 
+    reminderDate?: string | null, 
+    notes?: string | null,
+    customPitch?: string
+  ): boolean {
+    const ch = this.alternativeChannels.get(channelId);
+    if (!ch) return false;
+    if (status) ch.status = status;
+    if (reminderDate !== undefined) ch.reminderDate = reminderDate;
+    if (notes !== undefined) ch.notes = notes;
+    if (customPitch !== undefined) ch.customPitch = customPitch;
+    ch.updatedAt = new Date().toISOString();
+    this.alternativeChannels.set(channelId, ch);
+    return true;
+  }
+
+  // --- Specialized Dashboard Queries ---
+
+  /**
+   * 1. Worldwide Leads with multi-dimensional filtering
+   */
+  public getWorldwideLeads(filters?: {
+    country?: string;
+    pipeline?: string;
+    status?: string;
+    minScore?: number;
+    hasEmail?: boolean;
+    industry?: string;
+    search?: string;
+  }): BusinessEntity[] {
+    let result = Array.from(this.businesses.values());
+
+    if (filters?.country && filters.country !== 'all') {
+      result = result.filter(b => b.country.toLowerCase() === filters.country?.toLowerCase());
+    }
+    if (filters?.pipeline && filters.pipeline !== 'all') {
+      result = result.filter(b => b.pipelineType === filters.pipeline);
+    }
+    if (filters?.status && filters.status !== 'all') {
+      result = result.filter(b => b.qualificationStatus === filters.status);
+    }
+    if (filters?.industry && filters.industry !== 'all') {
+      result = result.filter(b => b.industry?.toLowerCase().includes(filters.industry!.toLowerCase()));
+    }
+    if (filters?.minScore !== undefined) {
+      result = result.filter(b => {
+        const score = this.scores.get(b.id)?.overallScore || 0;
+        return score >= filters.minScore!;
+      });
+    }
+    if (filters?.hasEmail !== undefined) {
+      result = result.filter(b => {
+        const contacts = this.contacts.get(b.id) || [];
+        const has = contacts.some(c => c.email && c.email.includes('@'));
+        return filters.hasEmail ? has : !has;
+      });
+    }
+    if (filters?.search) {
+      const q = filters.search.toLowerCase();
+      result = result.filter(b => 
+        b.name.toLowerCase().includes(q) || 
+        b.city?.toLowerCase().includes(q) || 
+        b.domain?.toLowerCase().includes(q)
+      );
+    }
+
+    return result.map(b => ({
+      ...b,
+      contacts: this.contacts.get(b.id) || [],
+      evidence: this.evidence.get(b.id) || [],
+      websiteCheck: this.websiteChecks.get(b.id) || null,
+      score: this.scores.get(b.id) || null,
+      alternativeChannels: this.getAlternativeChannels(b.id),
+    }));
+  }
+
+  /**
+   * 2. Ready for Email: Contacts meeting 100% of sending criteria
+   */
+  public getReadyForEmailLeads(): Array<{
+    business: BusinessEntity;
+    contact: ContactEntity;
+    score: LeadScoreEntity;
+    draft?: EmailDraftEntity | null;
+    reasons: string[];
+  }> {
+    const list: Array<any> = [];
+    const businesses = Array.from(this.businesses.values()).filter(b => b.qualificationStatus === 'qualified');
+
+    for (const b of businesses) {
+      const contacts = this.contacts.get(b.id) || [];
+      const primaryContact = contacts.find(c => c.email && c.email.includes('@')) || contacts[0];
+      if (!primaryContact?.email) continue;
+
+      if (this.isSuppressed(primaryContact.email)) continue;
+
+      const score = this.scores.get(b.id);
+      if (!score || score.overallScore < 60) continue;
+
+      const draft = Array.from(this.drafts.values()).find(d => d.businessId === b.id);
+
+      const reasons: string[] = [
+        `Verified commercial activity in ${b.country || 'Target Market'}`,
+        `Overall ICP score ${score.overallScore}/100 meets high-intent threshold`,
+        `Verified contact email (${primaryContact.email}) is active and unsuppressed`,
+        b.pipelineType === 'website_opportunities'
+          ? 'Digital audit shows absent or broken official website'
+          : 'Verified technical hiring/scaling signals match AI & Python engineering services',
+      ];
+
+      list.push({
+        business: {
+          ...b,
+          websiteCheck: this.websiteChecks.get(b.id) || null,
+          evidence: this.evidence.get(b.id) || [],
+        },
+        contact: primaryContact,
+        score,
+        draft: draft || null,
+        reasons,
+      });
+    }
+
+    return list;
+  }
+
+  /**
+   * 3. Sent Emails: Message history with Gmail Sent links
+   */
+  public getSentEmails(): Array<EmailDraftEntity & { businessName: string; country: string; domain?: string | null }> {
+    const sentDrafts = Array.from(this.drafts.values()).filter(d => d.status === 'sent');
+    return sentDrafts.map(d => {
+      const b = this.businesses.get(d.businessId);
+      const contacts = this.contacts.get(d.businessId) || [];
+      return {
+        ...d,
+        recipientEmail: d.recipientEmail || contacts[0]?.email || 'prospect@business.internal',
+        businessName: b?.name || 'Unknown Business',
+        country: b?.country || 'US',
+        domain: b?.domain || null,
+      };
+    });
+  }
+
+  /**
+   * 4. Other Outreach Opportunities: Businesses with professional channels beyond email
+   */
+  public getOtherOutreachOpportunities(): Array<{
+    business: BusinessEntity;
+    channels: AlternativeChannelEntity[];
+  }> {
+    const result: Array<any> = [];
+    for (const b of Array.from(this.businesses.values())) {
+      const channels = this.getAlternativeChannels(b.id);
+      if (channels.length > 0) {
+        result.push({
+          business: {
+            ...b,
+            score: this.scores.get(b.id) || null,
+            contacts: this.contacts.get(b.id) || [],
+          },
+          channels,
+        });
+      }
+    }
+    return result;
+  }
+
+  /**
+   * 5. Email Sent + Other Channels: Multi-touch prospective clients
+   */
+  public getEmailSentPlusOtherChannels(): Array<{
+    business: BusinessEntity;
+    draft: EmailDraftEntity;
+    channels: AlternativeChannelEntity[];
+  }> {
+    const result: Array<any> = [];
+    const sentDrafts = Array.from(this.drafts.values()).filter(d => d.status === 'sent');
+
+    for (const d of sentDrafts) {
+      const b = this.businesses.get(d.businessId);
+      if (!b) continue;
+      const channels = this.getAlternativeChannels(b.id);
+      if (channels.length > 0) {
+        result.push({
+          business: {
+            ...b,
+            score: this.scores.get(b.id) || null,
+          },
+          draft: d,
+          channels,
+        });
+      }
+    }
+    return result;
+  }
+
+  /**
+   * 6. No Email Available: Businesses without usable business email
+   */
+  public getNoEmailBusinesses(): Array<{
+    business: BusinessEntity;
+    channels: AlternativeChannelEntity[];
+  }> {
+    const result: Array<any> = [];
+    for (const b of Array.from(this.businesses.values())) {
+      const contacts = this.contacts.get(b.id) || [];
+      const hasEmail = contacts.some(c => c.email && c.email.includes('@'));
+      if (!hasEmail) {
+        result.push({
+          business: {
+            ...b,
+            score: this.scores.get(b.id) || null,
+          },
+          channels: this.getAlternativeChannels(b.id),
+        });
+      }
+    }
+    return result;
+  }
+
   // --- Distributed Scheduler Lock (Anti-Overlap) ---
   public acquireLock(name: string, ttlMs: number = 600000): boolean {
     const now = Date.now();
@@ -590,6 +1333,14 @@ LLMs, RAG, Data Pipelines & Full-Stack Systems`,
     const sentDrafts = drafts.filter(d => d.status === 'sent');
     const suppressionCount = this.suppression.size;
 
+    const readyForEmail = this.getReadyForEmailLeads();
+    const sentPlusChannels = this.getEmailSentPlusOtherChannels();
+    const noEmail = this.getNoEmailBusinesses();
+    const otherOpportunities = this.getOtherOutreachOpportunities();
+    const confirmedDeliveries = sentDrafts.filter(d => d.deliveryStatus === 'delivered' || d.status === 'sent').length;
+    const failuresCount = sentDrafts.filter(d => d.deliveryStatus === 'failed').length;
+    const repliesCount = sentDrafts.filter(d => d.deliveryStatus === 'replied').length;
+
     return {
       totalBusinesses: allBiz.length,
       pipelineAOpportunities: pipeA.length,
@@ -598,7 +1349,15 @@ LLMs, RAG, Data Pipelines & Full-Stack Systems`,
       totalDrafts: drafts.length,
       approvedDrafts: approvedDrafts.length,
       sentCount: sentDrafts.length,
+      confirmedDeliveries,
+      failuresCount,
+      repliesCount,
       suppressionCount,
+      eligibleEmailContacts: readyForEmail.length,
+      alternativeChannelsCount: this.alternativeChannels.size,
+      otherOutreachCount: otherOpportunities.length,
+      emailSentPlusChannelsCount: sentPlusChannels.length,
+      noEmailCount: noEmail.length,
       activeCampaigns: Array.from(this.campaigns.values()).filter(c => c.status === 'running' || c.status === 'scheduled').length,
       operatingMode: this.operatingMode,
       automationPaused: this.automationPaused,

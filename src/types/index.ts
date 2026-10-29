@@ -74,6 +74,7 @@ export interface BusinessEntity {
   websiteCheck?: WebsiteCheckEntity | null;
   contacts?: ContactEntity[];
   score?: LeadScoreEntity | null;
+  alternativeChannels?: AlternativeChannelEntity[];
 }
 
 export interface GrowthEvidenceEntity {
@@ -184,8 +185,77 @@ export interface EmailDraftEntity {
   status: 'draft' | 'approved' | 'rejected' | 'sent';
   approvedBy?: string | null;
   approvedAt?: string | null;
+  // Gmail & Delivery Tracking
+  gmailMessageId?: string | null;
+  gmailThreadId?: string | null;
+  gmailUrl?: string | null;
+  recipientEmail?: string | null;
+  sentAt?: string | null;
+  deliveryStatus?: 'sent' | 'delivered' | 'bounced' | 'failed' | 'replied';
   createdAt: string;
   updatedAt: string;
+}
+
+export type AlternativeChannelPlatform = 
+  | 'linkedin' 
+  | 'contact_form' 
+  | 'instagram' 
+  | 'facebook' 
+  | 'twitter' 
+  | 'youtube' 
+  | 'directory' 
+  | 'other';
+
+export type AlternativeChannelStatus = 
+  | 'not_contacted' 
+  | 'manually_contacted' 
+  | 'replied' 
+  | 'not_applicable';
+
+export interface AlternativeChannelEntity {
+  id: string;
+  businessId: string;
+  businessName?: string;
+  country?: string;
+  platform: AlternativeChannelPlatform;
+  profileUrl: string;
+  handleOrIdentifier?: string | null;
+  sourceName: string;
+  sourceUrl?: string | null;
+  isUsable: boolean;
+  customPitch: string;
+  status: AlternativeChannelStatus;
+  lastCheckedAt: string;
+  contactedAt?: string | null;
+  reminderDate?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SchedulerRunHistoryEntity {
+  runId: string;
+  status: 'completed' | 'skipped' | 'failed';
+  startTimePkt: string;
+  finishTimePkt: string;
+  startTimeUtc: string;
+  finishTimeUtc: string;
+  countriesSearched: string[];
+  sourcesSearched: string[];
+  leadsDiscovered: number;
+  leadsQualified: number;
+  draftsGenerated: number;
+  emailsSent: number;
+  skippedRecordsCount: number;
+  skippedReasons: Record<string, number>;
+  alternativeChannelsFound: number;
+  operatingMode: OperatingMode;
+  reason?: string;
+  errors?: string[];
+  durationMs: number;
+  nextScheduledRunPkt: string;
+  nextScheduledRunUtc: string;
+  notificationStatus?: 'sent' | 'failed' | 'mock_delivered';
 }
 
 export interface CampaignEntity {

@@ -95,3 +95,17 @@ export const SuppressionInputSchema = z.object({
   reason: z.enum(['unsubscribe', 'hard_bounce', 'complaint', 'manual_dnc', 'legal_risk', 'competitor']),
   notes: z.string().optional(),
 });
+
+// Alternative Channel Update Schema
+export const UpdateAlternativeChannelSchema = z.object({
+  channelId: z.string().min(1),
+  status: z.enum(['not_contacted', 'manually_contacted', 'replied', 'not_applicable']).optional(),
+  reminderDate: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  customPitch: z.string().optional(),
+});
+
+// Gmail Test Send Schema
+export const GmailTestSendSchema = z.object({
+  recipientEmail: z.string().email(),
+});

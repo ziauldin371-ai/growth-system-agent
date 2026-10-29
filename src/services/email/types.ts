@@ -14,6 +14,8 @@ export interface SendEmailPayload {
 export interface SendEmailResponse {
   success: boolean;
   messageId?: string;
+  threadId?: string;
+  gmailUrl?: string;
   provider: string;
   status: 'sent' | 'queued' | 'mock_delivered' | 'suppressed' | 'rejected_compliance' | 'failed';
   error?: string;

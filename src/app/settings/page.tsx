@@ -12,12 +12,36 @@ import {
   XCircle, 
   RefreshCw,
   KeyRound,
-  UserCheck
+  UserCheck,
+  AlertTriangle
 } from 'lucide-react';
 
 export default function SettingsPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  // Test email state
+  const [testEmail, setTestEmail] = useState('ziauldin371@gmail.com');
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<any>(null);
+
+  const handleSendTestEmail = async () => {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const res = await fetch('/api/gmail/test-send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipientEmail: testEmail }),
+      });
+      const resData = await res.json();
+      setTestResult(resData);
+    } catch (err: any) {
+      setTestResult({ success: false, error: err.message });
+    } finally {
+      setTesting(false);
+    }
+  };
 
   useEffect(() => {
     fetch('/api/analytics')
@@ -84,6 +108,22 @@ export default function SettingsPage() {
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Gmail REST API */}
+          <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2 text-xs font-bold text-white">
+                <Mail className="w-4 h-4 text-rose-400" />
+                <span>Gmail REST API (OAuth2)</span>
+              </div>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 font-semibold">
+                OAuth2 Adapter
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400">
+              Authenticated for <strong className="text-slate-200">ziauldin371@gmail.com</strong>. Places sent outreach directly in Gmail Sent mailbox.
+            </p>
+          </div>
+
           {/* Supabase */}
           <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
             <div className="flex items-center justify-between">
@@ -92,7 +132,7 @@ export default function SettingsPage() {
                 <span>Supabase PostgreSQL</span>
               </div>
               <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-semibold">
-                Connected
+                Active / RLS
               </span>
             </div>
             <p className="text-[11px] text-slate-400">
@@ -180,6 +220,93 @@ export default function SettingsPage() {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Gmail API Live Test Tool */}
+      <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Mail className="w-5 h-5 text-rose-400" />
+            <h2 className="text-sm font-bold text-white">Gmail API OAuth2 Verification & Test Send</h2>
+          </div>
+          <span className="px-2.5 py-0.5 rounded-full bg-slate-800 text-[11px] font-mono text-slate-300">
+            Sender: ziauldin371@gmail.com
+          </span>
+        </div>
+
+        <p className="text-xs text-slate-400 leading-relaxed">
+          Verify that your Google OAuth2 credentials can refresh tokens, assemble RFC 2822 multipart messages, and deliver test outreach that appears directly in your Google account&apos;s Sent mailbox.
+        </p>
+
+        <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+          <input
+            type="email"
+            value={testEmail}
+            onChange={(e) => setTestEmail(e.target.value)}
+            placeholder="Recipient email for test..."
+            className="flex-1 px-3.5 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full"
+          />
+          <button
+            onClick={handleSendTestEmail}
+            disabled={testing}
+            className="w-full sm:w-auto px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-medium text-xs transition-all shadow-md shadow-indigo-600/30 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {testing ? (
+              <>
+                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Dispatching via Gmail API...</span>
+              </>
+            ) : (
+              <>
+                <Mail className="w-3.5 h-3.5" />
+                <span>Send Test Email via Gmail API</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        {testResult && (
+          <div className={`p-4 rounded-xl border text-xs space-y-2 mt-4 ${
+            testResult.success
+              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+              : 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+          }`}>
+            <div className="flex items-center justify-between font-semibold">
+              <span className="flex items-center gap-1.5">
+                {testResult.success ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <AlertTriangle className="w-4 h-4 text-amber-400" />}
+                {testResult.success ? 'Gmail API Test Dispatched Successfully!' : 'Gmail Integration Notice'}
+              </span>
+              {testResult.gmailUrl && (
+                <a
+                  href={testResult.gmailUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-2.5 py-1 rounded bg-slate-900 border border-emerald-500/40 text-emerald-300 text-[11px] hover:bg-slate-800 transition-colors inline-flex items-center gap-1"
+                >
+                  <span>Open in Gmail Sent Mail &rarr;</span>
+                </a>
+              )}
+            </div>
+
+            <p className="text-[11px] leading-relaxed">
+              {testResult.error || 'The test message was successfully encoded and delivered. Check your Gmail Sent folder to verify.'}
+            </p>
+
+            {testResult.checklist && (
+              <div className="pt-2 border-t border-slate-800/80 space-y-1.5">
+                <span className="text-[10px] uppercase font-bold text-slate-400">OAuth Setup Status:</span>
+                {testResult.checklist.checks?.map((c: any, cIdx: number) => (
+                  <div key={cIdx} className="flex items-center justify-between text-[11px]">
+                    <span className="font-mono text-slate-300">{c.key}:</span>
+                    <span className={c.configured ? 'text-emerald-400 font-semibold' : 'text-amber-400 font-semibold'}>
+                      {c.configured ? 'Configured in Environment' : 'Missing (Add to Vercel Settings)'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Operator Professional Profile Configuration */}

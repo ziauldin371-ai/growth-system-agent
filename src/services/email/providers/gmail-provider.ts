@@ -126,10 +126,16 @@ export class GmailProvider implements IEmailProvider {
       }
 
       const data = await response.json();
+      const messageId = data.id;
+      const threadId = data.threadId;
+      const gmailUrl = `https://mail.google.com/mail/u/0/#sent/${messageId}`;
+
       return {
         success: true,
         provider: this.id,
-        messageId: data.id,
+        messageId,
+        threadId,
+        gmailUrl,
         status: 'sent',
       };
     } catch (err: any) {
@@ -140,6 +146,76 @@ export class GmailProvider implements IEmailProvider {
         error: `Gmail send exception: ${err.message}`,
       };
     }
+  }
+
+  /**
+   * Actionable setup checklist for administrator verification.
+   */
+  public getSetupChecklist() {
+    return {
+      senderEmail: this.senderEmail,
+      senderName: this.senderName,
+      isConfigured: this.isConfigured(),
+      checks: [
+        {
+          key: 'GOOGLE_CLIENT_ID',
+          label: 'Google OAuth Client ID',
+          configured: Boolean(process.env.GOOGLE_CLIENT_ID),
+          helpText: 'From Google Cloud Console > APIs & Services > Credentials (OAuth 2.0 Client ID)',
+        },
+        {
+          key: 'GOOGLE_CLIENT_SECRET',
+          label: 'Google OAuth Client Secret',
+          configured: Boolean(process.env.GOOGLE_CLIENT_SECRET),
+          helpText: 'Client Secret paired with the Web Client ID',
+        },
+        {
+          key: 'GOOGLE_REFRESH_TOKEN',
+          label: 'Authorized Refresh Token',
+          configured: Boolean(process.env.GOOGLE_REFRESH_TOKEN),
+          helpText: 'OAuth2 refresh token generated with https://www.googleapis.com/auth/gmail.send',
+        },
+      ],
+      requiredScope: 'https://www.googleapis.com/auth/gmail.send',
+      sentFolderUrl: 'https://mail.google.com/mail/u/0/#sent',
+    };
+  }
+
+  /**
+   * Dispatches a real verification test email to verify credentials and Sent folder placement.
+   */
+  public async sendTestEmail(recipientEmail: string = 'ziauldin371@gmail.com'): Promise<{
+    success: boolean;
+    messageId?: string;
+    threadId?: string;
+    gmailUrl?: string;
+    error?: string;
+    checklist?: any;
+  }> {
+    if (!this.isConfigured()) {
+      return {
+        success: false,
+        error: 'Cannot dispatch live test email: Gmail OAuth credentials are not fully configured in environment.',
+        checklist: this.getSetupChecklist(),
+      };
+    }
+
+    const testPayload: SendEmailPayload = {
+      to: recipientEmail,
+      subject: `Growth System Agent — Gmail API Integration Verified [${new Date().toISOString()}]`,
+      body: `Hi Zia,\n\nThis test message confirms that your Growth System Agent is successfully authorized with the official Google Gmail REST API.\n\nSender Account: ${this.senderEmail}\nTimestamp: ${new Date().toISOString()}\nDelivery Channel: Gmail API (users/me/messages/send)\n\nThis message has been placed directly into your Gmail account's Sent folder.\n\nBest regards,\nGrowth System Agent Engine`,
+      idempotencyKey: `test_send_${Date.now()}`,
+    };
+
+    const res = await this.send(testPayload);
+    return {
+      success: res.success,
+      messageId: res.messageId,
+      threadId: res.threadId,
+      gmailUrl: res.gmailUrl,
+      error: res.error,
+      checklist: this.getSetupChecklist(),
+    };
   }
 }
 
