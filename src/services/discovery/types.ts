@@ -16,6 +16,9 @@ export interface RawDiscoveredLead {
   annualRevenueRange?: string | null;
   sourceProvider: string;
   sourceIdentifier?: string | null;
+  fetchedAt?: string;
+  rawPayloadRef?: Record<string, any>;
+  isPermanentlyClosed?: boolean;
   socialUrls?: string[];
   evidence: Array<{
     sourceName: string;

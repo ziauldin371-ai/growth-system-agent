@@ -167,10 +167,22 @@ export default function SentEmailsPage() {
                       </td>
 
                       <td className="py-3 px-4">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[11px] font-medium">
-                          <CheckCircle2 className="w-3 h-3" />
-                          {item.deliveryStatus || 'Sent'}
-                        </span>
+                        {item.gmailConfirmed ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[11px] font-semibold">
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span>Sent (confirmed)</span>
+                          </span>
+                        ) : item.reconciledStatus === 'uncertain' ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[11px] font-medium">
+                            <Clock className="w-3 h-3" />
+                            <span>Sent (uncertain)</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 text-[11px] font-medium">
+                            <CheckCircle2 className="w-3 h-3 text-slate-400" />
+                            <span>{item.deliveryStatus || 'Sent'}</span>
+                          </span>
+                        )}
                       </td>
 
                       <td className="py-3 px-4 text-right">

@@ -56,6 +56,13 @@ export class CompaniesHouseProvider implements IDiscoveryProvider {
           companyType: company.company_type,
           sourceProvider: 'uk_companies_house',
           sourceIdentifier: companyNumber,
+          fetchedAt: new Date().toISOString(),
+          rawPayloadRef: {
+            companyNumber,
+            companyStatus: company.company_status,
+            dateOfCreation: company.date_of_creation,
+            companyType: company.company_type,
+          },
           evidence: [
             {
               sourceName: 'UK Companies House',

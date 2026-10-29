@@ -143,11 +143,44 @@ psql -h db.your-project.supabase.co -U postgres -d postgres -f backup_file.sql
 
 ---
 
-## 6. Verification & Quality Gates
+## 6. Real-Time Discovery, Deliverability & Multi-Platform Outreach
+
+### A. 48-Hour Freshness Rule & Closed Business Detection
+* Every lead must pass `enforceLeadFreshness()`:
+  - If last verification check is older than 48 hours, automatic re-verification is triggered.
+  - Closed or permanently closed businesses (`isPermanentlyClosed = true` or Google Places `CLOSED_PERMANENTLY`) are automatically rejected.
+  - Heat score is computed factoring in registration freshness, review signals, and reachability.
+* Real-time feed is queryable at `GET /api/discovery/feed`.
+
+### B. Gmail Sent Confirmation
+* Outreach messages sent via `users.messages.send` are immediately verified with `users.messages.get` to confirm the `SENT` label.
+* The message is stamped with `gmailConfirmed: true` and direct link to `https://mail.google.com/mail/u/0/#sent/{messageId}`.
+* In case of network timeout, the reconciliation engine queries `users.messages.list` with `to:{email} label:SENT` to avoid duplicate dispatches.
+
+### C. Inbox Placement & Content Linter
+* Pre-send content linter (`lintEmailContent()`) enforces:
+  - Word count: 60–110 words recommended (rejects > 125 words).
+  - Maximum 1 link on first touch; zero URL shorteners allowed.
+  - Zero spam trigger keywords ("guaranteed", "100% free", "risk-free", etc.).
+  - Plain-text opt-out footer required.
+* Domain health checker (`POST /api/deliverability/dns-check`) queries live DNS for SPF, DKIM, DMARC (`v=DMARC1`), and MX records.
+
+### D. Multi-Platform Outreach & Cross-Channel Quiet Periods
+* Outreach pitches generated per platform rules:
+  - **LinkedIn Connection Note**: Max 300 characters, no pitch, 1 genuine point, no links.
+  - **Instagram / Facebook DM**: 30–60 words, casual yet professional, no links.
+  - **X (Twitter) DM**: Under 280 characters.
+  - **Website Contact Form**: 60–100 words with explicit Subject line.
+* **3-Day Quiet Period**: When any channel is marked as contacted, a 72-hour cross-channel spacing window is scheduled across all other channels for that lead.
+* **Instant Opt-Out Lock**: If a lead opts out or replies negatively on any channel, clicking **Opt Out / Lock** immediately locks all alternative channels and adds the lead's domain and email to the global suppression list.
+
+---
+
+## 7. Verification & Quality Gates
 
 Run these commands before any deployment or pull request:
 ```bash
-# Unit & integration tests (67 passing tests across 18 test suites)
+# Unit & integration tests (80 passing tests across 22 test suites)
 npm test
 
 # Strict TypeScript type check

@@ -10,6 +10,27 @@ export async function PATCH(
     const channelId = params.id;
     const body = await req.json();
 
+    if (body.action === 'mark_contacted') {
+      dataStore.recordChannelContact(channelId);
+      const ch = dataStore.getAlternativeChannelById(channelId);
+      return NextResponse.json({
+        success: true,
+        message: 'Channel marked as contacted; 3-day multi-channel quiet period scheduled.',
+        channel: ch,
+      });
+    }
+
+    if (body.action === 'lock_opt_out') {
+      const ch = dataStore.getAlternativeChannelById(channelId);
+      if (ch) {
+        dataStore.lockAllChannelsForBusiness(ch.businessId, body.reason || 'Lead requested opt-out on alternative channel');
+      }
+      return NextResponse.json({
+        success: true,
+        message: 'All outreach channels locked for this business and added to global suppression list.',
+      });
+    }
+
     const parsed = UpdateAlternativeChannelSchema.safeParse({
       channelId,
       ...body,

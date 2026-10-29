@@ -1286,6 +1286,66 @@ ziauldin371@gmail.com`,
     return result;
   }
 
+  // --- Cross-Channel Locking & Coordination (Part D4) ---
+  public lockAllChannelsForBusiness(businessId: string, reason: string): void {
+    for (const [chId, channel] of Array.from(this.alternativeChannels.entries())) {
+      if (channel.businessId === businessId) {
+        channel.isLockedOptOut = true;
+        channel.status = 'not_applicable';
+        channel.notes = `[LOCKED - DO NOT CONTACT: ${reason}] ${channel.notes || ''}`.trim();
+        this.alternativeChannels.set(chId, channel);
+      }
+    }
+
+    // Suppress business domain if exists
+    const b = this.businesses.get(businessId);
+    if (b && b.domain) {
+      this.addSuppression({
+        id: `sup_dom_${Date.now()}`,
+        organizationId: 'org-demo-001',
+        type: 'domain',
+        value: b.domain,
+        reason: 'unsubscribe',
+        notes: reason,
+        createdAt: new Date().toISOString(),
+      });
+    }
+    const contacts = this.contacts.get(businessId) || [];
+    for (const c of contacts) {
+      if (c.email) {
+        this.addSuppression({
+          id: `sup_em_${Date.now()}_${Math.random()}`,
+          organizationId: 'org-demo-001',
+          type: 'email',
+          value: c.email,
+          reason: 'unsubscribe',
+          notes: reason,
+          createdAt: new Date().toISOString(),
+        });
+      }
+    }
+  }
+
+  public recordChannelContact(channelId: string, contactedAt: string = new Date().toISOString()): void {
+    const channel = this.alternativeChannels.get(channelId);
+    if (!channel) return;
+
+    channel.status = 'manually_contacted';
+    channel.contactedAt = contactedAt;
+
+    // Enforce 3-day quiet period (72 hours) across all other channels for this business
+    const nextEligible = new Date(new Date(contactedAt).getTime() + 72 * 60 * 60 * 1000).toISOString();
+    channel.nextTouchEligibleAt = nextEligible;
+    this.alternativeChannels.set(channelId, channel);
+
+    for (const [otherId, otherCh] of Array.from(this.alternativeChannels.entries())) {
+      if (otherCh.businessId === channel.businessId && otherId !== channelId) {
+        otherCh.nextTouchEligibleAt = nextEligible;
+        this.alternativeChannels.set(otherId, otherCh);
+      }
+    }
+  }
+
   // --- Distributed Scheduler Lock (Anti-Overlap) ---
   public acquireLock(name: string, ttlMs: number = 600000): boolean {
     const now = Date.now();

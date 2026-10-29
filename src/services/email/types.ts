@@ -16,6 +16,9 @@ export interface SendEmailResponse {
   messageId?: string;
   threadId?: string;
   gmailUrl?: string;
+  gmailConfirmed?: boolean;
+  labels?: string[];
+  reconciledStatus?: 'sent_confirmed' | 'uncertain' | 'failed';
   provider: string;
   status: 'sent' | 'queued' | 'mock_delivered' | 'suppressed' | 'rejected_compliance' | 'failed';
   error?: string;

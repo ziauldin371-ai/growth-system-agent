@@ -30,7 +30,7 @@ export class GooglePlacesProvider implements IDiscoveryProvider {
       headers: {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': apiKey,
-        'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.websiteUri,places.nationalPhoneNumber,places.rating,places.userRatingCount,places.id,places.types',
+        'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.websiteUri,places.nationalPhoneNumber,places.rating,places.userRatingCount,places.id,places.types,places.businessStatus',
       },
       body: JSON.stringify({
         textQuery: searchQuery,
@@ -46,7 +46,9 @@ export class GooglePlacesProvider implements IDiscoveryProvider {
     const data = await response.json();
     const places = data.places || [];
 
-    return places.map((place: any): RawDiscoveredLead => {
+    return places
+      .filter((place: any) => place.businessStatus !== 'CLOSED_PERMANENTLY' && place.businessStatus !== 'CLOSED_TEMPORARILY')
+      .map((place: any): RawDiscoveredLead => {
       const name = place.displayName?.text || 'Unknown Business';
       const website = place.websiteUri || null;
       const rating = place.rating || 0;
@@ -61,6 +63,14 @@ export class GooglePlacesProvider implements IDiscoveryProvider {
         industry: request.industry,
         sourceProvider: 'google_places',
         sourceIdentifier: place.id,
+        fetchedAt: new Date().toISOString(),
+        rawPayloadRef: {
+          id: place.id,
+          businessStatus: place.businessStatus,
+          types: place.types,
+          rating,
+          userRatingCount: reviews,
+        },
         evidence: [
           {
             sourceName: 'Google Places API',

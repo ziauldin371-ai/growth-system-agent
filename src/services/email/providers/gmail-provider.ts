@@ -67,6 +67,8 @@ export class GmailProvider implements IEmailProvider {
       `Subject: =?utf-8?B?${Buffer.from(subject).toString('base64')}?=`,
       `MIME-Version: 1.0`,
       `X-Idempotency-Key: ${payload.idempotencyKey}`,
+      `List-Unsubscribe: <mailto:${this.senderEmail}?subject=unsubscribe>`,
+      `List-Unsubscribe-Post: List-Unsubscribe=One-Click`,
       `Content-Type: multipart/alternative; boundary="${boundary}"`,
       '',
       `--${boundary}`,
@@ -130,12 +132,36 @@ export class GmailProvider implements IEmailProvider {
       const threadId = data.threadId;
       const gmailUrl = `https://mail.google.com/mail/u/0/#sent/${messageId}`;
 
+      // PART B: Call users.messages.get to confirm SENT label in Gmail
+      let isConfirmedSent = false;
+      let labelList: string[] = [];
+
+      try {
+        const verifyRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}?format=minimal`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        });
+        if (verifyRes.ok) {
+          const verifyData = await verifyRes.json();
+          labelList = verifyData.labelIds || [];
+          isConfirmedSent = labelList.includes('SENT');
+        }
+      } catch (verifyErr) {
+        // Log verification failure; delivery still occurred
+        console.warn('Gmail sent-folder label confirmation call failed:', verifyErr);
+      }
+
       return {
         success: true,
         provider: this.id,
         messageId,
         threadId,
         gmailUrl,
+        gmailConfirmed: isConfirmedSent,
+        labels: labelList,
+        reconciledStatus: isConfirmedSent ? 'sent_confirmed' : 'uncertain',
         status: 'sent',
       };
     } catch (err: any) {
@@ -145,6 +171,38 @@ export class GmailProvider implements IEmailProvider {
         status: 'failed',
         error: `Gmail send exception: ${err.message}`,
       };
+    }
+  }
+
+  /**
+   * Reconciles uncertain deliveries by searching the Gmail Sent label before any retry
+   */
+  public async reconcileSentStatus(toEmail: string, subjectKeyword?: string): Promise<{
+    foundInSent: boolean;
+    messageId?: string;
+    threadId?: string;
+  }> {
+    if (!this.isConfigured()) return { foundInSent: false };
+
+    try {
+      const accessToken = await this.getAccessToken();
+      const query = encodeURIComponent(`to:${toEmail} label:SENT ${subjectKeyword ? `subject:${subjectKeyword}` : ''}`.trim());
+      const res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${query}&maxResults=1`, {
+        headers: { 'Authorization': `Bearer ${accessToken}` },
+      });
+
+      if (!res.ok) return { foundInSent: false };
+      const data = await res.json();
+      if (data.messages && data.messages.length > 0) {
+        return {
+          foundInSent: true,
+          messageId: data.messages[0].id,
+          threadId: data.messages[0].threadId,
+        };
+      }
+      return { foundInSent: false };
+    } catch {
+      return { foundInSent: false };
     }
   }
 

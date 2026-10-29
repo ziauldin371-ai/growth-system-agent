@@ -67,6 +67,14 @@ export interface BusinessEntity {
   sourceProvider: string;
   sourceIdentifier?: string | null;
   isArchived: boolean;
+  fetchedAt?: string;
+  rawPayloadRef?: Record<string, any>;
+  lastVerifiedAt?: string | null;
+  isPermanentlyClosed?: boolean;
+  heatScore?: number;
+  triggerFreshnessRank?: number;
+  decisionMakerRole?: string | null;
+  decisionMakerName?: string | null;
   createdAt: string;
   updatedAt: string;
   // Relationships
@@ -192,6 +200,20 @@ export interface EmailDraftEntity {
   recipientEmail?: string | null;
   sentAt?: string | null;
   deliveryStatus?: 'sent' | 'delivered' | 'bounced' | 'failed' | 'replied';
+  gmailConfirmed?: boolean;
+  gmailLabels?: string[];
+  confirmedSentAt?: string | null;
+  reconciledStatus?: 'draft' | 'uncertain' | 'sent_confirmed' | 'failed';
+  qualityGatePassed?: boolean;
+  qualityGateMetrics?: {
+    wordCount: number;
+    readingLevel: string;
+    spamScore: number;
+    hasUnsub: boolean;
+    evidenceMatchesCount: number;
+    linkCount: number;
+    verdict: 'pass' | 'fail';
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -229,6 +251,12 @@ export interface AlternativeChannelEntity {
   contactedAt?: string | null;
   reminderDate?: string | null;
   notes?: string | null;
+  isVerifiedMatch?: boolean;
+  evidenceSources?: Array<{ sourceName: string; sourceUrl?: string }>;
+  charCount?: number;
+  suggestedTouchOrder?: number;
+  nextTouchEligibleAt?: string | null;
+  isLockedOptOut?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -309,4 +337,75 @@ export interface SuppressionEntry {
   reason: 'unsubscribe' | 'hard_bounce' | 'complaint' | 'manual_dnc' | 'legal_risk' | 'competitor';
   notes?: string | null;
   createdAt: string;
+}
+
+export interface BuyingTriggerEntity {
+  id: string;
+  businessId: string;
+  triggerType: 'new_registration' | 'hiring_signal' | 'review_friction' | 'website_decay' | 'funding_expansion';
+  title: string;
+  summary: string;
+  sourceUrl?: string | null;
+  sourceName: string;
+  observedDate: string;
+  confidence: number;
+  weightScore: number;
+  createdAt: string;
+}
+
+export interface ProductizedOfferEntity {
+  id: string;
+  title: string;
+  slug: string;
+  targetPipeline: 'website_opportunities' | 'ai_software_opportunities' | 'both';
+  scope: string;
+  deliverables: string[];
+  timeline: string;
+  startingPriceRange: string;
+  excludedItems: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProofItemEntity {
+  id: string;
+  title: string;
+  clientIndustry: string;
+  serviceType: string;
+  summary: string;
+  metricResult?: string | null;
+  testimonialQuote?: string | null;
+  caseStudyUrl?: string | null;
+  isApproved: boolean;
+  isFeatured: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DomainHealthEntity {
+  id: string;
+  domain: string;
+  spfStatus: 'pass' | 'missing' | 'invalid';
+  dkimStatus: 'pass' | 'missing' | 'invalid';
+  dmarcStatus: 'pass' | 'missing' | 'invalid';
+  dmarcPolicy: string;
+  mxStatus: 'pass' | 'missing' | 'invalid';
+  details: Record<string, any>;
+  checkedAt: string;
+}
+
+export interface InboxPlacementTestEntity {
+  id: string;
+  testSubject: string;
+  templateName: string;
+  testResults: Array<{
+    provider: 'Gmail' | 'Outlook' | 'Yahoo' | 'Workspace';
+    placement: 'Primary' | 'Promotions' | 'Spam';
+    timestamp: string;
+  }>;
+  primaryRate: number;
+  spamRate: number;
+  overallResult: 'pass' | 'warning' | 'fail';
+  testedAt: string;
 }
