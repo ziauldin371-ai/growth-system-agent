@@ -79,6 +79,27 @@ const DICTIONARY: Record<string, { en: string; ur: string }> = {
   'word.sent_confirmed': { en: 'Sent (confirmed)', ur: 'Bheji gayi (Tasdeeq shuda)' },
   'word.blocked': { en: 'Blocked', ur: 'Rok di gayi' },
   'word.waiting': { en: 'Waiting to Send', ur: 'Bhejne ke intezaar mein' },
+
+  // Stitch Friendly Wording
+  'stitch.good_morning': { en: 'Good morning, Zia! 👋', ur: 'Subah Bakhair, Zia! 👋' },
+  'stitch.all_calm': { en: 'All systems calm', ur: 'Tamam systems pursukoon hain' },
+  'stitch.needs_eyes': { en: 'Needs Your Eyes Today', ur: 'Aaj Aap Ki Tawajjah Chahiye' },
+  'stitch.todays_pipeline': { en: "Today's Pipeline", ur: 'Aaj Ki Pipeline' },
+  'stitch.find_businesses_now': { en: 'Find Businesses Now', ur: 'Abhi Karobaar Dhoondein' },
+  'stitch.call_hot_lead': { en: 'Call Hot Lead', ur: 'Aham Grahak Ko Call Karein' },
+  'stitch.emergency_stop': { en: 'Emergency Stop Everything', ur: 'Emergency Stop: Sab Rok Dein' },
+  'stitch.tap_to_call': { en: 'Tap to Call', ur: 'Call Karne Ke Liye Dabayein' },
+  'stitch.sent_and_queue': { en: 'Sent & Queue', ur: 'Bheji Gayi Aur Queue' },
+  'stitch.calls_and_social': { en: 'Calls & Social', ur: 'Calls Aur Social Media' },
+  'stitch.safety_rules': { en: 'Safety & Rules', ur: 'Hifazat Aur Qawaneen' },
+  'stitch.demo_banner': {
+    en: 'Demo data is shown; these are not real businesses',
+    ur: 'Demo data dikhaya ja raha hai; yeh asal karobaar nahi hain'
+  },
+  'stitch.queue_safe': { en: 'Queue safe emails for these leads', ur: 'In karobaar ke liye mehfooz emails queue karein' },
+  'stitch.copy_script': { en: 'Copy Script to Clipboard', ur: 'Script Clipboard Par Copy Karein' },
+  'stitch.pause_now': { en: 'Pause Now', ur: 'Abhi Rokein' },
+  'stitch.resume': { en: 'Resume', ur: 'Dobara Shuru Karein' },
 };
 
 const LanguageContext = createContext<LanguageContextType>({
@@ -97,7 +118,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       if (saved === 'en' || saved === 'ur') {
         setLanguageState(saved);
       }
-    } catch (e) {
+    } catch {
       // Ignore localStorage restrictions
     }
   }, []);
@@ -106,7 +127,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     setLanguageState(lang);
     try {
       localStorage.setItem('growth_agent_lang', lang);
-    } catch (e) {}
+    } catch {}
   };
 
   const toggleLanguage = () => {
@@ -130,4 +151,3 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 export function useLanguage() {
   return useContext(LanguageContext);
 }
-

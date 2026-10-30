@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#051424;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "surface-container": "#122131", "inverse-surface": "#d4e4fa", "secondary-fixed": "#6bff8f", "background": "#051424", "error-container": "#93000a", "secondary-fixed-dim": "#4ae176", "on-tertiary": "#472a00", "secondary-container": "#00b954", "on-error": "#690005", "tertiary-fixed-dim": "#ffb95f", "surface-bright": "#2c3a4c", "surface-variant": "#273647", "on-secondary-container": "#004119", "surface-container-lowest": "#010f1f", "outline-variant": "#464555", "on-secondary-fixed-variant": "#005321", "surface-dim": "#051424", "on-primary-container": "#f6f2ff", "tertiary-container": "#9c6300", "surface": "#051424", "on-tertiary-fixed-variant": "#653e00", "on-error-container": "#ffdad6", "on-surface": "#d4e4fa", "secondary": "#4ae176", "surface-container-high": "#1c2b3c", "on-primary-fixed": "#09006b", "primary-fixed-dim": "#c1c1ff", "surface-container-highest": "#273647", "surface-tint": "#c1c1ff", "on-primary-fixed-variant": "#2e29c6", "on-secondary": "#003915", "primary-container": "#5b5bf0", "on-surface-variant": "#c7c4d7", "tertiary": "#ffb95f", "outline": "#908fa1", "error": "#ffb4ab", "inverse-on-surface": "#233143", "inverse-primary": "#4948de", "primary-fixed": "#e1dfff", "on-tertiary-fixed": "#2a1700", "on-secondary-fixed": "#002109", "on-tertiary-container": "#fff2e7", "primary": "#c1c1ff", "on-primary": "#1500a8", "on-background": "#d4e4fa", "tertiary-fixed": "#ffddb8", "surface-container-low": "#0d1c2d" }, borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, spacing: { "margin": "2rem", "space-sm": "0.5rem", "space-xs": "0.25rem", "space-md": "1rem", "space-lg": "1.5rem", "space-xl": "2rem", "gutter": "1.5rem", "space-2xl": "3rem", "gutter-sm": "1rem", "margin-sm": "1rem" }, fontFamily: { "body-lg": ["Inter"], "body-md": ["Inter"], "label-md": ["Inter"], "label-badge": ["Inter"], "display-lg-mobile": ["Inter"], "label-lg": ["Inter"], "headline-lg": ["Inter"], "headline-md": ["Inter"], "headline-sm": ["Inter"], "display-lg": ["Inter"] }, fontSize: { "body-lg": ["16px", { lineHeight: "24px", letterSpacing: "-0.005em", fontWeight: "400" }], "body-md": ["14px", { lineHeight: "20px", letterSpacing: "0em", fontWeight: "400" }], "label-md": ["12px", { lineHeight: "16px", letterSpacing: "0.02em", fontWeight: "500" }], "label-badge": ["10px", { lineHeight: "12px", letterSpacing: "0.06em", fontWeight: "700" }], "display-lg-mobile": ["30px", { lineHeight: "36px", letterSpacing: "-0.02em", fontWeight: "700" }], "label-lg": ["14px", { lineHeight: "20px", letterSpacing: "0.01em", fontWeight: "600" }], "headline-lg": ["28px", { lineHeight: "36px", letterSpacing: "-0.02em", fontWeight: "600" }], "headline-md": ["22px", { lineHeight: "28px", letterSpacing: "-0.015em", fontWeight: "600" }], "headline-sm": ["18px", { lineHeight: "24px", letterSpacing: "-0.01em", fontWeight: "600" }], "display-lg": ["40px", { lineHeight: "48px", letterSpacing: "-0.025em", fontWeight: "700" }] } } } };</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface font-body-md text-on-surface flex flex-col min-h-screen selection:bg-primary-container selection:text-on-primary-container"><header class="fixed top-0 inset-x-0 z-50 bg-surface/85 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.25)]"><div class="h-44 px-gutter-sm flex flex-col justify-between py-space-xs"><div class="flex items-center justify-between gap-space-xs"><div class="flex items-center gap-space-sm"><img alt="Growth System Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAFHb-ZQ64Kd0D9bbCkT-LyQLPraLgyHZ9lIEiHDDZNMdSGRJOot0mRMLOdVyxxbuuMicAWOMTJbKaUcLnbAx7jB_pQHzuKHTilWPNGxPQdECKO0Sd1hBiLakCHIbESCNcxeUWm5MKa5JFGwwEazEMB4tDgZAqfnj_jUEBFNMT--nO6XdRJrorR_ryKqDvGx90GRS3pfofLjTd-UEhBg2x11gqk_QWbhtIrmulR7aR0"/><div class="flex flex-col leading-tight"><div class="flex items-center gap-space-xs"><span class="font-label-lg text-label-lg text-on-surface font-bold">Growth System</span><span class="px-1.5 py-0.5 rounded-full bg-tertiary-container text-on-tertiary-container font-label-badge text-label-badge tracking-wider uppercase">DEMO MODE</span></div><span class="font-label-md text-label-md text-on-surface-variant">Simple Client Finder</span></div></div><div class="flex items-center gap-space-xs"><button class="min-h-[44px] min-w-[44px] px-space-xs flex items-center justify-center rounded-lg bg-surface-container-high text-on-surface-variant font-label-md text-label-md active:bg-surface-variant transition-colors" title="Switch Language" type="button"><span class="material-symbols-outlined text-[16px] mr-1">translate</span>EN | اردو</button><button class="min-h-[44px] min-w-[44px] p-2 flex items-center justify-center rounded-lg bg-surface-container-high text-on-surface-variant hover:text-on-surface active:bg-surface-variant transition-colors" title="Quick Tour" type="button"><span class="material-symbols-outlined text-[20px]">help</span></button><div class="relative flex items-center pl-space-xs"><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-2 ring-primary-container" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBl9Rl_16fXYHcsdpaqdRioBJ-bLZ07O6A5xb-Z5eDMelrZaYU6dIGk01lpUqnC6mYr4MSpmUf1Z8I9MX2Ky6Mz2n8II4snsVJFxb18dlcoEgUDXoqlLtmlF6UCwOuyUvV1OvCApCHN_iQREGOS07iK1yQIkVMdW0MwtXnL6lxBa-kY7732ZYdwe16AITPF-1-qeGcDH4Mf-Athkt74O1ougTyrS7tTZoNjLGdEk-M1"/><span class="sr-only">Zia Ul Din</span></div></div></div><div class="flex items-center justify-between gap-space-sm"><h1 class="font-headline-sm text-headline-sm text-on-surface truncate">Calls &amp; Social</h1><button class="min-h-[44px] px-space-md py-1.5 bg-primary-container text-on-primary-container font-label-lg text-label-lg rounded-lg shadow-[0_0_16px_rgba(91,91,240,0.35)] flex items-center gap-1 active:opacity-90 transition-opacity whitespace-nowrap" type="button"><span class="material-symbols-outlined text-[18px]">bolt</span><span>Find Businesses Now</span></button></div><div class="relative w-full"><span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px] pointer-events-none">search</span><input class="w-full h-11 pl-10 pr-space-md rounded-lg bg-surface-container-lowest text-on-surface placeholder:text-outline font-body-md text-body-md focus:outline-none focus:ring-1 focus:ring-primary-container transition-all" placeholder="Search local businesses or leads..." type="search"/></div></div></header><main class="flex flex-col relative w-full pt-44 pb-28 px-gutter-sm bg-surface flex-1"><div class="flex flex-col w-full pb-6 space-y-space-md">
+<!-- Toast Notification (Hidden by default) -->
+<div class="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-secondary text-on-secondary px-space-md py-space-xs rounded-full font-label-md text-label-md shadow-[0_8px_24px_rgba(0,0,0,0.4)] flex items-center gap-space-xs opacity-0 pointer-events-none transition-all duration-300 transform -translate-y-2" id="toast">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+<span id="toast-text">Script copied to clipboard!</span>
+</div>
+<!-- Page Summary & Mission Card -->
+<div class="bg-surface-container rounded-xl p-space-md shadow-md space-y-space-sm relative overflow-hidden">
+<div class="absolute -top-12 -right-12 w-32 h-32 bg-primary-container/10 rounded-full blur-2xl pointer-events-none"></div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="font-headline-sm text-headline-sm text-on-surface">Contact Manually</span>
+<span class="px-1.5 py-0.5 rounded-full bg-tertiary-container text-on-tertiary-container font-label-badge text-label-badge uppercase tracking-wider">DEMO</span>
+</div>
+<div class="flex items-center gap-1 text-secondary font-label-md text-label-md bg-surface-container-high px-2 py-1 rounded-lg">
+<span class="material-symbols-outlined text-[16px]">bolt</span>
+<span>3x Reply Rate</span>
+</div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+      These 14 businesses have no public email, but great phone numbers and active social pages. Quick 2-minute calls or direct messages get fast replies.
+    </p>
+<!-- Filter Rail -->
+<div class="flex items-center gap-2 overflow-x-auto pt-1 pb-1 no-scrollbar">
+<button class="filter-btn active-filter px-3 py-1.5 rounded-lg font-label-md text-label-md bg-primary-container text-on-primary-container shadow-[0_0_12px_rgba(91,91,240,0.3)] whitespace-nowrap transition-all flex items-center gap-1" type="button">
+<span>All</span>
+<span class="px-1.5 py-0.2 rounded-full bg-surface-container-lowest/40 text-[10px]">14</span>
+</button>
+<button class="filter-btn px-3 py-1.5 rounded-lg font-label-md text-label-md bg-surface-container-high text-on-surface-variant whitespace-nowrap active:bg-surface-variant transition-all flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-[15px]">call</span>
+<span>Call Ready</span>
+<span class="px-1.5 py-0.2 rounded-full bg-surface-container-lowest/30 text-[10px]">8</span>
+</button>
+<button class="filter-btn px-3 py-1.5 rounded-lg font-label-md text-label-md bg-surface-container-high text-on-surface-variant whitespace-nowrap active:bg-surface-variant transition-all flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-[15px]">chat</span>
+<span>WhatsApp</span>
+<span class="px-1.5 py-0.2 rounded-full bg-surface-container-lowest/30 text-[10px]">4</span>
+</button>
+<button class="filter-btn px-3 py-1.5 rounded-lg font-label-md text-label-md bg-surface-container-high text-on-surface-variant whitespace-nowrap active:bg-surface-variant transition-all flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-[15px]">photo_camera</span>
+<span>Instagram</span>
+<span class="px-1.5 py-0.2 rounded-full bg-surface-container-lowest/30 text-[10px]">2</span>
+</button>
+</div>
+</div>
+<!-- 30-Second Calling Script Expandable Widget -->
+<div class="bg-surface-container rounded-xl overflow-hidden shadow-md transition-all duration-300">
+<button class="w-full p-space-md flex items-center justify-between text-left bg-surface-container-high/60 active:bg-surface-container-high transition-colors" id="script-toggle" type="button">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-8 h-8 rounded-lg bg-primary-container/20 text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[20px]">description</span>
+</div>
+<div class="min-w-0">
+<span class="font-label-lg text-label-lg text-on-surface block truncate">Your 30-Second Phone Script</span>
+<span class="font-label-md text-label-md text-on-surface-variant">Tap to read &amp; copy words to say</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline text-[22px] transition-transform duration-200" id="script-icon">expand_more</span>
+</button>
+<div class="p-space-md space-y-space-md bg-surface-container-lowest/40" id="script-body">
+<div class="p-space-md rounded-lg bg-surface-container-high/80 text-on-surface font-body-md text-body-md leading-relaxed relative">
+<span class="text-primary font-bold">"</span>Hi! I noticed your listing on Google Maps doesn't have a modern mobile website. I built a quick 2-page preview for you—can I send it to your WhatsApp?<span class="text-primary font-bold">"</span>
+</div>
+<div class="flex items-center gap-space-sm">
+<button class="flex-1 py-2.5 px-space-md bg-primary-container text-on-primary-container font-label-lg text-label-lg rounded-lg shadow-[0_0_16px_rgba(91,91,240,0.35)] flex items-center justify-center gap-1.5 active:opacity-90 transition-all" id="copy-script-btn" type="button">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+<span>Copy Script to Clipboard</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Outreach Queue Feed -->
+<div class="space-y-space-md">
+<div class="flex items-center justify-between px-1">
+<span class="font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wider text-[11px]">Priority Leads to Reach</span>
+<span class="font-label-md text-label-md text-secondary">3 Today</span>
+</div>
+<!-- Lead Card 1: Harbor Street Cafe -->
+<div class="bg-surface-container rounded-xl p-space-md shadow-md space-y-space-md relative overflow-hidden transition-all duration-200" id="card-harbor">
+<div class="flex items-start justify-between gap-space-sm">
+<div class="min-w-0">
+<div class="flex items-center gap-1.5 flex-wrap">
+<h3 class="font-headline-sm text-headline-sm text-on-surface truncate">Harbor Street Cafe</h3>
+<span class="px-1.5 py-0.5 rounded-full bg-secondary-container/20 text-secondary font-label-badge text-label-badge flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">check_circle</span>
+              High Intent
+            </span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[15px] text-outline">person</span>
+            Owner: <span class="text-on-surface font-medium">David Miller</span>
+</p>
+</div>
+<img class="w-12 h-12 rounded-lg object-cover bg-surface-container-high shrink-0" data-alt="A warm, atmospheric exterior of a charming seaside cafe at dusk with glowing Edison bulbs, wooden facade, and outdoor chalk menu board" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZc5Z0nBStxzzAn0PzsKruYB1WEcWeCNlaOP02NpMn1zbAvl8yL1sJeU-7XD9ewgX6z-keL9ibswF7DEeORXx2VjmuNCbSAGD-foUVvjl9JkVd3N648VoewJCWTLgzR5duEM2Szze9hiz9kU8ZNEhaIANErVfbciL5fEPRkOcaOAfH3PsOklCNWsOodXTWvxTBt5Ou-Xuijom58xjzXr6A943M9j3BBEz-T9VVvgUr"/>
+</div>
+<!-- Detail Badges -->
+<div class="grid grid-cols-2 gap-space-xs p-space-xs rounded-lg bg-surface-container-lowest/60">
+<div class="flex items-center gap-1.5 px-2 py-1.5">
+<span class="material-symbols-outlined text-tertiary text-[18px]">star</span>
+<div class="leading-tight">
+<span class="font-label-md text-label-md text-on-surface block font-bold">4.9 ★ Rating</span>
+<span class="font-label-badge text-label-badge text-on-surface-variant">128 Google Reviews</span>
+</div>
+</div>
+<div class="flex items-center gap-1.5 px-2 py-1.5">
+<span class="material-symbols-outlined text-error text-[18px]">link_off</span>
+<div class="leading-tight">
+<span class="font-label-md text-label-md text-error block font-bold">No Website</span>
+<span class="font-label-badge text-label-badge text-on-surface-variant">Losing Customers</span>
+</div>
+</div>
+</div>
+<!-- Phone Information -->
+<div class="flex items-center justify-between bg-surface-container-high/50 p-2.5 rounded-lg">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-[18px]">phone</span>
+<span class="font-label-lg text-label-lg text-on-surface tracking-wide">+44 20 7946 0912</span>
+</div>
+<button class="p-1 rounded bg-surface-container-highest text-on-surface-variant active:text-on-surface" onclick="navigator.clipboard.writeText('+442079460912'); showToast('Phone number copied!');" type="button">
+<span class="material-symbols-outlined text-[16px]">content_copy</span>
+</button>
+</div>
+<!-- Action Buttons -->
+<div class="grid grid-cols-2 gap-space-sm pt-1">
+<a class="py-2.5 px-2 bg-secondary-container text-on-secondary-container font-label-lg text-label-lg rounded-lg shadow-sm flex items-center justify-center gap-1 active:opacity-90 transition-opacity" href="tel:+442079460912">
+<span class="material-symbols-outlined text-[18px]">call</span>
+<span>Call Now</span>
+</a>
+<a class="py-2.5 px-2 bg-surface-container-high text-secondary font-label-lg text-label-lg rounded-lg flex items-center justify-center gap-1 active:bg-surface-variant transition-colors" href="https://wa.me/442079460912?text=Hi%20David,%20I%20noticed%20Harbor%20Street%20Cafe%20doesn't%20have%20a%20modern%20mobile%20website.%20I%20built%20a%20quick%202-page%20preview%20for%20you!" target="_blank">
+<span class="material-symbols-outlined text-[18px]">chat</span>
+<span>WhatsApp</span>
+</a>
+</div>
+<!-- Checkbox & Toggle -->
+<div class="pt-2 flex items-center justify-between">
+<label class="flex items-center gap-2.5 cursor-pointer select-none">
+<input class="sr-only peer" id="check-harbor" onchange="toggleDone('card-harbor', this.checked)" type="checkbox"/>
+<div class="w-5 h-5 rounded bg-surface-container-lowest peer-checked:bg-secondary-container flex items-center justify-center transition-colors shadow-inner">
+<span class="material-symbols-outlined text-[16px] text-on-secondary-container opacity-0 peer-checked:opacity-100 transition-opacity font-bold">check</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant peer-checked:text-on-surface peer-checked:line-through transition-all">Mark as Contacted</span>
+</label>
+<span class="font-label-badge text-label-badge text-outline">Never Called</span>
+</div>
+</div>
+<!-- Lead Card 2: Elite Grooming Barbershop -->
+<div class="bg-surface-container rounded-xl p-space-md shadow-md space-y-space-md relative overflow-hidden transition-all duration-200" id="card-elite">
+<div class="flex items-start justify-between gap-space-sm">
+<div class="min-w-0">
+<div class="flex items-center gap-1.5 flex-wrap">
+<h3 class="font-headline-sm text-headline-sm text-on-surface truncate">Elite Grooming Barbers</h3>
+<span class="px-1.5 py-0.5 rounded-full bg-primary-container/20 text-primary font-label-badge text-label-badge flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">schedule</span>
+              Active 1h Ago
+            </span>
+</div>
+<p class="font-body-md text-body-md text-primary flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[16px]">alternate_email</span>
+<span class="font-medium">@elitebarbers_uk</span>
+</p>
+</div>
+<img class="w-12 h-12 rounded-lg object-cover bg-surface-container-high shrink-0" data-alt="Interior of an upscale vintage modern barbershop with leather chairs, warm ambient neon lights, and tidy grooming accessories" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB_sCQMBqj-WkOv3Niye955FjfDfnqFrVU0N2hM7mFIPEvp1aXkFp3tLUlx1DzZe7qGkOZk2PDm_hCqDMfcQnwiqdT0OUBQZIMRKL3eM1r8hQRLIYuTIIxeaMyjr6kDB_19KkFsECugwYe66HZQvP0q0yTLVsVDlOKsDPN-NCTkiNGj4S1wPEbm6-iGAtP31lcKAD_pF5a6lWOdgYLwgNGfP0KcoBvWkNv2PttD4vzd"/>
+</div>
+<!-- Specific Issue Callout -->
+<div class="p-space-sm rounded-lg bg-surface-container-lowest/60 flex items-center gap-space-sm">
+<div class="w-7 h-7 rounded-full bg-error-container/30 text-error flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]">link_off</span>
+</div>
+<div class="min-w-0">
+<span class="font-label-md text-label-md text-on-surface block font-bold truncate">Booking link broken in bio</span>
+<span class="font-label-badge text-label-badge text-on-surface-variant block">Customers cannot book appointments directly</span>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="grid grid-cols-1 gap-space-xs pt-1">
+<button class="w-full py-2.5 px-space-md bg-primary-container text-on-primary-container font-label-lg text-label-lg rounded-lg shadow-[0_0_16px_rgba(91,91,240,0.35)] flex items-center justify-center gap-2 active:opacity-90 transition-opacity" onclick="showToast('Instagram DM link opened! Script copied.');" type="button">
+<span class="material-symbols-outlined text-[18px]">open_in_new</span>
+<span>Open Instagram &amp; Paste Script</span>
+</button>
+<button class="w-full py-2 px-space-md bg-surface-container-high text-on-surface-variant font-label-md text-label-md rounded-lg flex items-center justify-center gap-1 active:bg-surface-variant transition-colors" onclick="showOutcomeModal('Elite Grooming Barbers');" type="button">
+<span class="material-symbols-outlined text-[16px]">edit_note</span>
+<span>Log Outcome / Next Step</span>
+</button>
+</div>
+<!-- Checkbox & Toggle -->
+<div class="pt-1 flex items-center justify-between">
+<label class="flex items-center gap-2.5 cursor-pointer select-none">
+<input class="sr-only peer" id="check-elite" onchange="toggleDone('card-elite', this.checked)" type="checkbox"/>
+<div class="w-5 h-5 rounded bg-surface-container-lowest peer-checked:bg-secondary-container flex items-center justify-center transition-colors shadow-inner">
+<span class="material-symbols-outlined text-[16px] text-on-secondary-container opacity-0 peer-checked:opacity-100 transition-opacity font-bold">check</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant peer-checked:text-on-surface peer-checked:line-through transition-all">Mark as Contacted</span>
+</label>
+<span class="font-label-badge text-label-badge text-outline">Instagram DM Ready</span>
+</div>
+</div>
+<!-- Lead Card 3: Crown Roofing & Repairs -->
+<div class="bg-surface-container rounded-xl p-space-md shadow-md space-y-space-md relative overflow-hidden transition-all duration-200" id="card-crown">
+<div class="flex items-start justify-between gap-space-sm">
+<div class="min-w-0">
+<div class="flex items-center gap-1.5 flex-wrap">
+<h3 class="font-headline-sm text-headline-sm text-on-surface truncate">Crown Roofing &amp; Repairs</h3>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[16px] text-outline">call</span>
+<span class="text-on-surface font-medium">+44 161 496 0231</span>
+</p>
+</div>
+<img class="w-12 h-12 rounded-lg object-cover bg-surface-container-high shrink-0" data-alt="A modern commercial work van with roofing equipment outside a stately residential brick building under crisp clear daylight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCMN8jFo_seVVBsnob4lSXws1ThPuW9bPhCQIBd3mVHkcAHxVA_tMWwmkJfyBCPcAby3920hU0wNfPHBrN599CrnJSCcqIcVb8bBhWx-4UFYxRriONonLf3zgPomIWgyAu8rvY7U4_ORFkOe09Wy_ffbyxF-N0O0rMI5D8d7sUtuRe1WjEERyMyvRDO_GeJlJndtUnpa2E0ohLLg1hAReCyTU0t1gMUsv49fPWyAYzc"/>
+</div>
+<!-- Scheduled Call-back Alert Chip (Mandated Amber Pairing) -->
+<div class="p-space-sm rounded-lg bg-tertiary-container/30 text-tertiary flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-[20px] text-tertiary-fixed-dim shrink-0">schedule</span>
+<div class="min-w-0">
+<span class="font-label-lg text-label-lg font-bold block truncate text-tertiary-fixed">Call Back Today at 11:00 AM</span>
+<span class="font-label-badge text-label-badge text-on-tertiary-container block">Receptionist asked to follow up directly with David</span>
+</div>
+</div>
+<!-- Action Button -->
+<div class="pt-1">
+<a class="w-full py-2.5 px-space-md bg-secondary-container text-on-secondary-container font-label-lg text-label-lg rounded-lg shadow-sm flex items-center justify-center gap-2 active:opacity-90 transition-opacity" href="tel:+441614960231">
+<span class="material-symbols-outlined text-[20px]">call</span>
+<span>Call David Back</span>
+</a>
+</div>
+<!-- Checkbox & Toggle -->
+<div class="pt-1 flex items-center justify-between">
+<label class="flex items-center gap-2.5 cursor-pointer select-none">
+<input class="sr-only peer" id="check-crown" onchange="toggleDone('card-crown', this.checked)" type="checkbox"/>
+<div class="w-5 h-5 rounded bg-surface-container-lowest peer-checked:bg-secondary-container flex items-center justify-center transition-colors shadow-inner">
+<span class="material-symbols-outlined text-[16px] text-on-secondary-container opacity-0 peer-checked:opacity-100 transition-opacity font-bold">check</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant peer-checked:text-on-surface peer-checked:line-through transition-all">Mark as Contacted</span>
+</label>
+<span class="font-label-badge text-label-badge text-tertiary-fixed-dim">Reminder Set</span>
+</div>
+</div>
+</div>
+<!-- Daily Calling Progress Tracker & Motivator -->
+<div class="bg-surface-container-high rounded-xl p-space-md shadow-md space-y-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<div class="w-7 h-7 rounded-full bg-secondary/20 text-secondary flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+</div>
+<div>
+<span class="font-label-lg text-label-lg text-on-surface block leading-none">Completed Today</span>
+<span class="font-label-md text-label-md text-on-surface-variant leading-none">Daily target: 10 outreach actions</span>
+</div>
+</div>
+<div class="text-right">
+<span class="font-headline-sm text-headline-sm text-secondary font-bold" id="call-counter">4 / 10</span>
+</div>
+</div>
+<!-- Progress Bar -->
+<div class="w-full h-2 rounded-full bg-surface-container-lowest overflow-hidden">
+<div class="h-full bg-secondary transition-all duration-500 rounded-full" id="progress-fill" style="width: 40%"></div>
+</div>
+<div class="flex items-center justify-between pt-1 font-label-md text-label-md text-on-surface-variant">
+<span>6 more to unlock daily warm lead milestone!</span>
+<span class="text-secondary font-medium">40% Done</span>
+</div>
+</div>
+<!-- Fast Log Outcome Modal (Simple Overlay) -->
+<div class="fixed inset-0 z-50 bg-surface-container-lowest/80 backdrop-blur-sm hidden items-center justify-center p-space-md" id="outcome-modal">
+<div class="bg-surface-container w-full max-w-sm rounded-xl p-space-md shadow-xl space-y-space-md">
+<div class="flex items-center justify-between">
+<h4 class="font-headline-sm text-headline-sm text-on-surface" id="modal-title">Log Outreach Outcome</h4>
+<button class="text-outline hover:text-on-surface" onclick="closeOutcomeModal()" type="button">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="space-y-space-xs">
+<button class="w-full p-space-sm rounded-lg bg-surface-container-high hover:bg-surface-variant text-left flex items-center gap-2 text-secondary font-label-lg text-label-lg" onclick="recordOutcome('Agreed to see preview')" type="button">
+<span class="material-symbols-outlined">celebration</span>
+<span>Agreed to preview on WhatsApp</span>
+</button>
+<button class="w-full p-space-sm rounded-lg bg-surface-container-high hover:bg-surface-variant text-left flex items-center gap-2 text-tertiary font-label-lg text-label-lg" onclick="recordOutcome('Call back later')" type="button">
+<span class="material-symbols-outlined">schedule</span>
+<span>Call back later / Busy now</span>
+</button>
+<button class="w-full p-space-sm rounded-lg bg-surface-container-high hover:bg-surface-variant text-left flex items-center gap-2 text-on-surface-variant font-label-lg text-label-lg" onclick="recordOutcome('No answer')" type="button">
+<span class="material-symbols-outlined">phone_missed</span>
+<span>No answer / Sent voicemail</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<script>
+  // Toast Helper
+  function showToast(message) {
+    const toast = document.getElementById('toast');
+    const toastText = document.getElementById('toast-text');
+    if (toast && toastText) {
+      toastText.textContent = message;
+      toast.classList.remove('opacity-0', 'pointer-events-none', '-translate-y-2');
+      toast.classList.add('opacity-100', 'translate-y-0');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'pointer-events-none', '-translate-y-2');
+        toast.classList.remove('opacity-100', 'translate-y-0');
+      }, 2500);
+    }
+  }
+
+  // Toggle Script Drawer
+  const scriptToggle = document.getElementById('script-toggle');
+  const scriptBody = document.getElementById('script-body');
+  const scriptIcon = document.getElementById('script-icon');
+  let isScriptOpen = true;
+
+  if (scriptToggle && scriptBody && scriptIcon) {
+    scriptToggle.addEventListener('click', () => {
+      isScriptOpen = !isScriptOpen;
+      if (isScriptOpen) {
+        scriptBody.classList.remove('hidden');
+        scriptIcon.style.transform = 'rotate(0deg)';
+      } else {
+        scriptBody.classList.add('hidden');
+        scriptIcon.style.transform = 'rotate(-90deg)';
+      }
+    });
+  }
+
+  // Copy Script to Clipboard
+  const copyScriptBtn = document.getElementById('copy-script-btn');
+  if (copyScriptBtn) {
+    copyScriptBtn.addEventListener('click', () => {
+      const scriptText = "Hi! I noticed your listing on Google Maps doesn't have a modern mobile website. I built a quick 2-page preview for you—can I send it to your WhatsApp?";
+      navigator.clipboard.writeText(scriptText).then(() => {
+        showToast("Phone script copied! Ready to read.");
+      }).catch(() => {
+        showToast("Script ready!");
+      });
+    });
+  }
+
+  // Track progress count
+  let completedCount = 4;
+  function toggleDone(cardId, isChecked) {
+    const card = document.getElementById(cardId);
+    if (!card) return;
+    
+    if (isChecked) {
+      card.style.opacity = '0.6';
+      completedCount = Math.min(10, completedCount + 1);
+      showToast("Progress saved! One step closer.");
+    } else {
+      card.style.opacity = '1';
+      completedCount = Math.max(0, completedCount - 1);
+    }
+    
+    updateCounter();
+  }
+
+  function updateCounter() {
+    const counter = document.getElementById('call-counter');
+    const fill = document.getElementById('progress-fill');
+    if (counter) counter.textContent = `${completedCount} / 10`;
+    if (fill) fill.style.width = `${(completedCount / 10) * 100}%`;
+  }
+
+  // Outcome modal controls
+  function showOutcomeModal(businessName) {
+    const modal = document.getElementById('outcome-modal');
+    const modalTitle = document.getElementById('modal-title');
+    if (modalTitle) modalTitle.textContent = `Log: ${businessName}`;
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+  }
+
+  function closeOutcomeModal() {
+    const modal = document.getElementById('outcome-modal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+  }
+
+  function recordOutcome(status) {
+    closeOutcomeModal();
+    showToast(`Saved outcome: "${status}"`);
+    completedCount = Math.min(10, completedCount + 1);
+    updateCounter();
+  }
+
+  // Interactive Filter Chips
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.filter-btn').forEach(b => {
+        b.classList.remove('bg-primary-container', 'text-on-primary-container', 'shadow-[0_0_12px_rgba(91,91,240,0.3)]');
+        b.classList.add('bg-surface-container-high', 'text-on-surface-variant');
+      });
+      this.classList.remove('bg-surface-container-high', 'text-on-surface-variant');
+      this.classList.add('bg-primary-container', 'text-on-primary-container', 'shadow-[0_0_12px_rgba(91,91,240,0.3)]');
+      showToast(`Showing ${this.innerText.trim().split('\n')[0]}`);
+    });
+  });
+</script></main><nav class="fixed bottom-0 inset-x-0 z-50 pb-safe bg-surface-container-low/95 backdrop-blur-xl shadow-[0_-1px_12px_rgba(0,0,0,0.35)]" data-active-classes="text-primary-fixed bg-surface-container-high font-semibold"><div class="flex justify-around items-stretch h-20 px-space-xs"><a class="flex flex-col items-center justify-center flex-1 min-h-[44px] py-1 px-1 rounded-lg text-on-surface-variant hover:text-on-surface transition-all gap-1" data-path="today" href="#"><span class="material-symbols-outlined text-[22px]">today</span><span class="font-label-md text-label-md leading-none">Today</span><span class="font-label-badge text-label-badge opacity-60 leading-none">Home</span></a><a class="flex flex-col items-center justify-center flex-1 min-h-[44px] py-1 px-1 rounded-lg text-on-surface-variant hover:text-on-surface transition-all gap-1" data-path="found" href="#"><span class="material-symbols-outlined text-[22px]">storefront</span><span class="font-label-md text-label-md leading-none">Found</span><span class="font-label-badge text-label-badge opacity-60 leading-none">Businesses</span></a><a class="flex flex-col items-center justify-center flex-1 min-h-[44px] py-1 px-1 rounded-lg text-on-surface-variant hover:text-on-surface transition-all gap-1" data-path="sent-queue" href="#"><span class="material-symbols-outlined text-[22px]">outgoing_mail</span><span class="font-label-md text-label-md leading-none">Emails</span><span class="font-label-badge text-label-badge opacity-60 leading-none">Sent &amp; Queue</span></a><a class="flex flex-col items-center justify-center flex-1 min-h-[44px] py-1 px-1 rounded-lg text-on-surface-variant hover:text-on-surface transition-all gap-1" data-path="calls-social" href="#"><span class="material-symbols-outlined text-[22px]">call</span><span class="font-label-md text-label-md leading-none">Manual</span><span class="font-label-badge text-label-badge opacity-60 leading-none">Calls &amp; Social</span></a><a class="flex flex-col items-center justify-center flex-1 min-h-[44px] py-1 px-1 rounded-lg text-on-surface-variant hover:text-on-surface transition-all gap-1" data-path="more-menu" href="#"><span class="material-symbols-outlined text-[22px]">menu_open</span><span class="font-label-md text-label-md leading-none">More</span><span class="font-label-badge text-label-badge opacity-60 leading-none">Setup &amp; Rules</span></a></div></nav></body></html>

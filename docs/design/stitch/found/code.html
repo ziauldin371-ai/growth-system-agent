@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#051424;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "surface-container": "#122131", "inverse-surface": "#d4e4fa", "secondary-fixed": "#6bff8f", "background": "#051424", "error-container": "#93000a", "secondary-fixed-dim": "#4ae176", "on-tertiary": "#472a00", "secondary-container": "#00b954", "on-error": "#690005", "tertiary-fixed-dim": "#ffb95f", "surface-bright": "#2c3a4c", "surface-variant": "#273647", "on-secondary-container": "#004119", "surface-container-lowest": "#010f1f", "outline-variant": "#464555", "on-secondary-fixed-variant": "#005321", "surface-dim": "#051424", "on-primary-container": "#f6f2ff", "tertiary-container": "#9c6300", "surface": "#051424", "on-tertiary-fixed-variant": "#653e00", "on-error-container": "#ffdad6", "on-surface": "#d4e4fa", "secondary": "#4ae176", "surface-container-high": "#1c2b3c", "on-primary-fixed": "#09006b", "primary-fixed-dim": "#c1c1ff", "surface-container-highest": "#273647", "surface-tint": "#c1c1ff", "on-primary-fixed-variant": "#2e29c6", "on-secondary": "#003915", "primary-container": "#5b5bf0", "on-surface-variant": "#c7c4d7", "tertiary": "#ffb95f", "outline": "#908fa1", "error": "#ffb4ab", "inverse-on-surface": "#233143", "inverse-primary": "#4948de", "primary-fixed": "#e1dfff", "on-tertiary-fixed": "#2a1700", "on-secondary-fixed": "#002109", "on-tertiary-container": "#fff2e7", "primary": "#c1c1ff", "on-primary": "#1500a8", "on-background": "#d4e4fa", "tertiary-fixed": "#ffddb8", "surface-container-low": "#0d1c2d" }, borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, spacing: { "margin": "2rem", "space-sm": "0.5rem", "space-xs": "0.25rem", "space-md": "1rem", "space-lg": "1.5rem", "space-xl": "2rem", "gutter": "1.5rem", "space-2xl": "3rem", "gutter-sm": "1rem", "margin-sm": "1rem" }, fontFamily: { "body-lg": ["Inter"], "body-md": ["Inter"], "label-md": ["Inter"], "label-badge": ["Inter"], "display-lg-mobile": ["Inter"], "label-lg": ["Inter"], "headline-lg": ["Inter"], "headline-md": ["Inter"], "headline-sm": ["Inter"], "display-lg": ["Inter"] }, fontSize: { "body-lg": ["16px", { lineHeight: "24px", letterSpacing: "-0.005em", fontWeight: "400" }], "body-md": ["14px", { lineHeight: "20px", letterSpacing: "0em", fontWeight: "400" }], "label-md": ["12px", { lineHeight: "16px", letterSpacing: "0.02em", fontWeight: "500" }], "label-badge": ["10px", { lineHeight: "12px", letterSpacing: "0.06em", fontWeight: "700" }], "display-lg-mobile": ["30px", { lineHeight: "36px", letterSpacing: "-0.02em", fontWeight: "700" }], "label-lg": ["14px", { lineHeight: "20px", letterSpacing: "0.01em", fontWeight: "600" }], "headline-lg": ["28px", { lineHeight: "36px", letterSpacing: "-0.02em", fontWeight: "600" }], "headline-md": ["22px", { lineHeight: "28px", letterSpacing: "-0.015em", fontWeight: "600" }], "headline-sm": ["18px", { lineHeight: "24px", letterSpacing: "-0.01em", fontWeight: "600" }], "display-lg": ["40px", { lineHeight: "48px", letterSpacing: "-0.025em", fontWeight: "700" }] } } } };</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface font-body-md text-on-surface flex flex-col min-h-screen selection:bg-primary-container selection:text-on-primary-container"><header class="fixed top-0 inset-x-0 z-50 bg-surface/85 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.25)]"><div class="h-44 px-gutter-sm flex flex-col justify-between py-space-xs"><div class="flex items-center justify-between gap-space-xs"><div class="flex items-center gap-space-sm"><img alt="Growth System Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAFHb-ZQ64Kd0D9bbCkT-LyQLPraLgyHZ9lIEiHDDZNMdSGRJOot0mRMLOdVyxxbuuMicAWOMTJbKaUcLnbAx7jB_pQHzuKHTilWPNGxPQdECKO0Sd1hBiLakCHIbESCNcxeUWm5MKa5JFGwwEazEMB4tDgZAqfnj_jUEBFNMT--nO6XdRJrorR_ryKqDvGx90GRS3pfofLjTd-UEhBg2x11gqk_QWbhtIrmulR7aR0"/><div class="flex flex-col leading-tight"><div class="flex items-center gap-space-xs"><span class="font-label-lg text-label-lg text-on-surface font-bold">Growth System</span><span class="px-1.5 py-0.5 rounded-full bg-tertiary-container text-on-tertiary-container font-label-badge text-label-badge tracking-wider uppercase">DEMO MODE</span></div><span class="font-label-md text-label-md text-on-surface-variant">Simple Client Finder</span></div></div><div class="flex items-center gap-space-xs"><button class="min-h-[44px] min-w-[44px] px-space-xs flex items-center justify-center rounded-lg bg-surface-container-high text-on-surface-variant font-label-md text-label-md active:bg-surface-variant transition-colors" title="Switch Language" type="button"><span class="material-symbols-outlined text-[16px] mr-1">translate</span>EN | اردو</button><button class="min-h-[44px] min-w-[44px] p-2 flex items-center justify-center rounded-lg bg-surface-container-high text-on-surface-variant hover:text-on-surface active:bg-surface-variant transition-colors" title="Quick Tour" type="button"><span class="material-symbols-outlined text-[20px]">help</span></button><div class="relative flex items-center pl-space-xs"><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-2 ring-primary-container" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBl9Rl_16fXYHcsdpaqdRioBJ-bLZ07O6A5xb-Z5eDMelrZaYU6dIGk01lpUqnC6mYr4MSpmUf1Z8I9MX2Ky6Mz2n8II4snsVJFxb18dlcoEgUDXoqlLtmlF6UCwOuyUvV1OvCApCHN_iQREGOS07iK1yQIkVMdW0MwtXnL6lxBa-kY7732ZYdwe16AITPF-1-qeGcDH4Mf-Athkt74O1ougTyrS7tTZoNjLGdEk-M1"/><span class="sr-only">Zia Ul Din</span></div></div></div><div class="flex items-center justify-between gap-space-sm"><h1 class="font-headline-sm text-headline-sm text-on-surface truncate">Found</h1><button class="min-h-[44px] px-space-md py-1.5 bg-primary-container text-on-primary-container font-label-lg text-label-lg rounded-lg shadow-[0_0_16px_rgba(91,91,240,0.35)] flex items-center gap-1 active:opacity-90 transition-opacity whitespace-nowrap" type="button"><span class="material-symbols-outlined text-[18px]">bolt</span><span>Find Businesses Now</span></button></div><div class="relative w-full"><span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px] pointer-events-none">search</span><input class="w-full h-11 pl-10 pr-space-md rounded-lg bg-surface-container-lowest text-on-surface placeholder:text-outline font-body-md text-body-md focus:outline-none focus:ring-1 focus:ring-primary-container transition-all" placeholder="Search local businesses or leads..." type="search"/></div></div></header><main class="flex flex-col relative w-full pt-44 pb-28 px-gutter-sm bg-surface flex-1"><div class="flex flex-col w-full space-y-space-md">
+<!-- Interactive Overview Banner -->
+<section class="bg-surface-container rounded-xl p-space-md shadow-md relative overflow-hidden">
+<div class="absolute -right-10 -bottom-10 w-32 h-32 rounded-full bg-primary-container/10 blur-2xl pointer-events-none"></div>
+<div class="flex items-center justify-between gap-space-xs mb-space-xs">
+<div class="flex items-center gap-space-xs">
+<span class="font-headline-sm text-headline-sm text-on-surface">Businesses Found</span>
+<span class="px-1.5 py-0.5 rounded-full bg-tertiary-container text-on-tertiary-container font-label-badge text-label-badge tracking-wider uppercase font-bold">DEMO</span>
+</div>
+<span class="flex items-center gap-1 text-secondary font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px]">radar</span>
+        Live Radar
+      </span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px] text-primary">location_on</span>
+      Showing <span class="font-semibold text-on-surface">42 local opportunities</span> discovered in Manchester &amp; Leeds
+    </p>
+<!-- Filter Pills Row -->
+<div class="flex items-center gap-space-xs overflow-x-auto no-scrollbar pt-space-md pb-space-xs">
+<button class="filter-pill shrink-0 px-3 py-1.5 rounded-full bg-primary-container text-on-primary-container font-label-md text-label-md flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(91,91,240,0.35)]" data-filter="all" type="button">
+<span class="material-symbols-outlined text-[16px]">apps</span>
+        All (42)
+      </button>
+<button class="filter-pill shrink-0 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-md text-label-md flex items-center gap-1.5 transition-all active:bg-surface-bright" data-filter="no-website" type="button">
+<span class="material-symbols-outlined text-[16px] text-error">domain_disabled</span>
+        No Website (19)
+      </button>
+<button class="filter-pill shrink-0 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-md text-label-md flex items-center gap-1.5 transition-all active:bg-surface-bright" data-filter="broken" type="button">
+<span class="material-symbols-outlined text-[16px] text-tertiary">speed</span>
+        Broken / Slow (14)
+      </button>
+<button class="filter-pill shrink-0 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-md text-label-md flex items-center gap-1.5 transition-all active:bg-surface-bright" data-filter="ai-chat" type="button">
+<span class="material-symbols-outlined text-[16px] text-primary">smart_toy</span>
+        Needs AI Chat (9)
+      </button>
+</div>
+</section>
+<!-- Search & Quick Sort Field -->
+<section class="relative w-full">
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-outline text-[20px] pointer-events-none">manage_search</span>
+<input class="w-full h-11 pl-10 pr-10 rounded-xl bg-surface-container-lowest text-on-surface placeholder:text-outline font-body-md text-body-md focus:outline-none focus:ring-1 focus:ring-primary-container shadow-sm" id="business-search" placeholder="Search by business name or town (e.g. Manchester)..." type="search"/>
+<span class="material-symbols-outlined absolute right-3 text-on-surface-variant text-[20px] pointer-events-none">filter_list</span>
+</div>
+</section>
+<!-- Lead List Stream -->
+<section class="flex flex-col space-y-space-md" id="opportunity-list">
+<!-- Card 1: Green Valley Bakery -->
+<article class="bg-surface-container rounded-xl p-space-md shadow-md flex flex-col space-y-space-sm relative overflow-hidden" data-category="no-website">
+<div class="flex items-start justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm min-w-0">
+<img class="w-12 h-12 rounded-lg object-cover bg-surface-container-high shrink-0" data-alt="Artisanal rustic bakery store front in vibrant Manchester daylight with fresh organic sourdough loaves displayed on counter, warm editorial photography style with subtle moody navy blue atmosphere" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4SXMnHaTy9xmijV9efdqkrthibrsVCIBQH3O9J01rTwSzGRsEL_hE-JcX4XVZgnFfQLvVVkqAmWJkdldpoB9bQoa-rMnMoP-Rdlvc5azB-Z47P6axSfnuE3JrW-7lSXGk2YWtKPD1nUH_3p1Wz19VDv4iqKfIpKIauksSa3qu90-8HNyWjk0uzD10Dium2rudvCqRn9jsw8scJIlrANtDhFly5gAC_eBWV5oJQfy5"/>
+<div class="min-w-0">
+<h2 class="font-headline-sm text-headline-sm text-on-surface truncate">Green Valley Bakery</h2>
+<p class="font-label-md text-label-md text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">storefront</span> Bakery &amp; Cafe • Northern Quarter, Manchester
+            </p>
+</div>
+</div>
+<button aria-label="Save lead" class="w-8 h-8 rounded-lg bg-surface-container-high text-on-surface-variant flex items-center justify-center shrink-0 active:bg-surface-variant" type="button">
+<span class="material-symbols-outlined text-[18px]">bookmark_border</span>
+</button>
+</div>
+<!-- Problem & Opportunity Insight -->
+<div class="flex flex-wrap items-center gap-1.5">
+<span class="px-2.5 py-1 rounded-full bg-error-container text-on-error-container font-label-md text-label-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-error">warning</span>
+          No Website Found
+        </span>
+<span class="px-2.5 py-1 rounded-full bg-surface-container-high text-on-surface-variant font-label-md text-label-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-tertiary">trending_up</span>
+          4.7★ (148 Google Reviews)
+        </span>
+</div>
+<div class="bg-surface-container-low rounded-lg p-space-sm">
+<p class="font-body-md text-body-md text-on-surface">
+<span class="font-semibold text-primary">Opportunity:</span> Losing online pre-orders to neighboring cafes on Google Maps. Prime footfall, zero landing page.
+        </p>
+</div>
+<!-- Contact Verification -->
+<div class="flex items-center gap-1.5 px-space-xs py-1 rounded bg-secondary-container/20 text-secondary font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px] text-secondary">verified</span>
+<span>Verified Email: <span class="font-semibold text-on-surface">owner@greenvalley.co.uk</span></span>
+</div>
+<!-- Action Button -->
+<button class="w-full min-h-[44px] py-2 px-space-md rounded-lg bg-primary-container text-on-primary-container font-label-lg text-label-lg flex items-center justify-center gap-1.5 shadow-[0_0_14px_rgba(91,91,240,0.35)] active:opacity-90" onclick="triggerProposalModal('Green Valley Bakery', 'No Website Intro', 'owner@greenvalley.co.uk')" type="button">
+<span class="material-symbols-outlined text-[18px]">mail</span>
+<span>Send Intro Website Offer</span>
+<span class="material-symbols-outlined text-[16px] ml-auto">arrow_forward</span>
+</button>
+</article>
+<!-- Card 2: Dr. Malik Orthodontics -->
+<article class="bg-surface-container rounded-xl p-space-md shadow-md flex flex-col space-y-space-sm relative overflow-hidden" data-category="broken">
+<div class="flex items-start justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm min-w-0">
+<img class="w-12 h-12 rounded-lg object-cover bg-surface-container-high shrink-0" data-alt="Modern orthodontic specialist clinic in central Leeds with clean ambient illumination, high tech dental practice aesthetic, professional medical environment with deep navy accents" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfYz9JnTh2_xgkoDVNvfImd8S-YLVaFCLNn5hHGH1QfVRuDAfkcwnpyrXS-QfivEePxU-hpHhYGo2RNA42zowlo8ok_5cJ-Z1VjqcdvKxB9ufZkpamEgByJmgYA_QXmzQS3aD-_u8Y9_j-Erz4LM1NhSzWEARUnbO0Dh_gWkDWsJYzOu5aHG0E_NOahdwsEC9tnkeKrXRe8Vqs0krqskyVQ7_UNHndEge_cbotLhms"/>
+<div class="min-w-0">
+<h2 class="font-headline-sm text-headline-sm text-on-surface truncate">Dr. Malik Orthodontics</h2>
+<p class="font-label-md text-label-md text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">medical_services</span> Orthodontics &amp; Dental • Leeds City Centre
+            </p>
+</div>
+</div>
+<button aria-label="Save lead" class="w-8 h-8 rounded-lg bg-surface-container-high text-on-surface-variant flex items-center justify-center shrink-0 active:bg-surface-variant" type="button">
+<span class="material-symbols-outlined text-[18px]">bookmark_border</span>
+</button>
+</div>
+<!-- Problem & Opportunity Insight -->
+<div class="flex flex-wrap items-center gap-1.5">
+<span class="px-2.5 py-1 rounded-full bg-tertiary-container text-on-tertiary-container font-label-md text-label-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-tertiary">smartphone</span>
+          Broken on Mobile Phones
+        </span>
+<span class="px-2.5 py-1 rounded-full bg-surface-container-high text-error font-label-md text-label-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">timer</span>
+          Load time: 7.2s
+        </span>
+</div>
+<div class="bg-surface-container-low rounded-lg p-space-sm">
+<p class="font-body-md text-body-md text-on-surface">
+<span class="font-semibold text-tertiary">Opportunity:</span> Critical mobile slowdown causing immediate patient bounce. Missing instant tap-to-book calendar form.
+        </p>
+</div>
+<!-- Contact Verification -->
+<div class="flex items-center gap-1.5 px-space-xs py-1 rounded bg-secondary-container/20 text-secondary font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px] text-secondary">mark_email_read</span>
+<span>Email: <span class="font-semibold text-on-surface">info@malikortho.com</span></span>
+</div>
+<!-- Action Button -->
+<button class="w-full min-h-[44px] py-2 px-space-md rounded-lg bg-surface-bright text-on-surface font-label-lg text-label-lg flex items-center justify-center gap-1.5 active:bg-surface-variant" onclick="triggerProposalModal('Dr. Malik Orthodontics', 'Mobile Speed Audit', 'info@malikortho.com')" type="button">
+<span class="material-symbols-outlined text-[18px] text-tertiary">bolt</span>
+<span>Send Free Speed Audit Report</span>
+<span class="material-symbols-outlined text-[16px] ml-auto">arrow_forward</span>
+</button>
+</article>
+<!-- Card 3: Premier Auto Repairs -->
+<article class="bg-surface-container rounded-xl p-space-md shadow-md flex flex-col space-y-space-sm relative overflow-hidden" data-category="ai-chat">
+<div class="flex items-start justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm min-w-0">
+<img class="w-12 h-12 rounded-lg object-cover bg-surface-container-high shrink-0" data-alt="Clean and busy automotive mechanic workshop with high end diagnostic computer gear and vehicle lift in Salford Manchester, cinematic tone with navy shadows and rich lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB8LvSIOoWMHplXi7wlKmehTBLwQERjizKtxmLwSH7VMg8Jm1losVpjPIU7vD0pU23c0m35WDuST8dLkIPVXxTAi_bHqxu7RSYuZVlrvAGn2jUS9Ec5wE7LpAtT-wFdcQGWyOw-ZDFIzrfMYvkiijpjvCbdlPPUTvB0DNvx24X4BTOC1r3PyZSJcKCMQq3EKSnB3_IpXSASKOwYGRxxENZ-aXofyVCftimxKsWlFO7U"/>
+<div class="min-w-0">
+<h2 class="font-headline-sm text-headline-sm text-on-surface truncate">Premier Auto Repairs</h2>
+<p class="font-label-md text-label-md text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">build</span> Auto Repair &amp; Recovery • Salford
+            </p>
+</div>
+</div>
+<button aria-label="Save lead" class="w-8 h-8 rounded-lg bg-surface-container-high text-on-surface-variant flex items-center justify-center shrink-0 active:bg-surface-variant" type="button">
+<span class="material-symbols-outlined text-[18px]">bookmark_border</span>
+</button>
+</div>
+<!-- Problem & Opportunity Insight -->
+<div class="flex flex-wrap items-center gap-1.5">
+<span class="px-2.5 py-1 rounded-full bg-primary-container text-on-primary-container font-label-md text-label-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">smart_toy</span>
+          Missing 24/7 AI Receptionist
+        </span>
+<span class="px-2.5 py-1 rounded-full bg-surface-container-high text-on-surface-variant font-label-md text-label-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-secondary">phone_in_talk</span>
+          High Call Volume
+        </span>
+</div>
+<div class="bg-surface-container-low rounded-lg p-space-sm">
+<p class="font-body-md text-body-md text-on-surface">
+<span class="font-semibold text-primary">Opportunity:</span> Losing £600+ weekly from missed night towing calls and emergency weekend repairs when closed.
+        </p>
+</div>
+<!-- Contact Verification -->
+<div class="flex items-center gap-1.5 px-space-xs py-1 rounded bg-surface-container-high text-on-surface-variant font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px]">call</span>
+<span>Phone Only • <span class="font-semibold text-on-surface">+44 161 892 4410</span> (No direct email)</span>
+</div>
+<!-- Action Button -->
+<button class="w-full min-h-[44px] py-2 px-space-md rounded-lg bg-surface-bright text-on-surface font-label-lg text-label-lg flex items-center justify-center gap-1.5 active:bg-surface-variant" onclick="triggerCallQueue('Premier Auto Repairs', '+44 161 892 4410')" type="button">
+<span class="material-symbols-outlined text-[18px] text-secondary">phone_forwarded</span>
+<span>Add to Phone Call Queue</span>
+<span class="material-symbols-outlined text-[16px] ml-auto">arrow_forward</span>
+</button>
+</article>
+<!-- Card 4: Royal Heritage Tailors -->
+<article class="bg-surface-container rounded-xl p-space-md shadow-md flex flex-col space-y-space-sm relative overflow-hidden" data-category="broken">
+<div class="flex items-start justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm min-w-0">
+<img class="w-12 h-12 rounded-lg object-cover bg-surface-container-high shrink-0" data-alt="Traditional bespoke tailoring atelier shop with rolls of premium wool fabrics and fitting mannequins, elegant warm lighting with deep blue architectural tones" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJvrXCj4G9vsCXteumB1U4y9zfaK58PPpeTxoN9hpPxM7XtrGs_ewQS91h7ttC57mU6NMnHOkTwR_jHlytkYWGPkdreWgJ6uSmvcXHWFm4D23glu52AT-b79JSpzpSLWSJvXGFkKOSEV6_Xxv_YzeZzPeB1s0l5AsGNfcyy3s6uHebT8kJntNVOaXtPRYbwgONjsUfd8aSZKyZukwBykYStiQEbKiypmq1ZsVy7P58"/>
+<div class="min-w-0">
+<h2 class="font-headline-sm text-headline-sm text-on-surface truncate">Royal Heritage Tailors</h2>
+<p class="font-label-md text-label-md text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">styler</span> Bespoke Suits &amp; Formal Wear • Leeds
+            </p>
+</div>
+</div>
+<button aria-label="Save lead" class="w-8 h-8 rounded-lg bg-surface-container-high text-on-surface-variant flex items-center justify-center shrink-0 active:bg-surface-variant" type="button">
+<span class="material-symbols-outlined text-[18px]">bookmark_border</span>
+</button>
+</div>
+<!-- Problem & Opportunity Insight -->
+<div class="flex flex-wrap items-center gap-1.5">
+<span class="px-2.5 py-1 rounded-full bg-error-container text-on-error-container font-label-md text-label-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-error">broken_image</span>
+          Outdated 2012 Flash Site
+        </span>
+<span class="px-2.5 py-1 rounded-full bg-surface-container-high text-tertiary font-label-md text-label-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">visibility_off</span>
+          Unreadable on iOS
+        </span>
+</div>
+<div class="bg-surface-container-low rounded-lg p-space-sm">
+<p class="font-body-md text-body-md text-on-surface">
+<span class="font-semibold text-tertiary">Opportunity:</span> Old domain non-responsive. Active on Instagram showcasing high-ticket wedding suits (£800+ average order).
+        </p>
+</div>
+<!-- Contact Verification -->
+<div class="flex items-center gap-1.5 px-space-xs py-1 rounded bg-tertiary-container/30 text-tertiary font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px]">photo_camera</span>
+<span>Instagram DM Active: <span class="font-semibold text-on-surface">@royalheritagetailors</span></span>
+</div>
+<!-- Action Button -->
+<button class="w-full min-h-[44px] py-2 px-space-md rounded-lg bg-surface-bright text-on-surface font-label-lg text-label-lg flex items-center justify-center gap-1.5 active:bg-surface-variant" onclick="triggerInstagramScript('Royal Heritage Tailors', '@royalheritagetailors')" type="button">
+<span class="material-symbols-outlined text-[18px] text-tertiary">content_copy</span>
+<span>Open Instagram &amp; Copy Script</span>
+<span class="material-symbols-outlined text-[16px] ml-auto">arrow_forward</span>
+</button>
+</article>
+</section>
+<!-- High-Impact Batch Outreach Callout -->
+<section class="bg-surface-container-high rounded-xl p-space-md shadow-lg relative overflow-hidden mt-space-sm">
+<div class="flex items-center gap-space-sm mb-space-xs">
+<div class="w-9 h-9 rounded-lg bg-secondary-container/20 text-secondary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[22px]">rocket_launch</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface leading-tight">Batch Smart Outreach</h3>
+<p class="font-label-md text-label-md text-on-surface-variant">Safe automated sending engine</p>
+</div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-space-md">
+      Queue tailored introduction proposals for all 19 local businesses with verified emails and no website.
+    </p>
+<div class="flex items-center justify-between bg-surface-container-lowest p-space-sm rounded-lg mb-space-md font-label-md text-label-md text-on-surface-variant">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-secondary">verified_user</span>
+        Drip speed: 4 emails/hour
+      </span>
+<span class="text-secondary font-semibold">100% Spam Safe</span>
+</div>
+<button class="w-full min-h-[44px] py-3 px-space-md bg-primary-container text-on-primary-container font-label-lg text-label-lg rounded-xl shadow-[0_0_18px_rgba(91,91,240,0.4)] flex items-center justify-center gap-2 active:scale-[0.99] transition-transform" id="batch-action-btn" onclick="openBatchConfirmation()" type="button">
+<span class="material-symbols-outlined text-[20px]">mark_email_read</span>
+<span>Auto-Email All 19 "No Website" Leads</span>
+</button>
+</section>
+<!-- Interactive Confirmation Modal (Hidden by Default) -->
+<div class="fixed inset-0 z-50 bg-background/80 backdrop-blur-md hidden items-center justify-center p-gutter-sm" id="batch-modal">
+<div class="bg-surface-container rounded-xl p-space-lg shadow-xl max-w-sm w-full flex flex-col space-y-space-md relative border-0">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs text-primary">
+<span class="material-symbols-outlined text-[24px]">send_time_extension</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Queue 19 Emails?</span>
+</div>
+<button class="w-8 h-8 rounded-lg bg-surface-container-high text-on-surface-variant flex items-center justify-center" onclick="closeBatchConfirmation()" type="button">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+        Growth System will generate personalized, non-spammy website offers using the business name, Google rating, and neighborhood.
+      </p>
+<div class="space-y-1.5 bg-surface-container-lowest p-space-sm rounded-lg font-label-md text-label-md">
+<div class="flex justify-between text-on-surface">
+<span>Total Recipients:</span>
+<span class="font-bold text-primary">19 Businesses</span>
+</div>
+<div class="flex justify-between text-on-surface">
+<span>Estimated Completion:</span>
+<span>Today by 5:30 PM</span>
+</div>
+<div class="flex justify-between text-on-surface">
+<span>Sender Identity:</span>
+<span>Zia Ul Din (Growth Lead)</span>
+</div>
+</div>
+<div class="flex gap-space-xs pt-space-xs">
+<button class="flex-1 min-h-[44px] py-2 rounded-lg bg-surface-container-high text-on-surface font-label-lg text-label-lg active:bg-surface-variant" onclick="closeBatchConfirmation()" type="button">
+          Cancel
+        </button>
+<button class="flex-1 min-h-[44px] py-2 rounded-lg bg-secondary-container text-on-secondary-container font-label-lg text-label-lg flex items-center justify-center gap-1 shadow-md active:opacity-90" onclick="confirmBatchSending()" type="button">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+          Start Queue
+        </button>
+</div>
+</div>
+</div>
+<!-- Notification Toast Container -->
+<div class="fixed bottom-24 left-4 right-4 z-50 transform translate-y-32 transition-transform duration-300 ease-out pointer-events-none" id="toast">
+<div class="bg-surface-bright text-on-surface px-space-md py-space-sm rounded-xl shadow-xl flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-[20px] text-secondary" id="toast-icon">check</span>
+<span class="font-label-lg text-label-lg flex-1 truncate" id="toast-msg">Action completed</span>
+</div>
+</div>
+</div>
+<script>
+  // Filter pill toggles
+  const filterPills = document.querySelectorAll('.filter-pill');
+  const cards = document.querySelectorAll('#opportunity-list article');
+  const searchInput = document.getElementById('business-search');
+
+  filterPills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      filterPills.forEach(p => {
+        p.classList.remove('bg-primary-container', 'text-on-primary-container', 'shadow-[0_0_12px_rgba(91,91,240,0.35)]');
+        p.classList.add('bg-surface-container-high', 'text-on-surface-variant');
+      });
+      pill.classList.remove('bg-surface-container-high', 'text-on-surface-variant');
+      pill.classList.add('bg-primary-container', 'text-on-primary-container', 'shadow-[0_0_12px_rgba(91,91,240,0.35)]');
+
+      const filterValue = pill.getAttribute('data-filter');
+      cards.forEach(card => {
+        if (filterValue === 'all' || card.getAttribute('data-category') === filterValue) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    });
+  });
+
+  // Client-side text search
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase();
+      cards.forEach(card => {
+        const text = card.innerText.toLowerCase();
+        if (text.includes(query)) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    });
+  }
+
+  // Toast notifier
+  function showToast(message, icon = 'check_circle', iconColor = 'text-secondary') {
+    const toast = document.getElementById('toast');
+    const msg = document.getElementById('toast-msg');
+    const ico = document.getElementById('toast-icon');
+    if (!toast || !msg || !ico) return;
+
+    msg.innerText = message;
+    ico.innerText = icon;
+    ico.className = 'material-symbols-outlined text-[20px] ' + iconColor;
+    toast.classList.remove('translate-y-32');
+    toast.classList.add('translate-y-0');
+
+    setTimeout(() => {
+      toast.classList.remove('translate-y-0');
+      toast.classList.add('translate-y-32');
+    }, 2800);
+  }
+
+  // Modal handlers
+  function openBatchConfirmation() {
+    const modal = document.getElementById('batch-modal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+  }
+
+  function closeBatchConfirmation() {
+    const modal = document.getElementById('batch-modal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+  }
+
+  function confirmBatchSending() {
+    closeBatchConfirmation();
+    showToast('Queued 19 emails safely. Sending 1 every 15 mins.', 'outgoing_mail', 'text-primary');
+  }
+
+  // Card specific triggers
+  function triggerProposalModal(name, type, email) {
+    showToast('Prepared ' + type + ' for ' + email, 'send', 'text-secondary');
+  }
+
+  function triggerCallQueue(name, phone) {
+    showToast(name + ' added to phone queue (' + phone + ')', 'phone_callback', 'text-tertiary');
+  }
+
+  function triggerInstagramScript(name, handle) {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText("Hi team at " + name + "! Saw your suits on IG. Quick note: your website link is currently unreachable on phones. Made a 20s screen recording showing how to fix it if helpful.");
+    }
+    showToast('DM Script copied! Opening Instagram for ' + handle, 'content_copy', 'text-tertiary');
+  }
+</script></main><nav class="fixed bottom-0 inset-x-0 z-50 pb-safe bg-surface-container-low/95 backdrop-blur-xl shadow-[0_-1px_12px_rgba(0,0,0,0.35)]" data-active-classes="text-primary-fixed bg-surface-container-high font-semibold"><div class="flex justify-around items-stretch h-20 px-space-xs"><a class="flex flex-col items-center justify-center flex-1 min-h-[44px] py-1 px-1 rounded-lg text-on-surface-variant hover:text-on-surface transition-all gap-1" data-path="today" href="#"><span class="material-symbols-outlined text-[22px]">today</span><span class="font-label-md text-label-md leading-none">Today</span><span class="font-label-badge text-label-badge opacity-60 leading-none">Home</span></a><a aria-current="page" class="flex flex-col items-center justify-center flex-1 min-h-[44px] py-1 px-1 rounded-lg transition-all gap-1 text-primary-fixed bg-surface-container-high font-semibold" data-path="found" href="#"><span class="material-symbols-outlined text-[22px]">storefront</span><span class="font-label-md text-label-md leading-none">Found</span><span class="font-label-badge text-label-badge opacity-60 leading-none">Businesses</span></a><a class="flex flex-col items-center justify-center flex-1 min-h-[44px] py-1 px-1 rounded-lg text-on-surface-variant hover:text-on-surface transition-all gap-1" data-path="sent-queue" href="#"><span class="material-symbols-outlined text-[22px]">outgoing_mail</span><span class="font-label-md text-label-md leading-none">Emails</span><span class="font-label-badge text-label-badge opacity-60 leading-none">Sent &amp; Queue</span></a><a class="flex flex-col items-center justify-center flex-1 min-h-[44px] py-1 px-1 rounded-lg text-on-surface-variant hover:text-on-surface transition-all gap-1" data-path="calls-social" href="#"><span class="material-symbols-outlined text-[22px]">call</span><span class="font-label-md text-label-md leading-none">Manual</span><span class="font-label-badge text-label-badge opacity-60 leading-none">Calls &amp; Social</span></a><a class="flex flex-col items-center justify-center flex-1 min-h-[44px] py-1 px-1 rounded-lg text-on-surface-variant hover:text-on-surface transition-all gap-1" data-path="more-menu" href="#"><span class="material-symbols-outlined text-[22px]">menu_open</span><span class="font-label-md text-label-md leading-none">More</span><span class="font-label-badge text-label-badge opacity-60 leading-none">Setup &amp; Rules</span></a></div></nav></body></html>
