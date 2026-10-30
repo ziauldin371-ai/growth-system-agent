@@ -132,8 +132,10 @@ export default function LoginPage() {
         </div>
 
         <Suspense fallback={
-          <div className="p-8 text-center text-sm text-slate-500 bg-slate-900/50 rounded-2xl border border-slate-800">
-            Loading authentication portal...
+          <div className="p-8 text-center text-sm text-slate-400 bg-slate-900/50 rounded-2xl border border-slate-800 space-y-2">
+            <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+            <p className="text-slate-300 font-medium">Loading authentication portal...</p>
+            <p className="text-[11px] text-slate-500">If the form does not appear, please ensure JavaScript is enabled in your browser.</p>
           </div>
         }>
           <LoginForm />

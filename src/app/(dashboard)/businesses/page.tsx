@@ -30,6 +30,7 @@ function BusinessesContent() {
 
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
   const [searchTerm, setSearchTerm] = useState(initialQuery);
+  const [showDemo, setShowDemo] = useState(false);
   const [businesses, setBusinesses] = useState<BusinessEntity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -54,6 +55,10 @@ function BusinessesContent() {
 
   // Tab Filtering Logic
   const filteredBusinesses = businesses.filter((b) => {
+    // 0. Demo Data Guard (Hidden by default; never sendable)
+    const isDemoLead = b.sourceProvider === 'b2b_mock' || (b as any).isDemo === true || (b.domain && (b.domain.includes('.mock') || b.domain.includes('.internal')));
+    if (!showDemo && isDemoLead) return false;
+
     // 1. Text Search Filter
     if (searchTerm.trim()) {
       const q = searchTerm.toLowerCase();
@@ -204,16 +209,29 @@ function BusinessesContent() {
           </button>
         </div>
 
-        {/* Search Input */}
-        <div className="relative w-full md:w-64">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search business or city..."
-            className="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
-          />
+        {/* Controls: Search & Demo Toggle */}
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <label className="flex items-center space-x-2 text-xs text-slate-400 cursor-pointer select-none bg-slate-950/60 border border-slate-800 px-3 py-1.5 rounded-xl hover:border-slate-700 transition-colors">
+            <input
+              type="checkbox"
+              checked={showDemo}
+              onChange={(e) => setShowDemo(e.target.checked)}
+              className="rounded border-slate-700 bg-slate-950 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5"
+            />
+            <span>Show demo data</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded bg-orange-500/20 text-orange-400 font-bold border border-orange-500/30">DEMO</span>
+          </label>
+
+          <div className="relative w-full md:w-64">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search business or city..."
+              className="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
+            />
+          </div>
         </div>
       </div>
 

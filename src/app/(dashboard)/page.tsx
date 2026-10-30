@@ -40,7 +40,20 @@ export default async function HomePage() {
   const isEmergencyStop = process.env.EMERGENCY_STOP === 'true';
   const isGmailConfigured = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_REFRESH_TOKEN);
   const isPlacesConfigured = Boolean(process.env.GOOGLE_PLACES_API_KEY);
+  const isSupabaseConfigured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  const isProduction = process.env.NODE_ENV === 'production';
+  const isDbDisconnectedInProd = isProduction && !isSupabaseConfigured;
   const hasMockProvider = process.env.EMAIL_PROVIDER === 'mock' || !isGmailConfigured;
+
+  // Check if real test email to ziauldin371@gmail.com is confirmed in Gmail Sent
+  const sentEmails = await dataStore.getSentEmails();
+  const hasConfirmedTestEmail = sentEmails.some(
+    (d: any) =>
+      d.recipientEmail?.toLowerCase() === 'ziauldin371@gmail.com' &&
+      (d.deliveryStatus === 'delivered' || d.status === 'sent') &&
+      Boolean(d.gmailMessageId)
+  );
+  const isAutoSendWaitingForTest = isProduction && !hasConfirmedTestEmail;
 
   // Next automatic run (09:00 and 17:00 Asia/Karachi / 04:00 and 12:00 UTC)
   const now = new Date();
@@ -108,7 +121,20 @@ export default async function HomePage() {
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-12">
       {/* Top Banner (Only when needed) */}
-      {isEmergencyStop ? (
+      {isDbDisconnectedInProd ? (
+        <div className="p-4 rounded-2xl bg-rose-500/15 border border-rose-500/40 flex items-center justify-between gap-4 text-rose-200">
+          <div className="flex items-center gap-3">
+            <ShieldAlert className="w-5 h-5 text-rose-400 shrink-0" />
+            <div>
+              <span className="font-bold text-sm">Database not connected</span>
+              <span className="text-xs text-rose-300 ml-2">Supabase PostgreSQL is required in production. In-memory data is blocked to prevent data loss. Discovery and sending are disabled.</span>
+            </div>
+          </div>
+          <Link href="/setup" className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold shrink-0">
+            Connect Database
+          </Link>
+        </div>
+      ) : isEmergencyStop ? (
         <div className="p-4 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-between gap-4 text-rose-200">
           <div className="flex items-center gap-3">
             <ShieldAlert className="w-5 h-5 text-rose-400 shrink-0" />
@@ -117,8 +143,21 @@ export default async function HomePage() {
               <span className="text-xs text-rose-300 ml-2">No emails will be sent until resumed.</span>
             </div>
           </div>
-          <Link href="/safety" className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold">
+          <Link href="/safety" className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold shrink-0">
             Manage Safety
+          </Link>
+        </div>
+      ) : isAutoSendWaitingForTest ? (
+        <div className="p-4 rounded-2xl bg-amber-500/15 border border-amber-500/40 flex items-center justify-between gap-4 text-amber-200">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+            <div>
+              <span className="font-bold text-sm">Auto-send waiting for Gmail test</span>
+              <span className="text-xs text-amber-300 ml-2">Auto-send is locked until a real test email to ziauldin371@gmail.com is confirmed in Gmail Sent.</span>
+            </div>
+          </div>
+          <Link href="/emails" className="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shrink-0">
+            Send Test to Myself
           </Link>
         </div>
       ) : hasMockProvider ? (

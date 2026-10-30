@@ -65,7 +65,7 @@ export async function GET() {
     database: {
       mode: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'supabase_postgresql' : 'local_file',
       status: dbStatus,
-      connected: isDbConnected || !process.env.NEXT_PUBLIC_SUPABASE_URL,
+      connected: isDbConnected,
     },
     system: {
       environment: process.env.NODE_ENV || 'development',
