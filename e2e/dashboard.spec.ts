@@ -12,7 +12,7 @@ function getOperatorPassword(): string {
   return '';
 }
 
-test.describe('Growth System Agent — Redesigned 10-Second Dashboard E2E', () => {
+test.describe('Growth System Agent — Stitch UI Redesign E2E', () => {
   test.beforeEach(async ({ page }, testInfo) => {
     if (testInfo.title.includes('Login page')) return;
     const pass = getOperatorPassword();
@@ -25,10 +25,10 @@ test.describe('Growth System Agent — Redesigned 10-Second Dashboard E2E', () =
 
   test('open Home, click Find Businesses Now, see the form', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('h1')).toContainText('Today at a glance');
+    await expect(page.getByText('Good morning, Zia!')).toBeVisible();
 
-    // Click "Find Businesses" CTA in top bar header
-    const findBtn = page.getByRole('banner').getByRole('link', { name: /Find Businesses/i });
+    // Click "Find Businesses Now" CTA in top bar header
+    const findBtn = page.locator('header').getByRole('link', { name: /Find Businesses/i }).first();
     await expect(findBtn).toBeVisible();
     await findBtn.click();
     await page.waitForURL('**/run-and-schedule', { timeout: 10000 });
@@ -37,24 +37,22 @@ test.describe('Growth System Agent — Redesigned 10-Second Dashboard E2E', () =
     const openModalBtn = page.locator('main').getByRole('button', { name: /Find Businesses Now/i });
     await openModalBtn.click();
 
-    // Verify modal / form is rendered with Country, Business Type, and Start Run button
+    // Verify modal / form is rendered with Country and Start Search button
     await expect(page.locator('label', { hasText: 'Country' })).toBeVisible();
-    await expect(page.locator('label', { hasText: 'Business Type' })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Start Run Now/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Start Search Now/i })).toBeVisible();
   });
 
-  test('Emails page renders clean status tabs and empty state', async ({ page }) => {
+  test('Emails page renders clean status tiles and activity stream', async ({ page }) => {
     await page.goto('/emails');
-    await expect(page.locator('h1')).toContainText('Who did we email?');
-    await expect(page.getByRole('button', { name: /Sent \(confirmed\)/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Waiting to Send/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Blocked/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Replies/i })).toBeVisible();
+    await expect(page.getByText('Outreach & Email Queue')).toBeVisible();
+    await expect(page.getByText('Sent Today').first()).toBeVisible();
+    await expect(page.getByText('In Queue').first()).toBeVisible();
+    await expect(page.getByText('Blocked', { exact: true }).first()).toBeVisible();
   });
 
   test('Setup page shows amber for mock providers in development', async ({ page }) => {
     await page.goto('/setup');
-    await expect(page.locator('h1')).toContainText('How is everything connected?');
+    await expect(page.getByText('Setup & Connections')).toBeVisible();
     // Verify amber "Test mode" badges for simulated adapters
     await expect(page.getByText(/Test mode/i).first()).toBeVisible();
     await expect(page.getByText('Service Connection Checklist (Traffic Lights)')).toBeVisible();
@@ -83,7 +81,7 @@ test.describe('Growth System Agent — Redesigned 10-Second Dashboard E2E', () =
     await expect(sidebar).toHaveCount(0);
 
     // Confirm heading
-    await expect(page.locator('h1')).toContainText('Growth System Agent');
+    await expect(page.locator('h1')).toContainText('Growth System');
 
     // Confirm email input has generic placeholder and does not leak operator email
     const emailInput = page.locator('input[type="email"]');
