@@ -24,3 +24,4 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     </LanguageProvider>
   );
 }
+

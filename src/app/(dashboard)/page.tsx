@@ -187,10 +187,10 @@ export default async function HomePage() {
             <Building2 className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" />
           </div>
           <div className="text-3xl font-extrabold text-white mt-2 tracking-tight">
-            {stats.totalBusinesses}
+            {stats.totalBusinesses ?? 0}
           </div>
           <div className="text-xs text-indigo-300 mt-1 flex items-center gap-1">
-            <span>{stats.qualifiedTotal} qualified matches</span>
+            <span>{stats.qualifiedTotal ?? 0} qualified matches</span>
             <ArrowUpRight className="w-3 h-3" />
           </div>
         </Link>
@@ -205,7 +205,7 @@ export default async function HomePage() {
             <CheckCircle2 className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
           </div>
           <div className="text-3xl font-extrabold text-emerald-400 mt-2 tracking-tight">
-            {stats.eligibleEmailContacts}
+            {stats.eligibleEmailContacts ?? 0}
           </div>
           <div className="text-xs text-slate-400 mt-1 flex items-center gap-1">
             <span>Passed 8 safety checks</span>
@@ -223,10 +223,10 @@ export default async function HomePage() {
             <Send className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" />
           </div>
           <div className="text-3xl font-extrabold text-white mt-2 tracking-tight">
-            {stats.sentCount}
+            {stats.sentCount ?? 0}
           </div>
           <div className="text-xs text-indigo-300 mt-1 flex items-center gap-1">
-            <span>{stats.confirmedDeliveries} confirmed in Gmail</span>
+            <span>{stats.confirmedDeliveries ?? 0} confirmed in Gmail</span>
             <ArrowUpRight className="w-3 h-3" />
           </div>
         </Link>
@@ -241,11 +241,13 @@ export default async function HomePage() {
             <MessageSquare className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
           </div>
           <div className="text-3xl font-extrabold text-white mt-2 tracking-tight">
-            0
+            {stats.repliesCount ?? 0}
           </div>
-          <div className="text-xs text-slate-400 mt-1 flex items-center gap-1">
-            <span>Synced from Gmail inbox</span>
-            <ArrowUpRight className="w-3 h-3" />
+          <div className="text-xs mt-1 flex items-center gap-1">
+            <span className={isGmailConfigured ? 'text-slate-400' : 'text-amber-400 font-medium'}>
+              {isGmailConfigured ? 'Synced from Gmail inbox' : 'Gmail not connected'}
+            </span>
+            <ArrowUpRight className="w-3 h-3 text-slate-500" />
           </div>
         </Link>
       </div>
@@ -260,7 +262,7 @@ export default async function HomePage() {
           <div className="space-y-1">
             <span className="text-xs text-slate-400 font-medium">Contact manually (waiting for you)</span>
             <div className="text-xl font-bold text-amber-300">
-              {stats.alternativeChannelsCount || stats.noEmailCount} businesses
+              {(stats.alternativeChannelsCount || stats.noEmailCount) ?? 0} businesses
             </div>
             <div className="text-[11px] text-slate-500">Facebook, Instagram, WhatsApp, phone</div>
           </div>
@@ -275,7 +277,7 @@ export default async function HomePage() {
           <div className="space-y-1">
             <span className="text-xs text-slate-400 font-medium">Blocked emails (why)</span>
             <div className="text-xl font-bold text-rose-300">
-              {blockedDraftsCount} drafts blocked
+              {blockedDraftsCount ?? 0} drafts blocked
             </div>
             <div className="text-[11px] text-slate-500">View exact reasons (hours, demo, MX)</div>
           </div>
