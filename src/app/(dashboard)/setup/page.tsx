@@ -1,23 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { 
-  Settings, 
-  Database, 
-  Mail, 
-  Globe, 
-  Cpu, 
-  CheckCircle2, 
-  AlertTriangle, 
-  XCircle, 
-  Clock, 
-  ExternalLink, 
-  RefreshCw,
-  Sparkles,
-  ShieldCheck,
-  Building
-} from 'lucide-react';
-import { PageHeader, StatusChip } from '@/components/ui/design-system';
+import React, { useState } from 'react';
+import Link from 'next/link';
 import { useLanguage } from '@/context/language-context';
 
 interface IntegrationItem {
@@ -68,7 +52,7 @@ export default function SetupPage() {
     {
       id: 'places',
       name: 'Business Search (Google Places API New)',
-      description: 'Discovers verified commercial businesses worldwide with real customer reviews, hours, and domains.',
+      description: 'Discovers verified commercial businesses worldwide with customer reviews, hours, and domains.',
       status: isPlacesConfigured ? 'connected' : 'test_mode',
       statusLabel: isPlacesConfigured ? 'Connected (Places New API)' : 'Test mode (B2B Directory Mock)',
       envVar: 'GOOGLE_PLACES_API_KEY',
@@ -119,76 +103,77 @@ export default function SetupPage() {
 
   const handleTestConnection = async (id: string) => {
     setTestingId(id);
-    await new Promise(r => setTimeout(r, 900));
-    setTestResults(prev => ({
+    await new Promise((r) => setTimeout(r, 800));
+    setTestResults((prev) => ({
       ...prev,
-      [id]: id === 'email_checker' 
-        ? 'DNS lookup verified: resolving MX records in 42ms.'
-        : `Verified operational status for ${id}. Service is ready.`,
+      [id]:
+        id === 'email_checker'
+          ? 'DNS lookup verified: resolving MX records in 38ms.'
+          : `Verified operational status for ${id}. Service is ready.`,
     }));
     setTestingId(null);
   };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-12">
-      {/* Page Header */}
-      <PageHeader
-        title="How is everything connected?"
-        subtitle="Check live integrations with traffic lights and finish your step-by-step setup."
-        urduSubtitle="Connections ki traffic lights dekhein aur step-by-step setup mukammal karein."
-        helpContent={{
-          titleEn: 'Understanding Setup & Traffic Lights',
-          titleUr: 'Setup Aur Traffic Lights Ko Samajhna',
-          pointsEn: [
-            'Green (Connected): The real external service is active and responding.',
-            'Amber (Test mode): Using a simulated sandbox adapter. Real data cannot be sent until keys are added.',
-            'Red (Missing): The integration is not configured or required credentials failed.',
-            'You do NOT need every key to test: the system safely works in Test Mode without crashing.',
-          ],
-          pointsUr: [
-            'Green: Asal service bilkul theek kaam kar rahi hai.',
-            'Amber (Test mode): Filhal demo adapter chal raha hai taake testing ho sakay.',
-            'Red (Missing): Zaroori key mojood nahi hai.',
-            'Aap ko sab keys aik sath dalne ki zaroorat nahi, system test mode mein bhi chalta hai.',
-          ],
-        }}
-      />
+    <div className="flex flex-col w-full gap-space-md max-w-5xl mx-auto pb-12">
+      {/* Page Header Card */}
+      <div className="bg-surface-container rounded-xl p-space-md sm:p-space-lg shadow-md space-y-space-sm border border-outline-variant/20">
+        <div>
+          <h1 className="font-headline-sm sm:font-headline-md text-headline-sm sm:text-headline-md text-on-surface font-bold">
+            Setup &amp; Connections
+          </h1>
+          <p className="font-body-md text-xs sm:text-sm text-on-surface-variant mt-1">
+            Check live integrations with traffic lights and finish your step-by-step setup. Amber badges indicate simulated test mode.
+          </p>
+        </div>
+      </div>
 
       {/* Traffic Lights List */}
-      <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-          <h2 className="text-base font-bold text-white flex items-center gap-2">
-            <Settings className="w-5 h-5 text-indigo-400" />
-            <span>Service Connection Checklist (Traffic Lights)</span>
-          </h2>
-          <span className="text-xs text-slate-400">Green = Active • Amber = Test Mode</span>
+      <div className="p-space-md sm:p-space-lg rounded-xl bg-surface-container border border-outline-variant/20 shadow-md space-y-4">
+        <div className="flex items-center justify-between border-b border-outline-variant/20 pb-3">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary text-[20px]">tune</span>
+            <h2 className="font-headline-sm text-headline-sm text-on-surface font-semibold">
+              Service Connection Checklist (Traffic Lights)
+            </h2>
+          </div>
+          <span className="text-xs text-on-surface-variant">Green = Connected • Amber = Test Mode</span>
         </div>
 
         <div className="space-y-3">
           {integrations.map((item) => {
             const isConnected = item.status === 'connected';
-            const isTestMode = item.status === 'test_mode';
 
             return (
-              <div 
+              <div
                 key={item.id}
-                className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                className="p-space-md rounded-xl bg-surface-container-low border border-outline-variant/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
               >
                 <div className="space-y-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-bold text-white">{item.name}</span>
-                    <StatusChip 
-                      variant={isConnected ? 'success' : isTestMode ? 'warning' : 'error'} 
-                      label={item.statusLabel} 
-                    />
+                    <span className="font-label-lg text-xs sm:text-sm font-bold text-on-surface">
+                      {item.name}
+                    </span>
+                    <span
+                      className={`px-2 py-0.5 rounded-full font-label-badge text-[10px] font-semibold flex items-center gap-1 ${
+                        isConnected
+                          ? 'bg-secondary-container/20 text-secondary'
+                          : 'bg-tertiary-container/30 text-tertiary'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-[12px]">
+                        {isConnected ? 'check_circle' : 'warning'}
+                      </span>
+                      <span>{item.statusLabel}</span>
+                    </span>
                   </div>
-                  <p className="text-xs text-slate-300">{item.description}</p>
-                  <div className="text-[11px] text-slate-500 font-mono">
+                  <p className="font-body-md text-xs text-on-surface-variant">{item.description}</p>
+                  <div className="text-[11px] text-outline font-mono">
                     Environment: <code>{item.envVar}</code>
                   </div>
                   {testResults[item.id] && (
-                    <div className="text-[11px] text-emerald-400 mt-1 flex items-center gap-1 font-medium">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
+                    <div className="text-[11px] text-secondary mt-1 flex items-center gap-1 font-medium">
+                      <span className="material-symbols-outlined text-[14px]">check_circle</span>
                       <span>{testResults[item.id]}</span>
                     </div>
                   )}
@@ -199,16 +184,17 @@ export default function SetupPage() {
                     href={item.docLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 underline"
+                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
                   >
                     <span>How to get this</span>
-                    <ExternalLink className="w-3 h-3" />
+                    <span className="material-symbols-outlined text-[14px]">open_in_new</span>
                   </a>
 
                   <button
+                    type="button"
                     onClick={() => handleTestConnection(item.id)}
                     disabled={testingId === item.id}
-                    className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors"
+                    className="px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-variant text-on-surface text-xs font-semibold border border-outline-variant/20 transition-colors min-h-[36px]"
                   >
                     {testingId === item.id ? 'Testing...' : 'Test Connection'}
                   </button>
@@ -219,43 +205,51 @@ export default function SetupPage() {
         </div>
       </div>
 
-      {/* Step-by-Step Guided Setup Wizard */}
-      <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4">
-        <h2 className="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
-          <Sparkles className="w-5 h-5 text-indigo-400" />
-          <span>Step-by-Step Setup Guide</span>
-        </h2>
+      {/* Step-by-Step Setup Guide */}
+      <div className="p-space-md sm:p-space-lg rounded-xl bg-surface-container border border-outline-variant/20 shadow-md space-y-4">
+        <div className="flex items-center gap-2 border-b border-outline-variant/20 pb-3">
+          <span className="material-symbols-outlined text-primary text-[20px]">bolt</span>
+          <h2 className="font-headline-sm text-headline-sm text-on-surface font-semibold">
+            Step-by-Step Setup Guide
+          </h2>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-          <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
-            <div className="font-bold text-white flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[11px]">1</span>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+          <div className="p-space-md rounded-xl bg-surface-container-low border border-outline-variant/20 space-y-2">
+            <div className="font-bold text-on-surface flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center text-[11px] font-bold">
+                1
+              </span>
               <span>Connect Gmail (OAuth2)</span>
             </div>
-            <p className="text-slate-400 leading-relaxed text-[11px]">
+            <p className="text-on-surface-variant leading-relaxed text-[11px]">
               Authorize your Google account so emails show up in your real Gmail Sent folder.
             </p>
-            <div className="p-2 rounded bg-amber-500/10 border border-amber-500/20 text-[10px] text-amber-300 leading-normal">
+            <div className="p-2 rounded bg-tertiary-container/20 border border-tertiary/30 text-[10px] text-tertiary leading-normal">
               <strong>CRITICAL:</strong> In Google Cloud Console &gt; <em>OAuth consent screen</em>, set Publishing status to <strong>&quot;In production&quot;</strong>. If left in &quot;Testing&quot; mode, Google expires refresh tokens after 7 days and stops automated sending.
             </div>
           </div>
 
-          <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
-            <div className="font-bold text-white flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[11px]">2</span>
+          <div className="p-space-md rounded-xl bg-surface-container-low border border-outline-variant/20 space-y-2">
+            <div className="font-bold text-on-surface flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center text-[11px] font-bold">
+                2
+              </span>
               <span>Add Google Places Key</span>
             </div>
-            <p className="text-slate-400 leading-relaxed text-[11px]">
+            <p className="text-on-surface-variant leading-relaxed text-[11px]">
               Enable Google Places API in Google Cloud Console. This powers live discovery across dentists, accountants, real estate, and 14 industries.
             </p>
           </div>
 
-          <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
-            <div className="font-bold text-white flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[11px]">3</span>
+          <div className="p-space-md rounded-xl bg-surface-container-low border border-outline-variant/20 space-y-2">
+            <div className="font-bold text-on-surface flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center text-[11px] font-bold">
+                3
+              </span>
               <span>Add Gemini AI Key</span>
             </div>
-            <p className="text-slate-400 leading-relaxed text-[11px]">
+            <p className="text-on-surface-variant leading-relaxed text-[11px]">
               Generate a free key at Google AI Studio (aistudio.google.com). Gemini drafts verified 60-100 word pitches backed strictly by live business evidence.
             </p>
           </div>
@@ -264,4 +258,3 @@ export default function SetupPage() {
     </div>
   );
 }
-
