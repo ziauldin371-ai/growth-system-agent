@@ -136,8 +136,8 @@ export default function WorldwideLeadsPage() {
               className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none"
             >
               <option value="all">All Pipelines</option>
-              <option value="website_opportunities">Pipeline A: Web Opportunities</option>
-              <option value="ai_software_opportunities">Pipeline B: AI & Software</option>
+              <option value="website_opportunities">Needs a website: Web Opportunities</option>
+              <option value="ai_software_opportunities">Needs AI / software: AI & Software</option>
             </select>
           </div>
 
@@ -200,7 +200,7 @@ export default function WorldwideLeadsPage() {
                   <th className="py-3 px-4">Website Status</th>
                   <th className="py-3 px-4">Email Contact</th>
                   <th className="py-3 px-4">Alternative Channels</th>
-                  <th className="py-3 px-4 text-right">Dossier</th>
+                  <th className="py-3 px-4 text-right">View details</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60 text-slate-300">
@@ -234,12 +234,12 @@ export default function WorldwideLeadsPage() {
                         {lead.pipelineType === 'website_opportunities' ? (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
                             <Globe className="w-3 h-3" />
-                            Pipeline A (Web)
+                            Needs a website (Web)
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-medium">
                             <Cpu className="w-3 h-3" />
-                            Pipeline B (AI/Tech)
+                            Needs AI / software (AI/Tech)
                           </span>
                         )}
                       </td>
@@ -258,7 +258,7 @@ export default function WorldwideLeadsPage() {
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${
                           lead.websiteCheck?.status === 'functional'
                             ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                            : lead.websiteCheck?.status === 'apparently_absent'
+                            : lead.websiteCheck?.status === 'No website found'
                             ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
                             : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
                         }`}>
@@ -299,7 +299,7 @@ export default function WorldwideLeadsPage() {
                           href={`/businesses/${lead.id}`}
                           className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs transition-colors"
                         >
-                          <span>Dossier</span>
+                          <span>View details</span>
                           <ArrowRight className="w-3 h-3 text-slate-400" />
                         </Link>
                       </td>

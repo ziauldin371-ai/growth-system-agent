@@ -17,7 +17,7 @@ export default function PipelineAPage() {
         <div>
           <div className="inline-flex items-center space-x-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 mb-2">
             <Globe className="w-3.5 h-3.5" />
-            <span>Pipeline A</span>
+            <span>Needs a website</span>
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-white">
             Website Opportunities
@@ -82,7 +82,7 @@ export default function PipelineAPage() {
                     </td>
                     <td className="py-4 px-6">
                       <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-rose-500/10 text-rose-300 border border-rose-500/20">
-                        {webCheck?.status || 'apparently_absent'}
+                        {webCheck?.status || 'No website found'}
                       </span>
                       {webCheck?.errorDetails && (
                         <div className="text-[10px] text-slate-400 mt-1 max-w-xs truncate">
@@ -128,7 +128,7 @@ export default function PipelineAPage() {
                         href={`/businesses/${biz.id}`}
                         className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition-colors inline-block"
                       >
-                        Inspect Dossier →
+                        View details →
                       </Link>
                     </td>
                   </tr>

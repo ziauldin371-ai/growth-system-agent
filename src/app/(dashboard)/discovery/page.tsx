@@ -100,8 +100,8 @@ export default function DiscoveryHubPage() {
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
               >
                 <option value="both">Both Pipelines (Balanced)</option>
-                <option value="website_opportunities">Pipeline A: Website Opportunities Only</option>
-                <option value="ai_software_opportunities">Pipeline B: AI & Software Opportunities Only</option>
+                <option value="website_opportunities">Needs a website: Website Opportunities Only</option>
+                <option value="ai_software_opportunities">Needs AI / software: AI & Software Opportunities Only</option>
               </select>
             </div>
 

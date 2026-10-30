@@ -170,7 +170,7 @@ export default function OtherOutreachPage() {
                       href={`/businesses/${business.id}`}
                       className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition-colors inline-flex items-center gap-1"
                     >
-                      <span>Dossier</span>
+                      <span>View details</span>
                       <ArrowRight className="w-3 h-3 text-slate-400" />
                     </Link>
                   </div>
