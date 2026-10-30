@@ -115,3 +115,4 @@ run().catch((err) => {
   console.error('Screenshot generation error:', err);
   process.exit(1);
 });
+
