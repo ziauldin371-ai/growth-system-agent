@@ -2,18 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { 
-  Globe, 
-  Phone, 
-  Mail, 
-  ArrowRight, 
-  MessageSquare, 
-  MapPin, 
-  Share2,
-  AlertCircle
-} from 'lucide-react';
 import { BusinessEntity } from '@/types';
-import { StatusChip, MatchChip } from '@/components/ui/design-system';
 import { useLanguage } from '@/context/language-context';
 
 interface BusinessCardProps {
@@ -24,108 +13,169 @@ export function BusinessCard({ business }: BusinessCardProps) {
   const { t } = useLanguage();
   const isDemo = Boolean(business.isSandboxData || business.sourceProvider === 'b2b_mock');
 
-  // Compute Plain Language Status
-  let statusLabel = 'Website works';
-  let statusVariant: 'success' | 'warning' | 'error' | 'neutral' = 'neutral';
-  let statusTooltip = 'Website is online and functional';
-
+  // Compute status
   const webStatus = business.websiteCheck?.status;
-  if (!business.domain || webStatus === 'apparently_absent') {
-    statusLabel = 'No website found';
-    statusVariant = 'error';
-    statusTooltip = 'No active domain or website registered for this business';
-  } else if (webStatus === 'social_only') {
-    statusLabel = 'Only has a social page';
-    statusVariant = 'warning';
-    statusTooltip = 'Business operates via Facebook/Instagram without a custom web domain';
-  } else if (webStatus === 'parked' || webStatus === 'broken') {
-    statusLabel = 'Website has problems';
-    statusVariant = 'warning';
-    statusTooltip = 'Website domain is parked, expired, or returned HTTP errors';
-  } else if (business.pipelineType === 'ai_software_opportunities') {
-    statusLabel = 'Needs AI / software';
-    statusVariant = 'success';
-    statusTooltip = 'Has functional website but showed intent or requirements for software/AI';
-  }
+  const isNoWebsite = !business.domain || webStatus === 'apparently_absent' || webStatus === 'social_only';
+  const isBroken = webStatus === 'parked' || webStatus === 'broken';
+  const isNeedsAi = business.pipelineType === 'ai_software_opportunities';
 
-  // Score match reasoning
-  const score = business.score?.overallScore || business.heatScore || 65;
-  const matchReason = business.score?.reasoning || 
-    (business.phone ? 'Verified local contact details & strong commercial activity' : 'Discovered via verified registry');
+  // Contact info
+  const verifiedEmail = business.contacts?.find((c) => c.email)?.email;
+  const phone = business.phone || business.contacts?.find((c) => c.phone)?.phone;
+  const rating = (business as any).rating || (business.evidence?.[0]?.metadata as any)?.rating;
+  const reviewCount = (business as any).reviewCount || (business.evidence?.[0]?.metadata as any)?.userRatingsTotal;
 
-  // Contact availability channels
-  const hasEmail = Boolean(business.contacts && business.contacts.length > 0 && business.contacts.some(c => c.email));
-  const hasPhone = Boolean(business.phone);
-  const socialList = business.websiteCheck?.socialUrls || [];
-  const hasLinkedIn = socialList.some(s => s.toLowerCase().includes('linkedin'));
-  const hasFacebook = socialList.some(s => s.toLowerCase().includes('facebook'));
-  const hasInstagram = socialList.some(s => s.toLowerCase().includes('instagram'));
-  const hasWhatsApp = Boolean(hasPhone && (business.country === 'PK' || business.country === 'UAE' || business.country === 'UK'));
+  // Opportunity text from evidence only (Honesty Rule 3)
+  const oppSummary =
+    business.evidence?.[0]?.summary ||
+    business.score?.reasoning ||
+    (isNoWebsite
+      ? 'No active landing page found on Google Maps. Prime local search opportunity.'
+      : isBroken
+      ? 'Website returns errors or slow load times. Mobile fix opportunity.'
+      : 'Active commercial business ready for direct modern engagement.');
 
   return (
-    <div className={`p-5 rounded-2xl border transition-all ${
-      isDemo 
-        ? 'bg-slate-900/40 border-amber-500/30 shadow-sm' 
-        : 'bg-slate-900/70 border-slate-800 hover:border-slate-700 hover:shadow-lg hover:shadow-black/20'
-    }`}>
-      {/* Header: Name, City, DEMO & Status Chips */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="space-y-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-base font-bold text-white truncate max-w-sm">
-              {business.name}
-            </h3>
-            {isDemo && (
-              <StatusChip variant="demo" label="DEMO" tooltip="Simulated sandbox record — sending is blocked" />
-            )}
-            <StatusChip variant={statusVariant} label={statusLabel} tooltip={statusTooltip} />
+    <article className="bg-surface-container rounded-xl p-space-md shadow-md flex flex-col space-y-space-sm relative overflow-hidden border border-outline-variant/20 hover:border-outline-variant/40 transition-all">
+      {/* Header Row */}
+      <div className="flex items-start justify-between gap-space-sm">
+        <div className="flex items-center gap-space-sm min-w-0">
+          <div className="w-12 h-12 rounded-lg bg-surface-container-high text-primary flex items-center justify-center shrink-0">
+            <span className="material-symbols-outlined text-[24px]">
+              {isNeedsAi ? 'smart_toy' : isNoWebsite ? 'domain_disabled' : 'storefront'}
+            </span>
           </div>
-
-          <div className="flex items-center gap-3 text-xs text-slate-400">
-            {(business.city || business.country) && (
-              <span className="flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-slate-500" />
-                <span>{business.city ? `${business.city}, ` : ''}{business.country}</span>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="font-headline-sm text-headline-sm text-on-surface truncate font-bold">
+                {business.name}
+              </h2>
+              {isDemo && (
+                <span className="px-1.5 py-0.5 rounded-full bg-tertiary-container text-on-tertiary-container font-label-badge text-[10px] tracking-wider uppercase font-bold">
+                  DEMO
+                </span>
+              )}
+            </div>
+            <p className="font-label-md text-xs sm:text-sm text-on-surface-variant flex items-center gap-1 truncate">
+              <span className="material-symbols-outlined text-[14px]">location_on</span>
+              <span>
+                {[business.industry, business.city, business.country].filter(Boolean).join(' • ')}
               </span>
-            )}
-            {business.industry && (
-              <span className="px-2 py-0.5 rounded bg-slate-800/80 text-slate-300 font-medium">
-                {business.industry}
-              </span>
-            )}
+            </p>
           </div>
         </div>
 
-        {/* Action Button: View Details */}
-        <div>
+        <Link
+          href={`/businesses/${business.id}`}
+          className="w-9 h-9 rounded-lg bg-surface-container-high hover:bg-surface-variant text-on-surface-variant flex items-center justify-center shrink-0 transition-colors"
+          title="View Business Details"
+          aria-label={`View details for ${business.name}`}
+        >
+          <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+        </Link>
+      </div>
+
+      {/* Problem & Opportunity Insight Badges */}
+      <div className="flex flex-wrap items-center gap-1.5 pt-1">
+        {isNoWebsite ? (
+          <span className="px-2.5 py-1 rounded-full bg-error-container/30 text-error font-label-md text-xs flex items-center gap-1 font-semibold">
+            <span className="material-symbols-outlined text-[14px]">warning</span>
+            No Website Found
+          </span>
+        ) : isBroken ? (
+          <span className="px-2.5 py-1 rounded-full bg-tertiary-container/30 text-tertiary font-label-md text-xs flex items-center gap-1 font-semibold">
+            <span className="material-symbols-outlined text-[14px]">speed</span>
+            Website Has Problems
+          </span>
+        ) : isNeedsAi ? (
+          <span className="px-2.5 py-1 rounded-full bg-primary-container/20 text-primary font-label-md text-xs flex items-center gap-1 font-semibold">
+            <span className="material-symbols-outlined text-[14px]">smart_toy</span>
+            Needs AI / Software
+          </span>
+        ) : (
+          <span className="px-2.5 py-1 rounded-full bg-secondary-container/20 text-secondary font-label-md text-xs flex items-center gap-1 font-semibold">
+            <span className="material-symbols-outlined text-[14px]">check_circle</span>
+            Website Online
+          </span>
+        )}
+
+        {rating && (
+          <span className="px-2.5 py-1 rounded-full bg-surface-container-high text-on-surface-variant font-label-md text-xs flex items-center gap-1">
+            <span className="material-symbols-outlined text-[14px] text-tertiary">star</span>
+            <span>
+              {rating}★ {reviewCount ? `(${reviewCount} Reviews)` : ''}
+            </span>
+          </span>
+        )}
+      </div>
+
+      {/* Opportunity Callout Box */}
+      <div className="bg-surface-container-low rounded-lg p-space-sm">
+        <p className="font-body-md text-xs sm:text-sm text-on-surface leading-relaxed">
+          <span className="font-semibold text-primary">Opportunity: </span>
+          {oppSummary}
+        </p>
+      </div>
+
+      {/* Contact Verification */}
+      {verifiedEmail ? (
+        <div className="flex items-center gap-1.5 px-space-xs py-1 rounded bg-secondary-container/20 text-secondary font-label-md text-xs">
+          <span className="material-symbols-outlined text-[16px]">verified</span>
+          <span>
+            Verified Email: <strong className="text-on-surface font-mono">{verifiedEmail}</strong>
+          </span>
+        </div>
+      ) : phone ? (
+        <div className="flex items-center gap-1.5 px-space-xs py-1 rounded bg-surface-container-high text-on-surface-variant font-label-md text-xs">
+          <span className="material-symbols-outlined text-[16px] text-primary">phone</span>
+          <span>
+            Verified Phone: <strong className="text-on-surface font-mono">{phone}</strong> (No email found)
+          </span>
+        </div>
+      ) : (
+        <div className="flex items-center gap-1.5 px-space-xs py-1 rounded bg-surface-container-high text-on-surface-variant font-label-md text-xs">
+          <span className="material-symbols-outlined text-[16px]">info</span>
+          <span>Direct search lead (requires manual review before contact)</span>
+        </div>
+      )}
+
+      {/* Action Button */}
+      <div className="pt-1">
+        {verifiedEmail ? (
           <Link
             href={`/businesses/${business.id}`}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600/15 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 hover:border-transparent text-xs font-semibold transition-all shrink-0"
+            className="w-full min-h-[44px] py-2 px-space-md rounded-lg bg-primary-container text-on-primary-container font-label-lg text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-[0_0_14px_rgba(91,91,240,0.35)] active:opacity-90 font-semibold transition-opacity"
+          >
+            <span className="material-symbols-outlined text-[18px]">mail</span>
+            <span>Send Intro Website Offer</span>
+            <span className="material-symbols-outlined text-[16px] ml-auto">arrow_forward</span>
+          </Link>
+        ) : phone ? (
+          <div className="grid grid-cols-2 gap-2">
+            <a
+              href={`tel:${phone}`}
+              className="min-h-[44px] py-2 px-space-md rounded-lg bg-secondary-container text-on-secondary-container font-label-lg text-xs sm:text-sm flex items-center justify-center gap-1.5 active:opacity-90 font-semibold"
+            >
+              <span className="material-symbols-outlined text-[18px]">call</span>
+              <span>Tap to Call</span>
+            </a>
+            <Link
+              href={`/businesses/${business.id}`}
+              className="min-h-[44px] py-2 px-space-md rounded-lg bg-surface-container-high hover:bg-surface-variant text-on-surface font-label-lg text-xs sm:text-sm flex items-center justify-center gap-1.5 font-semibold"
+            >
+              <span>View Details</span>
+            </Link>
+          </div>
+        ) : (
+          <Link
+            href={`/businesses/${business.id}`}
+            className="w-full min-h-[44px] py-2 px-space-md rounded-lg bg-surface-container-high hover:bg-surface-variant text-on-surface font-label-lg text-xs sm:text-sm flex items-center justify-center gap-1.5 font-semibold"
           >
             <span>{t('action.view_details', 'View details')}</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <span className="material-symbols-outlined text-[16px] ml-auto">arrow_forward</span>
           </Link>
-        </div>
+        )}
       </div>
-
-      {/* Match Reason Row */}
-      <div className="mt-3.5 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs gap-3">
-        <MatchChip score={score} reason={matchReason} />
-
-        {/* Outreach Channel Icons */}
-        <div className="flex items-center gap-2 text-slate-400 shrink-0">
-          <span className="text-[11px] text-slate-500 hidden md:inline">Channels:</span>
-          {hasEmail && <span title="Verified email available"><Mail className="w-3.5 h-3.5 text-emerald-400" /></span>}
-          {hasPhone && <span title="Phone available"><Phone className="w-3.5 h-3.5 text-indigo-400" /></span>}
-          {hasLinkedIn && <span title="LinkedIn profile available"><Share2 className="w-3.5 h-3.5 text-blue-400" /></span>}
-          {hasFacebook && <span title="Facebook page available"><Globe className="w-3.5 h-3.5 text-cyan-400" /></span>}
-          {hasInstagram && <span title="Instagram profile available"><MessageSquare className="w-3.5 h-3.5 text-pink-400" /></span>}
-          {hasWhatsApp && <span title="WhatsApp available"><MessageSquare className="w-3.5 h-3.5 text-emerald-500" /></span>}
-          {!hasEmail && !hasPhone && socialList.length === 0 && (
-            <span className="text-[10px] text-slate-500 italic">No channels recorded</span>
-          )}
-        </div>
-      </div>
-    </div>
+    </article>
   );
 }
