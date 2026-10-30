@@ -119,7 +119,7 @@ export function lintEmailContent(subject: string, bodyText: string, isFirstTouch
   score = Math.max(0, Math.min(100, score));
 
   if (score >= 80 && errors.length === 0) {
-    recommendations.push('Excellent copy quality: high probability of landing in Primary inbox.');
+    recommendations.push('Excellent copy quality: high probability of reaching recipient inbox.');
   } else {
     recommendations.push('Address highlighted lint errors before dispatching to maintain sender health.');
   }

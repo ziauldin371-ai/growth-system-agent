@@ -36,7 +36,7 @@ describe('Repository Persistence & Restart Survival (Item 1)', () => {
       type: 'email',
       value: suppressedEmail,
       reason: 'unsubscribe',
-      notes: 'User clicked one-click unsubscribe in email footer',
+      notes: 'User invoked one-click unsubscribe in email footer',
       createdAt: new Date().toISOString(),
     });
 

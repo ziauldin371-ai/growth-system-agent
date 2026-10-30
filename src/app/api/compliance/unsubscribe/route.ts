@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     type: 'email',
     value: targetEmail,
     reason: 'unsubscribe',
-    notes: 'Recipient clicked verified unsubscribe link (HMAC signed token).',
+    notes: 'Recipient invoked verified unsubscribe link (HMAC signed token).',
     createdAt: new Date().toISOString(),
   });
 
