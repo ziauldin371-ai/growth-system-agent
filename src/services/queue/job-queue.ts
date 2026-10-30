@@ -29,8 +29,8 @@ export class JobQueue {
 
     const key = idempotencyKey || `job_${crypto.randomBytes(8).toString('hex')}`;
 
-    // Check if job with this idempotency key already exists
-    const existing = dataStore.getJobs().find(j => j.idempotencyKey === key);
+    const existingJobs = await dataStore.getJobs();
+    const existing = existingJobs.find(j => j.idempotencyKey === key);
     if (existing) {
       return existing;
     }
@@ -49,7 +49,7 @@ export class JobQueue {
       updatedAt: new Date().toISOString(),
     };
 
-    dataStore.saveJob(job);
+    await dataStore.saveJob(job);
     this.triggerProcessing();
     return job;
   }
@@ -72,8 +72,8 @@ export class JobQueue {
   }
 
   private async processNextBatch(): Promise<void> {
-    const pendingJobs = dataStore
-      .getJobs()
+    const allJobs = await dataStore.getJobs();
+    const pendingJobs = allJobs
       .filter(j => j.status === 'pending')
       .sort((a, b) => b.priority - a.priority || new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
 
@@ -87,7 +87,7 @@ export class JobQueue {
 
   private async executeJob(job: AutomationJobEntity): Promise<void> {
     this.activeWorkers++;
-    dataStore.updateJob(job.id, {
+    await dataStore.updateJob(job.id, {
       status: 'running',
       lockedAt: new Date().toISOString(),
       lockedBy: `worker_${process.pid}`,
@@ -116,7 +116,7 @@ export class JobQueue {
           throw new Error(`Unsupported job type: ${job.jobType}`);
       }
 
-      dataStore.updateJob(job.id, {
+      await dataStore.updateJob(job.id, {
         status: 'completed',
         result,
         updatedAt: new Date().toISOString(),
@@ -127,7 +127,7 @@ export class JobQueue {
 
       if (nextRetry >= job.maxRetries) {
         // Move to dead-letter queue
-        dataStore.updateJob(job.id, {
+        await dataStore.updateJob(job.id, {
           status: 'dead_letter',
           errorMessage: `Exceeded max retries (${job.maxRetries}): ${errorMsg}`,
           retryCount: nextRetry,
@@ -136,7 +136,7 @@ export class JobQueue {
       } else {
         // Schedule retry with exponential backoff and jitter
         const backoffMs = Math.pow(2, nextRetry) * 1000 + Math.floor(Math.random() * 500);
-        dataStore.updateJob(job.id, {
+        await dataStore.updateJob(job.id, {
           status: 'pending',
           retryCount: nextRetry,
           errorMessage: `Attempt ${nextRetry} failed: ${errorMsg}`,
@@ -161,7 +161,8 @@ export class JobQueue {
       const normName = normalizeBusinessName(raw.name);
 
       // Check for duplicate business in dataStore
-      const existing = dataStore.getBusinesses().businesses;
+      const existingRes = await dataStore.getBusinesses();
+      const existing = existingRes.businesses;
       const isDup = existing.some(b => isDuplicateBusiness(
         { normalizedName: normName, normalizedDomain: raw.domain, phone: raw.phone, city: raw.city },
         b
@@ -172,7 +173,7 @@ export class JobQueue {
       const bizId = `biz_${crypto.randomBytes(6).toString('hex')}`;
       const newBiz: any = {
         id: bizId,
-        organizationId: 'org-demo-001',
+        organizationId: 'org_growth_system_main',
         name: raw.name,
         normalizedName: normName,
         domain: raw.domain || null,
@@ -196,7 +197,7 @@ export class JobQueue {
         updatedAt: new Date().toISOString(),
       };
 
-      dataStore.saveBusiness(newBiz);
+      await dataStore.saveBusiness(newBiz);
 
       // Save Evidence
       if (raw.evidence && raw.evidence.length > 0) {
@@ -213,7 +214,7 @@ export class JobQueue {
           freshnessScore: 1.0,
           createdAt: new Date().toISOString(),
         }));
-        dataStore.saveEvidence(bizId, evList);
+        await dataStore.saveEvidence(bizId, evList);
       }
 
       // Verify Website
@@ -238,21 +239,22 @@ export class JobQueue {
         checkedAt: new Date().toISOString(),
         errorDetails: webCheckResult.errorDetails,
       };
-      dataStore.saveWebsiteCheck(webCheckEntity);
+      await dataStore.saveWebsiteCheck(webCheckEntity);
 
       // Score Lead against ICP
+      const currentSavedBiz = await dataStore.getBusinessById(bizId);
       const evaluatedScore = icpEngine.evaluateLead({
         business: newBiz,
-        evidence: dataStore.getBusinessById(bizId)?.evidence || [],
+        evidence: currentSavedBiz?.evidence || [],
         websiteCheck: webCheckEntity,
         contacts: raw.contacts as any || [],
       });
 
       newBiz.pipelineType = evaluatedScore.targetPipeline;
       newBiz.qualificationStatus = evaluatedScore.overallScore >= 60 ? 'qualified' : 'unreviewed';
-      dataStore.saveBusiness(newBiz);
+      await dataStore.saveBusiness(newBiz);
 
-      dataStore.saveLeadScore({
+      await dataStore.saveLeadScore({
         id: `sc_${bizId}`,
         businessId: bizId,
         overallScore: evaluatedScore.overallScore,
@@ -270,7 +272,7 @@ export class JobQueue {
       // Save Contacts if present
       if (raw.contacts && raw.contacts.length > 0) {
         for (const c of raw.contacts) {
-          dataStore.saveContact({
+          await dataStore.saveContact({
             id: `c_${crypto.randomBytes(6).toString('hex')}`,
             businessId: bizId,
             fullName: c.fullName,
@@ -304,12 +306,12 @@ export class JobQueue {
       ...check,
       checkedAt: new Date().toISOString(),
     };
-    dataStore.saveWebsiteCheck(entity);
+    await dataStore.saveWebsiteCheck(entity);
     return check;
   }
 
   private async handleScoreLeads(payload: { businessId: string }) {
-    const biz = dataStore.getBusinessById(payload.businessId);
+    const biz = await dataStore.getBusinessById(payload.businessId);
     if (!biz) throw new Error(`Business ${payload.businessId} not found`);
 
     const scored = icpEngine.evaluateLead({
@@ -319,7 +321,7 @@ export class JobQueue {
       contacts: biz.contacts || [],
     });
 
-    dataStore.saveLeadScore({
+    await dataStore.saveLeadScore({
       id: `sc_${biz.id}`,
       businessId: biz.id,
       overallScore: scored.overallScore,
@@ -335,12 +337,12 @@ export class JobQueue {
     });
 
     biz.pipelineType = scored.targetPipeline;
-    dataStore.saveBusiness(biz);
+    await dataStore.saveBusiness(biz);
     return scored;
   }
 
   private async handleGenerateDraft(payload: { businessId: string; strategy: any; campaignId?: string }) {
-    const biz = dataStore.getBusinessById(payload.businessId);
+    const biz = await dataStore.getBusinessById(payload.businessId);
     if (!biz) throw new Error(`Business ${payload.businessId} not found`);
 
     const result = await outreachService.generateDraft({
@@ -370,15 +372,15 @@ export class JobQueue {
       updatedAt: new Date().toISOString(),
     };
 
-    dataStore.saveDraft(draftEntity);
+    await dataStore.saveDraft(draftEntity);
     return { draftId, ...result };
   }
 
   private async handleSendApprovedEmail(payload: { draftId: string; approvedBy: string }) {
-    const draft = dataStore.getDraftById(payload.draftId);
+    const draft = await dataStore.getDraftById(payload.draftId);
     if (!draft) throw new Error(`Draft ${payload.draftId} not found`);
 
-    const biz = dataStore.getBusinessById(draft.businessId);
+    const biz = await dataStore.getBusinessById(draft.businessId);
     const recipient = biz?.contacts?.find(c => c.id === draft.contactId)?.email || 'marcus.vance@vanguardhvac-service.internal';
 
     const sendRes = await emailService.dispatchOutreachEmail({
@@ -393,7 +395,7 @@ export class JobQueue {
     });
 
     if (sendRes.success) {
-      dataStore.updateDraftStatus(draft.id, 'sent');
+      await dataStore.updateDraftStatus(draft.id, 'sent');
     }
 
     return sendRes;

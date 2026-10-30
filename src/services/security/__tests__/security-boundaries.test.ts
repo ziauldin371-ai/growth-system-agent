@@ -3,7 +3,7 @@ import { AIOutreachOutputSchema } from '@/lib/validation/schemas';
 import { isPrivateOrReservedIp } from '../../website/ssrf-guard';
 import { complianceGuard } from '../../email/compliance-guard';
 import { emailService } from '../../email/email-service';
-import { dataStore } from '../../repository/data-store';
+import { inMemoryDataStore as dataStore } from '../../repository/data-store';
 
 describe('Security Boundaries & Threat Modeling', () => {
   it('rejects malformed AI structured responses missing required fields or having insufficient subject lines', () => {

@@ -28,9 +28,9 @@ export async function GET(req: NextRequest) {
   }
 
   // Register on suppression list
-  dataStore.addSuppression({
+  await dataStore.addSuppression({
     id: `sup_unsub_${crypto.randomBytes(6).toString('hex')}`,
-    organizationId: 'org-demo-001',
+    organizationId: 'org_growth_system_main',
     type: 'email',
     value: targetEmail,
     reason: 'unsubscribe',

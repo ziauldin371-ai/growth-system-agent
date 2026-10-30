@@ -4,7 +4,7 @@ import { SuppressionInputSchema } from '@/lib/validation/schemas';
 import crypto from 'crypto';
 
 export async function GET() {
-  const list = dataStore.getSuppressionList();
+  const list = await dataStore.getSuppressionList();
   return NextResponse.json({
     success: true,
     total: list.length,
@@ -19,12 +19,12 @@ export async function POST(req: NextRequest) {
 
     const entry = {
       id: `sup_${crypto.randomBytes(6).toString('hex')}`,
-      organizationId: 'org-demo-001',
+      organizationId: 'org_growth_system_main',
       ...validated,
       createdAt: new Date().toISOString(),
     };
 
-    dataStore.addSuppression(entry);
+    await dataStore.addSuppression(entry);
 
     return NextResponse.json({
       success: true,

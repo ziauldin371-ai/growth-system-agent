@@ -4,8 +4,8 @@ import { Globe, AlertCircle, ArrowUpRight, Sparkles, Phone, MapPin } from 'lucid
 
 export const dynamic = 'force-dynamic';
 
-export default function PipelineAPage() {
-  const { businesses } = dataStore.getBusinesses({
+export default async function PipelineAPage() {
+  const { businesses } = await dataStore.getBusinesses({
     pipeline: 'website_opportunities',
     limit: 100,
   });

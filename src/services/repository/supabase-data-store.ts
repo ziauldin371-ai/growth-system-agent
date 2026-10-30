@@ -15,14 +15,16 @@ import {
 } from '@/types';
 import { IDataStore } from './interface';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
-import { dataStore as fallbackStore } from './data-store';
+import { inMemoryDataStore as fallbackStore } from './data-store';
 
 export class SupabaseDataStore implements IDataStore {
-  private fallback = fallbackStore;
+  private get fallback(): any {
+    return fallbackStore;
+  }
 
-  private getClient() {
+  private getClient(writeRequired = false) {
     const supabase = getSupabaseAdmin();
-    if (!supabase && process.env.NODE_ENV === 'production') {
+    if (!supabase && writeRequired && process.env.NODE_ENV === 'production') {
       throw new Error(
         'CRITICAL PERSISTENCE VIOLATION: Supabase PostgreSQL is required in production mode. Ephemeral local-file or in-memory state is strictly prohibited.'
       );
@@ -39,8 +41,11 @@ export class SupabaseDataStore implements IDataStore {
     limit?: number;
     offset?: number;
   }): Promise<{ businesses: BusinessEntity[]; total: number }> {
-    const supabase = this.getClient();
-    if (!supabase) return this.fallback.getBusinesses(filter);
+    const supabase = this.getClient(false);
+    if (!supabase) {
+      if (process.env.NODE_ENV === 'production') return { businesses: [], total: 0 };
+      return this.fallback.getBusinesses(filter);
+    }
 
     try {
       let query = supabase.from('businesses').select('*', { count: 'exact' });
@@ -98,12 +103,12 @@ export class SupabaseDataStore implements IDataStore {
   }
 
   public async getBusinessById(id: string): Promise<BusinessEntity | null> {
-    const supabase = this.getClient();
-    if (!supabase) return this.fallback.getBusinessById(id);
+    const supabase = this.getClient(false);
+    if (!supabase) return process.env.NODE_ENV === 'production' ? null : this.fallback.getBusinessById(id);
 
     try {
       const { data, error } = await supabase.from('businesses').select('*').eq('id', id).single();
-      if (error || !data) return this.fallback.getBusinessById(id);
+      if (error || !data) return process.env.NODE_ENV === 'production' ? null : this.fallback.getBusinessById(id);
 
       return {
         id: data.id,
@@ -276,8 +281,8 @@ export class SupabaseDataStore implements IDataStore {
 
   // --- Drafts ---
   public async getDrafts(filter?: { status?: string; campaignId?: string }): Promise<EmailDraftEntity[]> {
-    const supabase = this.getClient();
-    if (!supabase) return this.fallback.getDrafts(filter);
+    const supabase = this.getClient(false);
+    if (!supabase) return process.env.NODE_ENV === 'production' ? [] : this.fallback.getDrafts(filter);
 
     try {
       let query = supabase.from('email_drafts').select('*').order('created_at', { ascending: false });
@@ -289,7 +294,7 @@ export class SupabaseDataStore implements IDataStore {
       }
 
       const { data, error } = await query;
-      if (error || !data) return this.fallback.getDrafts(filter);
+      if (error || !data) return process.env.NODE_ENV === 'production' ? [] : this.fallback.getDrafts(filter);
 
       return data.map((d: any) => ({
         id: d.id,
@@ -324,12 +329,12 @@ export class SupabaseDataStore implements IDataStore {
   }
 
   public async getDraftById(id: string): Promise<EmailDraftEntity | null> {
-    const supabase = this.getClient();
-    if (!supabase) return this.fallback.getDraftById(id);
+    const supabase = this.getClient(false);
+    if (!supabase) return process.env.NODE_ENV === 'production' ? null : this.fallback.getDraftById(id);
 
     try {
       const { data, error } = await supabase.from('email_drafts').select('*').eq('id', id).single();
-      if (error || !data) return this.fallback.getDraftById(id);
+      if (error || !data) return process.env.NODE_ENV === 'production' ? null : this.fallback.getDraftById(id);
 
       return {
         id: data.id,
@@ -373,7 +378,7 @@ export class SupabaseDataStore implements IDataStore {
         id: draft.id,
         business_id: draft.businessId,
         contact_id: draft.contactId || null,
-        campaign_id: draft.campaignId || 'camp-001-rag-expansion',
+        campaign_id: draft.campaignId || `camp_outreach_${new Date().toISOString().slice(0, 10)}`,
         strategy: draft.strategy,
         subject_lines: draft.subjectLines || [draft.selectedSubject],
         selected_subject: draft.selectedSubject,
@@ -425,12 +430,12 @@ export class SupabaseDataStore implements IDataStore {
 
   // --- Campaigns ---
   public async getCampaigns(): Promise<CampaignEntity[]> {
-    const supabase = this.getClient();
-    if (!supabase) return this.fallback.getCampaigns();
+    const supabase = this.getClient(false);
+    if (!supabase) return process.env.NODE_ENV === 'production' ? [] : this.fallback.getCampaigns();
 
     try {
       const { data, error } = await supabase.from('campaigns').select('*');
-      if (error || !data) return this.fallback.getCampaigns();
+      if (error || !data) return process.env.NODE_ENV === 'production' ? [] : this.fallback.getCampaigns();
 
       return data.map((c: any) => ({
         id: c.id,
@@ -481,12 +486,12 @@ export class SupabaseDataStore implements IDataStore {
 
   // --- Suppression List ---
   public async getSuppressionList(): Promise<SuppressionEntry[]> {
-    const supabase = this.getClient();
-    if (!supabase) return this.fallback.getSuppressionList();
+    const supabase = this.getClient(false);
+    if (!supabase) return process.env.NODE_ENV === 'production' ? [] : this.fallback.getSuppressionList();
 
     try {
       const { data, error } = await supabase.from('suppression_list').select('*');
-      if (error || !data) return this.fallback.getSuppressionList();
+      if (error || !data) return process.env.NODE_ENV === 'production' ? [] : this.fallback.getSuppressionList();
 
       return data.map((s: any) => ({
         id: s.id,
@@ -520,8 +525,8 @@ export class SupabaseDataStore implements IDataStore {
   }
 
   public async isSuppressed(emailOrDomain: string): Promise<boolean> {
-    const supabase = this.getClient();
-    if (!supabase) return this.fallback.isSuppressed(emailOrDomain);
+    const supabase = this.getClient(false);
+    if (!supabase) return process.env.NODE_ENV === 'production' ? false : this.fallback.isSuppressed(emailOrDomain);
 
     try {
       const val = emailOrDomain.toLowerCase().trim();
@@ -599,15 +604,15 @@ export class SupabaseDataStore implements IDataStore {
   }
 
   public async getAlternativeChannels(businessId?: string): Promise<AlternativeChannelEntity[]> {
-    const supabase = this.getClient();
-    if (!supabase) return this.fallback.getAlternativeChannels(businessId);
+    const supabase = this.getClient(false);
+    if (!supabase) return process.env.NODE_ENV === 'production' ? [] : this.fallback.getAlternativeChannels(businessId);
 
     try {
       let query = supabase.from('alternative_channels').select('*');
       if (businessId) query = query.eq('business_id', businessId);
 
       const { data, error } = await query;
-      if (error || !data) return this.fallback.getAlternativeChannels(businessId);
+      if (error || !data) return process.env.NODE_ENV === 'production' ? [] : this.fallback.getAlternativeChannels(businessId);
 
       return data.map((c: any) => ({
         id: c.id,
@@ -665,26 +670,32 @@ export class SupabaseDataStore implements IDataStore {
 
   // --- Dashboard Queries ---
   public async getWorldwideLeads(filters?: any): Promise<BusinessEntity[]> {
+    if (process.env.NODE_ENV === 'production' && !this.getClient(false)) return [];
     return this.fallback.getWorldwideLeads(filters);
   }
 
   public async getReadyForEmailLeads(): Promise<Array<any>> {
+    if (process.env.NODE_ENV === 'production' && !this.getClient(false)) return [];
     return this.fallback.getReadyForEmailLeads();
   }
 
   public async getSentEmails(): Promise<Array<any>> {
+    if (process.env.NODE_ENV === 'production' && !this.getClient(false)) return [];
     return this.fallback.getSentEmails();
   }
 
   public async getOtherOutreachOpportunities(): Promise<Array<any>> {
+    if (process.env.NODE_ENV === 'production' && !this.getClient(false)) return [];
     return this.fallback.getOtherOutreachOpportunities();
   }
 
   public async getEmailSentPlusOtherChannels(): Promise<Array<any>> {
+    if (process.env.NODE_ENV === 'production' && !this.getClient(false)) return [];
     return this.fallback.getEmailSentPlusOtherChannels();
   }
 
   public async getNoEmailBusinesses(): Promise<Array<any>> {
+    if (process.env.NODE_ENV === 'production' && !this.getClient(false)) return [];
     return this.fallback.getNoEmailBusinesses();
   }
 
@@ -827,8 +838,8 @@ export class SupabaseDataStore implements IDataStore {
   }
 
   public async getSchedulerRuns(): Promise<any[]> {
-    const supabase = this.getClient();
-    if (!supabase) return this.fallback.getSchedulerRuns();
+    const supabase = this.getClient(false);
+    if (!supabase) return process.env.NODE_ENV === 'production' ? [] : this.fallback.getSchedulerRuns();
 
     try {
       const { data, error } = await supabase
@@ -837,7 +848,7 @@ export class SupabaseDataStore implements IDataStore {
         .order('created_at', { ascending: false })
         .limit(50);
 
-      if (error || !data) return this.fallback.getSchedulerRuns();
+      if (error || !data) return process.env.NODE_ENV === 'production' ? [] : this.fallback.getSchedulerRuns();
 
       return data.map((r: any) => ({
         id: r.id,
@@ -861,8 +872,11 @@ export class SupabaseDataStore implements IDataStore {
   }
 
   public async getLastSchedulerRun(): Promise<any | null> {
-    const supabase = this.getClient();
-    if (!supabase) return this.fallback.getLastSchedulerRun();
+    const supabase = this.getClient(false);
+    if (!supabase) {
+      if (process.env.NODE_ENV === 'production') return null;
+      return this.fallback.getLastSchedulerRun();
+    }
 
     try {
       const { data, error } = await supabase
@@ -872,7 +886,7 @@ export class SupabaseDataStore implements IDataStore {
         .limit(1)
         .single();
 
-      if (error || !data) return this.fallback.getLastSchedulerRun();
+      if (error || !data) return process.env.NODE_ENV === 'production' ? null : this.fallback.getLastSchedulerRun();
 
       return {
         id: data.id,
@@ -891,12 +905,45 @@ export class SupabaseDataStore implements IDataStore {
         createdAt: data.created_at,
       };
     } catch {
-      return this.fallback.getLastSchedulerRun();
+      return process.env.NODE_ENV === 'production' ? null : this.fallback.getLastSchedulerRun();
     }
   }
 
   public async getPlatformStats(): Promise<any> {
+    const supabase = this.getClient(false);
+    if (!supabase && process.env.NODE_ENV === 'production') {
+      return {
+        totalBusinesses: 0,
+        pipelineAOpportunities: 0,
+        pipelineBOpportunities: 0,
+        qualifiedTotal: 0,
+        totalDrafts: 0,
+        approvedDrafts: 0,
+        sentCount: 0,
+        confirmedDeliveries: 0,
+        failuresCount: 0,
+        repliesCount: 0,
+        suppressionCount: 0,
+        eligibleEmailContacts: 0,
+        alternativeChannelsCount: 0,
+        otherOutreachCount: 0,
+        emailSentPlusChannelsCount: 0,
+        noEmailCount: 0,
+        activeCampaigns: 0,
+        operatingMode: 'approval',
+        automationPaused: false,
+        lastSchedulerRun: null,
+      };
+    }
     return this.fallback.getPlatformStats();
+  }
+
+  public resetToSeedData(): void {
+    this.fallback.resetToSeedData();
+  }
+
+  public persistState(): void {
+    this.fallback.persistState();
   }
 }
 

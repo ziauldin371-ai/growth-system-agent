@@ -230,11 +230,14 @@ export default function SetupPage() {
           <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
             <div className="font-bold text-white flex items-center gap-2">
               <span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[11px]">1</span>
-              <span>Connect Gmail</span>
+              <span>Connect Gmail (OAuth2)</span>
             </div>
             <p className="text-slate-400 leading-relaxed text-[11px]">
-              Authorize your Google account so emails show up in your real Gmail Sent folder and replies automatically update your dashboard.
+              Authorize your Google account so emails show up in your real Gmail Sent folder.
             </p>
+            <div className="p-2 rounded bg-amber-500/10 border border-amber-500/20 text-[10px] text-amber-300 leading-normal">
+              <strong>CRITICAL:</strong> In Google Cloud Console &gt; <em>OAuth consent screen</em>, set Publishing status to <strong>&quot;In production&quot;</strong>. If left in &quot;Testing&quot; mode, Google expires refresh tokens after 7 days and stops automated sending.
+            </div>
           </div>
 
           <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">

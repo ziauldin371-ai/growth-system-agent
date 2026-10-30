@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!, 10) : 50;
   const offset = searchParams.get('offset') ? parseInt(searchParams.get('offset')!, 10) : 0;
 
-  const result = dataStore.getBusinesses({
+  const result = await dataStore.getBusinesses({
     pipeline,
     search,
     qualificationStatus,

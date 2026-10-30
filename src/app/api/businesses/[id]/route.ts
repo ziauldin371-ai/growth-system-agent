@@ -5,12 +5,13 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const business = dataStore.getBusinessById(params.id);
+  const business = await dataStore.getBusinessById(params.id);
   if (!business) {
     return NextResponse.json({ success: false, error: 'Business not found' }, { status: 404 });
   }
 
-  const drafts = dataStore.getDrafts().filter(d => d.businessId === business.id);
+  const allDrafts = await dataStore.getDrafts();
+  const drafts = allDrafts.filter(d => d.businessId === business.id);
 
   return NextResponse.json({
     success: true,

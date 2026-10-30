@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
   const pipeline = (searchParams.get('pipeline') || 'all') as PipelineType | 'all';
   
-  const { businesses } = dataStore.getBusinesses({ pipeline, limit: 1000 });
+  const { businesses } = await dataStore.getBusinesses({ pipeline, limit: 1000 });
 
   const headers = [
     'Name',

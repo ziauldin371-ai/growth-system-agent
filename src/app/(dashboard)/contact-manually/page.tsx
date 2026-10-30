@@ -155,9 +155,30 @@ export default function ContactManuallyPage() {
                   <MatchChip score={score} reason={item.score?.rationale || 'High local demand & verified reviews'} />
                 </div>
 
+                {/* UK TPS / Do Not Call Compliance Reminder */}
+                {(item.country === 'UK' || phone?.startsWith('+44')) && (
+                  <div className="mt-3 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-300 flex items-center gap-2">
+                    <span className="font-semibold px-1.5 py-0.5 rounded bg-amber-500/20">TPS Notice</span>
+                    <span>Check UK Telephone Preference Service before making cold marketing calls to sole traders / partnerships.</span>
+                  </div>
+                )}
+
                 {/* Available Channels */}
                 <div className="mt-4 pt-4 border-t border-slate-800 flex flex-wrap items-center gap-2">
                   <span className="text-xs text-slate-400 font-medium mr-1">Reach them via:</span>
+
+                  {item.googleMapsUri && (
+                    <a
+                      href={item.googleMapsUri}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 text-xs font-semibold"
+                    >
+                      <MapPin className="w-3.5 h-3.5" />
+                      <span>Google Maps</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
 
                   {phone && (
                     <a
@@ -229,13 +250,35 @@ export default function ContactManuallyPage() {
                       <span>{copiedId === id ? 'Copied to Clipboard!' : 'Copy Pitch'}</span>
                     </button>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        onClick={() => {
+                          const reminderDate = new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10);
+                          alert(`Reminder set for ${reminderDate}`);
+                        }}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium border border-slate-700"
+                        title="Set follow-up reminder for 3 days"
+                      >
+                        <span>Set Reminder</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setBusinesses(prev => prev.filter(b => (b.businessId || b.id) !== id));
+                        }}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs font-medium border border-rose-500/20"
+                        title="Dismiss lead as not relevant"
+                      >
+                        <span>Not Relevant</span>
+                      </button>
+
                       <Link
                         href={`/businesses/${id}`}
-                        className="text-xs text-slate-400 hover:text-white underline mr-2"
+                        className="text-xs text-slate-400 hover:text-white underline px-2"
                       >
                         View details
                       </Link>
+
                       <button
                         onClick={() => handleMarkContacted(id)}
                         disabled={isContacted}

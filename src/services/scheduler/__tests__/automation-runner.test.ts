@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { automationRunner } from '../automation-runner';
-import { dataStore } from '../../repository/data-store';
+import { inMemoryDataStore as dataStore } from '../../repository/data-store';
 import { emailService } from '../../email/email-service';
 import { discoveryService } from '../../discovery/discovery-service';
 

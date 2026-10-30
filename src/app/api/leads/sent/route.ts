@@ -3,7 +3,7 @@ import { dataStore } from '@/services/repository/data-store';
 
 export async function GET() {
   try {
-    const sent = dataStore.getSentEmails();
+    const sent = await dataStore.getSentEmails();
     return NextResponse.json({
       success: true,
       total: sent.length,

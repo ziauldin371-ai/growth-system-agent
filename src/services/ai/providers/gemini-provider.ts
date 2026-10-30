@@ -11,7 +11,7 @@ export class GeminiProvider implements ILLMProvider {
   }
 
   public getModelName(): string {
-    return process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+    return process.env.GEMINI_MODEL || 'gemini-2.5-flash';
   }
 
   public async generateOutreachDraft(context: GenerateOutreachContext): Promise<AIOutreachOutput> {

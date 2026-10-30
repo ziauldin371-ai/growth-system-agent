@@ -31,3 +31,6 @@ token.json
 .data/
 supabase/.temp/
 *.zip
+
+.vercel
+.env*

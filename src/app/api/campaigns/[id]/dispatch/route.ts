@@ -16,13 +16,13 @@ export async function POST(
     );
   }
 
-  const campaign = dataStore.getCampaignById(params.id);
+  const campaign = await dataStore.getCampaignById(params.id);
   if (!campaign) {
     return NextResponse.json({ success: false, error: 'Campaign not found' }, { status: 404 });
   }
 
   // Find approved drafts associated with this campaign
-  const approvedDrafts = dataStore
+  const approvedDrafts = await dataStore
     .getDrafts({ status: 'approved', campaignId: campaign.id });
 
   if (approvedDrafts.length === 0) {
@@ -47,7 +47,7 @@ export async function POST(
   }
 
   campaign.status = 'running';
-  dataStore.saveCampaign(campaign);
+  await dataStore.saveCampaign(campaign);
 
   return NextResponse.json({
     success: true,

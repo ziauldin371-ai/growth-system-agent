@@ -11,8 +11,8 @@ export async function PATCH(
     const body = await req.json();
 
     if (body.action === 'mark_contacted') {
-      dataStore.recordChannelContact(channelId);
-      const ch = dataStore.getAlternativeChannelById(channelId);
+      await dataStore.recordChannelContact(channelId);
+      const ch = await dataStore.getAlternativeChannelById(channelId);
       return NextResponse.json({
         success: true,
         message: 'Channel marked as contacted; 3-day multi-channel quiet period scheduled.',
@@ -21,9 +21,9 @@ export async function PATCH(
     }
 
     if (body.action === 'lock_opt_out') {
-      const ch = dataStore.getAlternativeChannelById(channelId);
+      const ch = await dataStore.getAlternativeChannelById(channelId);
       if (ch) {
-        dataStore.lockAllChannelsForBusiness(ch.businessId, body.reason || 'Lead requested opt-out on alternative channel');
+        await dataStore.lockAllChannelsForBusiness(ch.businessId, body.reason || 'Lead requested opt-out on alternative channel');
       }
       return NextResponse.json({
         success: true,
@@ -43,7 +43,7 @@ export async function PATCH(
       );
     }
 
-    const updated = dataStore.updateAlternativeChannelStatus(
+    const updated = await dataStore.updateAlternativeChannelStatus(
       channelId,
       parsed.data.status,
       parsed.data.reminderDate,
@@ -58,7 +58,7 @@ export async function PATCH(
       );
     }
 
-    const record = dataStore.getAlternativeChannelById(channelId);
+    const record = await dataStore.getAlternativeChannelById(channelId);
 
     return NextResponse.json({
       success: true,

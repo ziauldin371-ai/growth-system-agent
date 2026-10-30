@@ -395,11 +395,12 @@ export class AutomationRunner {
           const draftId = crypto.randomUUID();
           const isAutoSend = operatingMode === 'auto_send';
 
+          const campaignId = `camp_${scored.targetPipeline}_${new Date().toISOString().slice(0, 10)}`;
           const draftEntity: any = {
             id: draftId,
             businessId: bizId,
             contactId: primaryContact?.id || null,
-            campaignId: 'camp-001-rag-expansion',
+            campaignId,
             strategy: scored.targetPipeline === 'website_opportunities' ? 'web_development' : 'rag_systems',
             ...draftRes.draft,
             version: 1,

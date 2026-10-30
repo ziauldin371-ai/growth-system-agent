@@ -3,7 +3,7 @@ import { dataStore } from '@/services/repository/data-store';
 
 export async function GET() {
   try {
-    const records = dataStore.getOtherOutreachOpportunities();
+    const records = await dataStore.getOtherOutreachOpportunities();
     return NextResponse.json({
       success: true,
       total: records.length,

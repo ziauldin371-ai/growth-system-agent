@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     const hasEmailParam = searchParams.get('hasEmail');
     const hasEmail = hasEmailParam !== null ? hasEmailParam === 'true' : undefined;
 
-    const leads = dataStore.getWorldwideLeads({
+    const leads = await dataStore.getWorldwideLeads({
       country,
       pipeline,
       status,

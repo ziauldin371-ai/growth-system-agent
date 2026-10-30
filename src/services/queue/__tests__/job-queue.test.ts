@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { jobQueue } from '../job-queue';
-import { dataStore } from '../../repository/data-store';
+import { inMemoryDataStore as dataStore } from '../../repository/data-store';
 
 describe('Durable Job Queue & Worker Engine', () => {
   it('enqueues and executes a discovery crawl job with automated website verification and scoring', async () => {

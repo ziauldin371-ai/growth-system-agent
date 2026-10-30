@@ -1550,4 +1550,7 @@ ziauldin371@gmail.com`,
   }
 }
 
-export const dataStore = new DataStore();
+import { supabaseDataStore } from './supabase-data-store';
+
+export const inMemoryDataStore = new DataStore();
+export const dataStore: IDataStore = supabaseDataStore;

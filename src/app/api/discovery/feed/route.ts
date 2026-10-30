@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const { businesses } = dataStore.getBusinesses({ limit: 50 });
+    const { businesses } = await dataStore.getBusinesses({ limit: 50 });
     
     // Sort newest-first (by fetchedAt or createdAt)
     const feed = businesses

@@ -19,9 +19,12 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  const configuredBaseUrl = process.env.APP_BASE_URL || process.env.NEXT_PUBLIC_APP_URL;
   const host = req.headers.get('host') || 'localhost:3000';
   const protocol = host.includes('localhost') ? 'http' : 'https';
-  const redirectUri = `${protocol}://${host}/api/auth/gmail/callback`;
+  const redirectUri = configuredBaseUrl 
+    ? `${configuredBaseUrl.replace(/\/$/, '')}/api/auth/gmail/callback`
+    : `${protocol}://${host}/api/auth/gmail/callback`;
 
   const state = crypto.randomBytes(24).toString('hex');
 

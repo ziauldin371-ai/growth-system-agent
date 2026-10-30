@@ -3,7 +3,7 @@ import { dataStore } from '@/services/repository/data-store';
 import { jobQueue } from '@/services/queue/job-queue';
 
 export async function GET() {
-  const jobs = dataStore.getJobs();
+  const jobs = await dataStore.getJobs();
   return NextResponse.json({
     success: true,
     total: jobs.length,

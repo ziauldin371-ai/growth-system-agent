@@ -4,8 +4,8 @@ import { Cpu, AlertCircle, ArrowUpRight, Sparkles, Code2, Briefcase } from 'luci
 
 export const dynamic = 'force-dynamic';
 
-export default function PipelineBPage() {
-  const { businesses } = dataStore.getBusinesses({
+export default async function PipelineBPage() {
+  const { businesses } = await dataStore.getBusinesses({
     pipeline: 'ai_software_opportunities',
     limit: 100,
   });
