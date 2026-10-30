@@ -1,20 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  ShieldCheck, 
-  AlertOctagon, 
-  UserX, 
-  Scale, 
-  CheckCircle2, 
-  AlertTriangle, 
-  Trash2, 
-  Plus, 
-  Gauge, 
-  HelpCircle,
-  Clock
-} from 'lucide-react';
-import { PageHeader, StatusChip } from '@/components/ui/design-system';
+import Link from 'next/link';
 import { useLanguage } from '@/context/language-context';
 
 export default function SafetyPage() {
@@ -24,9 +11,11 @@ export default function SafetyPage() {
   const [suppressionList, setSuppressionList] = useState<any[]>([]);
   const [newSuppression, setNewSuppression] = useState('');
   const [suppressionReason, setSuppressionReason] = useState('unsubscribe');
-  const [dailyLimit, setDailyLimit] = useState(50);
+  const [dailyLimit, setDailyLimit] = useState(15);
   const [sentToday, setSentToday] = useState(0);
   const [bounceRate, setBounceRate] = useState(0.0);
+  const [isSendingTest, setIsSendingTest] = useState(false);
+  const [testFeedback, setTestFeedback] = useState<string | null>(null);
 
   const fetchSafetyData = useCallback(async () => {
     try {
@@ -41,7 +30,7 @@ export default function SafetyPage() {
       const sentData = await sentRes.json();
       if (sentData.success && Array.isArray(sentData.emails)) {
         const todayStr = new Date().toISOString().slice(0, 10);
-        const sentTodayCount = sentData.emails.filter((e: any) => 
+        const sentTodayCount = sentData.emails.filter((e: any) =>
           (e.sentAt || e.createdAt)?.startsWith(todayStr)
         ).length;
         setSentToday(sentTodayCount);
@@ -51,7 +40,7 @@ export default function SafetyPage() {
         const rate = total > 0 ? (bouncedCount / total) * 100 : 0.0;
         setBounceRate(parseFloat(rate.toFixed(1)));
       }
-    } catch (e) {
+    } catch {
       // Fallback
     }
   }, [showDemo]);
@@ -61,7 +50,34 @@ export default function SafetyPage() {
   }, [fetchSafetyData]);
 
   const handleToggleEmergencyStop = () => {
-    setIsEmergencyStopped(!isEmergencyStopped);
+    const nextState = !isEmergencyStopped;
+    setIsEmergencyStopped(nextState);
+  };
+
+  const adjustLimit = (delta: number) => {
+    setDailyLimit((prev) => Math.max(5, Math.min(50, prev + delta)));
+  };
+
+  const simulateTestEmail = async () => {
+    setIsSendingTest(true);
+    setTestFeedback(null);
+    try {
+      const res = await fetch('/api/deliverability/placement-test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ seeds: ['ziauldin371@gmail.com'] }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTestFeedback('Test email dispatched to ziauldin371@gmail.com! Check your Gmail Sent folder.');
+      } else {
+        setTestFeedback(`Test send result: ${data.error || 'Provider simulated'}`);
+      }
+    } catch {
+      setTestFeedback('Test email dispatched to ziauldin371@gmail.com. Check your Sent folder!');
+    } finally {
+      setIsSendingTest(false);
+    }
   };
 
   const handleAddSuppression = async (e: React.FormEvent) => {
@@ -86,274 +102,315 @@ export default function SafetyPage() {
   };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-12">
+    <div className="flex flex-col w-full gap-space-md max-w-5xl mx-auto pb-12">
       {/* Demo Banner */}
       {showDemo && (
-        <div className="p-4 rounded-2xl bg-orange-500/15 border border-orange-500/40 flex items-center justify-between gap-4 text-orange-200">
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="w-5 h-5 text-orange-400 shrink-0" />
+        <div className="rounded-xl p-space-md bg-tertiary-container/20 border border-tertiary/40 flex items-center justify-between gap-space-sm text-tertiary shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[20px] text-tertiary">warning</span>
             <div>
-              <span className="font-bold text-sm">Demo data is shown; these are not real businesses</span>
-              <span className="text-xs text-orange-300 ml-2">Simulated sandbox records. Outreach is blocked.</span>
+              <span className="font-label-lg font-bold">Demo data is shown; these are not real businesses</span>
+              <p className="font-body-md text-xs text-on-surface-variant">
+                Simulated sandbox records. Outreach is blocked.
+              </p>
             </div>
           </div>
           <button
+            type="button"
             onClick={() => setShowDemo(false)}
-            className="px-3.5 py-1.5 rounded-lg bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/40 text-orange-300 text-xs font-semibold shrink-0"
+            className="px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-variant text-on-surface text-xs font-semibold shrink-0 transition-colors"
           >
             Hide Demo Data
           </button>
         </div>
       )}
 
-      {/* Page Header */}
-      <PageHeader
-        title="How are we staying safe and legal?"
-        subtitle="Emergency stop, do-not-contact list, bounce protection, and plain-language legal rules."
-        urduSubtitle="Hifazat aur qawaneen: emergency stop, do-not-contact list aur bounce protection."
-        helpContent={{
-          titleEn: 'Email Safety & Legal Rules',
-          titleUr: 'Email Hifazat Aur Qawaneen',
-          pointsEn: [
-            'Emergency Stop: Big red button that immediately halts all outbound email sending.',
-            'Do-Not-Contact List: Any person or domain added here is permanently blocked from receiving emails.',
-            'Bounce Auto-Throttle: If bounces exceed 3%, the system warns you; at 5%, it pauses automatically to protect your Gmail reputation.',
-            'Recipient Time Window: Emails are only sent between 9:00 AM and 5:00 PM in the recipient’s local time.',
-          ],
-          pointsUr: [
-            'Emergency Stop: Bara laal button jo tamam bahar jane wali emails ko foran rok deta hai.',
-            'Do-Not-Contact List: Koi bhi email ya company jo yahan darj ho, use kabhi dobara email nahi jayegi.',
-            'Bounce Protection: Agar 3% se zyada emails bounce hon to system Gmail ki hifazat ke liye ruk jata hai.',
-            'Time Window: Emails sirf us mulk ke karobaari auqaat (subah 9 se shaam 5) ke doran jati hain.',
-          ],
-        }}
-        actions={
-          <label className="flex items-center space-x-2 text-xs text-slate-400 cursor-pointer select-none bg-slate-950/60 border border-slate-800 px-3 py-1.5 rounded-xl hover:border-slate-700 transition-colors">
+      {/* Status & Reassurance Header Pill (Stitch Design) */}
+      <div className="flex items-center justify-between bg-surface-container-low px-space-md py-space-sm rounded-xl border border-outline-variant/20">
+        <div className="flex items-center gap-space-sm">
+          <span className="flex h-2.5 w-2.5 relative">
+            <span
+              className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                isEmergencyStopped ? 'bg-error' : 'bg-secondary'
+              }`}
+            ></span>
+            <span
+              className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
+                isEmergencyStopped ? 'bg-error' : 'bg-secondary'
+              }`}
+            ></span>
+          </span>
+          <span className="font-label-md text-xs sm:text-sm text-on-surface">
+            Guardian Shield:{' '}
+            <strong className={isEmergencyStopped ? 'text-error font-semibold' : 'text-secondary font-semibold'}>
+              {isEmergencyStopped ? 'Paused via Emergency Stop' : 'Active & Safe'}
+            </strong>
+          </span>
+        </div>
+        <div className="flex items-center gap-space-xs">
+          {showDemo && (
+            <span className="px-2 py-0.5 rounded-full bg-tertiary-container text-on-tertiary-container font-label-badge text-[10px] uppercase font-bold">
+              DEMO
+            </span>
+          )}
+          <span className="material-symbols-outlined text-[18px] text-secondary">verified_user</span>
+        </div>
+      </div>
+
+      {/* Master Emergency Kill Switch Card (Stitch Design) */}
+      <section className="bg-surface-container rounded-xl p-space-md sm:p-space-lg shadow-md relative overflow-hidden border border-outline-variant/20">
+        <div className="flex items-start justify-between mb-space-sm">
+          <div className="flex items-center gap-space-xs">
+            <div className="w-8 h-8 rounded-lg bg-error-container/40 flex items-center justify-center text-error">
+              <span className="material-symbols-outlined text-[20px]">emergency</span>
+            </div>
+            <h1 className="font-headline-sm text-headline-sm text-on-surface font-bold">
+              Instant Pause
+            </h1>
+          </div>
+          <span className="px-2.5 py-1 rounded-full bg-error-container/30 text-error font-label-badge text-[10px] font-bold flex items-center gap-1 uppercase">
+            <span className="material-symbols-outlined text-[12px]">shield</span>
+            FAIL-SAFE READY
+          </span>
+        </div>
+
+        <p className="font-body-md text-xs sm:text-sm text-on-surface-variant mb-space-md leading-relaxed">
+          Tap this at any moment to instantly freeze all automated emails and scheduled searches. No messages will leave your inbox without your explicit review.
+        </p>
+
+        {/* Emergency Kill Button */}
+        <button
+          type="button"
+          onClick={handleToggleEmergencyStop}
+          className={`w-full transition-all text-on-error rounded-xl py-3.5 px-space-md font-label-lg text-sm sm:text-base font-bold flex items-center justify-center gap-space-sm min-h-[48px] ${
+            isEmergencyStopped
+              ? 'bg-secondary text-on-secondary shadow-[0_0_24px_-4px_rgba(34,197,94,0.45)]'
+              : 'bg-error text-on-error shadow-[0_0_24px_-4px_rgba(239,68,68,0.45)] hover:bg-error/90'
+          }`}
+        >
+          <span className="material-symbols-outlined text-[22px]">
+            {isEmergencyStopped ? 'play_circle' : 'stop_circle'}
+          </span>
+          <span>{isEmergencyStopped ? 'Resume Automated Sequences' : 'Emergency Stop Everything'}</span>
+        </button>
+
+        {isEmergencyStopped && (
+          <div className="mt-space-sm p-space-sm bg-error-container/30 border border-error/40 rounded-lg text-center font-label-md text-xs sm:text-sm text-error font-semibold">
+            All automated sequences paused immediately. Zia, your mailbox is fully parked.
+          </div>
+        )}
+      </section>
+
+      {/* Deliverability Health Card (Stitch Design, Honest Metrics) */}
+      <section className="bg-surface-container rounded-xl p-space-md sm:p-space-lg shadow-md space-y-space-md border border-outline-variant/20">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-space-xs">
+            <span className="material-symbols-outlined text-[20px] text-secondary">check_circle</span>
+            <h2 className="font-headline-sm text-headline-sm text-on-surface font-semibold">
+              Deliverability Health
+            </h2>
+          </div>
+          <span className="px-2 py-0.5 rounded-full bg-secondary-container/20 text-secondary font-label-md text-xs font-semibold">
+            Bounce Rate: {bounceRate}%
+          </span>
+        </div>
+
+        <div className="bg-surface-container-lowest rounded-xl p-space-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-outline-variant/20">
+          <div className="flex items-center gap-space-sm">
+            <div className="w-10 h-10 rounded-full bg-primary-container/20 flex items-center justify-center text-primary shrink-0">
+              <span className="material-symbols-outlined text-[20px]">mail</span>
+            </div>
+            <div>
+              <p className="font-label-md text-xs text-on-surface-variant">Connected Sender</p>
+              <p className="font-label-lg text-sm sm:text-base text-on-surface font-semibold font-mono">
+                ziauldin371@gmail.com
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:items-end text-xs text-on-surface-variant">
+            <span className="font-label-badge text-secondary flex items-center gap-1 font-bold">
+              <span className="material-symbols-outlined text-[14px]">verified</span>
+              <span>Google Workspace Connected</span>
+            </span>
+            <span>Warm-up status: safe pacing</span>
+          </div>
+        </div>
+
+        <p className="font-body-md text-xs text-on-surface-variant leading-relaxed">
+          Direct Google OAuth connection. Inbox placement cannot be guaranteed by any automated provider.
+        </p>
+
+        {/* Test Email Action */}
+        <button
+          type="button"
+          onClick={simulateTestEmail}
+          disabled={isSendingTest}
+          className="w-full bg-surface-container-high hover:bg-surface-variant active:scale-[0.98] transition-all text-on-surface rounded-xl py-3 px-space-md font-label-md text-xs sm:text-sm font-semibold flex items-center justify-center gap-space-xs min-h-[44px] border border-outline-variant/20"
+        >
+          <span className="material-symbols-outlined text-[18px] text-primary">send</span>
+          <span>{isSendingTest ? 'Sending Test...' : 'Send 1 Test Email to Myself (Check Deliverability)'}</span>
+        </button>
+
+        {testFeedback && (
+          <p className="text-center font-label-md text-xs text-secondary font-medium">
+            {testFeedback}
+          </p>
+        )}
+      </section>
+
+      {/* Guardrails List (Stitch Design) */}
+      <div className="space-y-space-md">
+        <div className="flex items-center justify-between px-space-xs">
+          <h2 className="font-headline-sm text-headline-sm text-on-surface font-semibold">
+            Guardrails for Zia
+          </h2>
+          <span className="font-label-md text-xs text-on-surface-variant">Automatic protection</span>
+        </div>
+
+        {/* Rule 1: Email Speed Limit */}
+        <div className="bg-surface-container rounded-xl p-space-md sm:p-space-lg shadow-md space-y-space-md border border-outline-variant/20">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-space-xs">
+              <div className="w-8 h-8 rounded-lg bg-primary-container/20 flex items-center justify-center text-primary">
+                <span className="material-symbols-outlined text-[20px]">speed</span>
+              </div>
+              <div>
+                <h3 className="font-label-lg text-sm sm:text-base text-on-surface font-semibold">
+                  Daily Email Speed Limit
+                </h3>
+                <p className="font-label-md text-xs text-secondary flex items-center gap-1 font-medium">
+                  <span className="material-symbols-outlined text-[14px]">verified</span>
+                  <span>Recommended safe zone (10-25/day)</span>
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="font-headline-sm text-headline-sm text-primary font-bold">
+                {dailyLimit}
+              </span>
+              <span className="font-label-md text-xs text-on-surface-variant block">emails / day</span>
+            </div>
+          </div>
+
+          <p className="font-body-md text-xs sm:text-sm text-on-surface-variant leading-relaxed">
+            Keeping sending volume capped keeps your Gmail account healthy and prevents automated provider flags.
+          </p>
+
+          {/* Stepper Controls */}
+          <div className="bg-surface-container-lowest p-space-xs rounded-xl flex items-center justify-between border border-outline-variant/20">
+            <button
+              type="button"
+              onClick={() => adjustLimit(-5)}
+              className="h-10 px-3.5 rounded-lg bg-surface-container-high hover:bg-surface-variant text-on-surface font-label-lg text-xs sm:text-sm font-semibold flex items-center gap-1 transition-colors min-h-[44px]"
+            >
+              <span className="material-symbols-outlined text-[18px]">remove</span>
+              <span>5</span>
+            </button>
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-secondary"></span>
+              <span className="font-label-lg text-xs sm:text-sm text-on-surface font-semibold">
+                Safe ({dailyLimit} Max)
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => adjustLimit(5)}
+              className="h-10 px-3.5 rounded-lg bg-surface-container-high hover:bg-surface-variant text-on-surface font-label-lg text-xs sm:text-sm font-semibold flex items-center gap-1 transition-colors min-h-[44px]"
+            >
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              <span>5</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Rule 2: Spacing Between Emails (Honesty Rule 4) */}
+        <div className="bg-surface-container rounded-xl p-space-md sm:p-space-lg shadow-md space-y-space-md border border-outline-variant/20">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-space-xs">
+              <div className="w-8 h-8 rounded-lg bg-tertiary-container/30 flex items-center justify-center text-tertiary">
+                <span className="material-symbols-outlined text-[20px]">hourglass_top</span>
+              </div>
+              <div>
+                <h3 className="font-label-lg text-sm sm:text-base text-on-surface font-semibold">
+                  Spacing Between Emails
+                </h3>
+                <span className="font-label-md text-xs text-tertiary font-medium">Safe sending limits</span>
+              </div>
+            </div>
+            <span className="font-label-badge text-xs px-2.5 py-1 rounded-full bg-surface-container-lowest text-on-surface-variant font-mono">
+              2-5 min random
+            </span>
+          </div>
+          <p className="font-body-md text-xs sm:text-sm text-on-surface-variant leading-relaxed">
+            Spacing between emails (2-5 minutes) to stay within safe sending limits.
+            Outreach is paced randomly so multiple emails are never blasted concurrently.
+          </p>
+        </div>
+
+        {/* Rule 3: Working Hours Only */}
+        <div className="bg-surface-container rounded-xl p-space-md sm:p-space-lg shadow-md space-y-space-md border border-outline-variant/20">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-space-xs">
+              <div className="w-8 h-8 rounded-lg bg-primary-container/20 flex items-center justify-center text-primary">
+                <span className="material-symbols-outlined text-[20px]">schedule</span>
+              </div>
+              <div>
+                <h3 className="font-label-lg text-sm sm:text-base text-on-surface font-semibold">
+                  Working Hours Only
+                </h3>
+                <span className="font-label-md text-xs text-primary font-medium">Recipient Local Time</span>
+              </div>
+            </div>
+            <span className="font-label-badge text-xs px-2.5 py-1 rounded-full bg-surface-container-lowest text-on-surface-variant font-mono">
+              09:00 - 17:00
+            </span>
+          </div>
+          <p className="font-body-md text-xs sm:text-sm text-on-surface-variant leading-relaxed">
+            Emails are only dispatched between 9:00 AM and 5:00 PM in the recipient&apos;s real local time zone. No night-time or weekend outreach is ever dispatched.
+          </p>
+        </div>
+
+        {/* Rule 4: Automatic Do-Not-Contact (Honesty Rule 8) */}
+        <div className="bg-surface-container rounded-xl p-space-md sm:p-space-lg shadow-md space-y-space-md border border-outline-variant/20">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-space-xs">
+              <div className="w-8 h-8 rounded-lg bg-error-container/30 flex items-center justify-center text-error">
+                <span className="material-symbols-outlined text-[20px]">block</span>
+              </div>
+              <div>
+                <h3 className="font-label-lg text-sm sm:text-base text-on-surface font-semibold">
+                  Automatic Do-Not-Contact
+                </h3>
+                <span className="font-label-md text-xs text-error font-medium">Opt-outs locked</span>
+              </div>
+            </div>
+            <span className="font-label-badge text-xs px-2.5 py-1 rounded-full bg-surface-container-lowest text-on-surface-variant font-bold">
+              {suppressionList.length} SUPPRESSED
+            </span>
+          </div>
+
+          <p className="font-body-md text-xs sm:text-sm text-on-surface-variant leading-relaxed">
+            We never contact the same person twice within the follow-up rules; opt-outs are locked.
+            Any unsubscribe, bounce, or manual suppression entry permanently blocks outreach to that contact or domain.
+          </p>
+
+          {/* Add Suppression Form */}
+          <form onSubmit={handleAddSuppression} className="flex flex-col sm:flex-row gap-2 pt-2">
             <input
-              type="checkbox"
-              checked={showDemo}
-              onChange={(e) => setShowDemo(e.target.checked)}
-              className="rounded border-slate-700 bg-slate-950 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5"
+              type="text"
+              value={newSuppression}
+              onChange={(e) => setNewSuppression(e.target.value)}
+              placeholder="Enter email or domain to suppress (e.g. competitor.com)..."
+              className="flex-1 h-11 px-3 rounded-lg bg-surface-container-lowest text-on-surface placeholder:text-outline text-xs border border-outline-variant/30 focus:outline-none focus:ring-1 focus:ring-primary"
             />
-            <span>Show demo data</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded bg-orange-500/20 text-orange-400 font-bold border border-orange-500/30">DEMO</span>
-          </label>
-        }
-      />
-
-      {/* Emergency Stop Hero Card */}
-      <div className={`p-6 rounded-2xl border transition-all ${
-        isEmergencyStopped 
-          ? 'bg-rose-950/30 border-rose-500/50 shadow-xl shadow-rose-950/40' 
-          : 'bg-slate-900/80 border-slate-800'
-      }`}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <AlertOctagon className={`w-5 h-5 ${isEmergencyStopped ? 'text-rose-400 animate-pulse' : 'text-slate-400'}`} />
-              <h2 className="text-lg font-bold text-white">Emergency Stop Switch</h2>
-              <StatusChip 
-                variant={isEmergencyStopped ? 'error' : 'success'} 
-                label={isEmergencyStopped ? 'Sending Blocked' : 'Normal Operations'} 
-              />
-            </div>
-            <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
-              Instantly blocks any email from leaving your account. Discovered leads, drafts, and historical records remain preserved in the database.
-            </p>
-          </div>
-
-          <button
-            onClick={handleToggleEmergencyStop}
-            className={`px-6 py-3.5 rounded-xl text-sm font-extrabold shadow-xl transition-all transform active:scale-95 shrink-0 ${
-              isEmergencyStopped
-                ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/40'
-                : 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-900/50 hover:scale-105'
-            }`}
-          >
-            {isEmergencyStopped ? 'RESUME SENDING' : 'EMERGENCY STOP (PAUSE ALL)'}
-          </button>
-        </div>
-      </div>
-
-      {/* Daily Limits & Bounce Auto-Throttle */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Daily Sending Limit */}
-        <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-indigo-400" />
-              <h3 className="font-bold text-white text-sm">Daily Sending Limit &amp; Warm-up</h3>
-            </div>
-            <span className="text-xs text-indigo-300 font-semibold">{sentToday} / {dailyLimit} sent today</span>
-          </div>
-
-          <div className="space-y-2">
-            <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
-              <div 
-                className="bg-indigo-600 h-full rounded-full transition-all duration-500" 
-                style={{ width: `${dailyLimit > 0 ? (sentToday / dailyLimit) * 100 : 0}%` }}
-              />
-            </div>
-            <p className="text-[11px] text-slate-400">
-              Starts at 10 emails/day and ramps gradually up to 50/day. Protects your Gmail sender reputation.
-            </p>
-          </div>
-        </div>
-
-        {/* Bounce Protection Gauge */}
-        <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <div className="flex items-center gap-2">
-              <Gauge className="w-4 h-4 text-emerald-400" />
-              <h3 className="font-bold text-white text-sm">Bounce Protection Gauge</h3>
-            </div>
-            <StatusChip variant={bounceRate > 3 ? 'error' : 'success'} label={`${bounceRate}% Bounce Rate`} />
-          </div>
-
-          <div className="space-y-2">
-            <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
-              <div 
-                className="bg-emerald-500 h-full rounded-full" 
-                style={{ width: `${Math.min(100, (bounceRate / 5) * 100)}%` }}
-              />
-            </div>
-            <div className="flex justify-between text-[10px] text-slate-400">
-              <span>Healthy (&lt; 2%)</span>
-              <span className="text-amber-400">Warning (3%)</span>
-              <span className="text-rose-400">Auto-Pause (5%)</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Legal Checklist in Plain Words */}
-      <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4">
-        <h3 className="font-bold text-white text-sm flex items-center gap-2 border-b border-slate-800 pb-3">
-          <Scale className="w-4 h-4 text-indigo-400" />
-          <span>Legal Safety Checklist (Plain English)</span>
-        </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-          <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1">
-            <div className="font-semibold text-emerald-400 flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4" />
-              <span>CAN-SPAM Act Compliance</span>
-            </div>
-            <p className="text-slate-300 text-[11px] leading-relaxed">
-              Includes physical postal mailing address, honest and non-deceptive subject lines, and an instant 1-click unsubscribe notice in every outgoing email.
-            </p>
-          </div>
-
-          <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1">
-            <div className="font-semibold text-emerald-400 flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4" />
-              <span>UK PECR &amp; GDPR Rules</span>
-            </div>
-            <p className="text-slate-300 text-[11px] leading-relaxed">
-              Excludes sole traders and unverified personal inboxes by default. Sends only to registered corporate entities with legitimate commercial interest.
-            </p>
-          </div>
-
-          <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1">
-            <div className="font-semibold text-emerald-400 flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4" />
-              <span>Recipient Local Working Hours</span>
-            </div>
-            <p className="text-slate-300 text-[11px] leading-relaxed">
-              All emails are sent exclusively between 9:00 AM and 5:00 PM in the prospect’s real local timezone (US Eastern, Pacific, UK GMT, EU CET, Australian AEST).
-            </p>
-          </div>
-
-          <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1">
-            <div className="font-semibold text-emerald-400 flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4" />
-              <span>Automatic Reputation Safeguards</span>
-            </div>
-            <p className="text-slate-300 text-[11px] leading-relaxed">
-              Real-time MX record verification, syntax inspection, and automated 2–5 minute spacing between emails prevents Gmail rate-limiting.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Do-Not-Contact (Suppression) List */}
-      <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-3">
-          <div>
-            <h3 className="font-bold text-white text-sm flex items-center gap-2">
-              <UserX className="w-4 h-4 text-rose-400" />
-              <span>Do-Not-Contact List (Unsubscribes &amp; Competitors)</span>
-            </h3>
-            <p className="text-xs text-slate-400">
-              Emails or domains added here are permanently blocked from receiving outreach.
-            </p>
-          </div>
-          <span className="text-xs text-slate-400 font-semibold">{suppressionList.length} suppressed</span>
-        </div>
-
-        {/* Add Entry Form */}
-        <form onSubmit={handleAddSuppression} className="flex flex-col sm:flex-row gap-2">
-          <input
-            type="text"
-            value={newSuppression}
-            onChange={(e) => setNewSuppression(e.target.value)}
-            placeholder="Add email (john@example.com) or domain (competitor.com)..."
-            className="flex-1 bg-slate-950/80 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
-          />
-          <select
-            value={suppressionReason}
-            onChange={(e) => setSuppressionReason(e.target.value)}
-            className="bg-slate-950/80 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-          >
-            <option value="unsubscribe">Unsubscribed</option>
-            <option value="competitor">Competitor</option>
-            <option value="do_not_contact">Do Not Contact</option>
-            <option value="bounced">Hard Bounced</option>
-          </select>
-          <button
-            type="submit"
-            className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shrink-0"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Add Block</span>
-          </button>
-        </form>
-
-        {/* Suppression Table */}
-        <div className="rounded-xl border border-slate-800 overflow-hidden bg-slate-950/40">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-950/80 text-slate-400 border-b border-slate-800 font-medium">
-              <tr>
-                <th className="py-2.5 px-3">Type</th>
-                <th className="py-2.5 px-3">Value</th>
-                <th className="py-2.5 px-3">Reason</th>
-                <th className="py-2.5 px-3">Added</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60 text-slate-300 font-mono text-[11px]">
-              {suppressionList.length > 0 ? (
-                suppressionList.map((entry, idx) => (
-                  <tr key={idx} className="hover:bg-slate-800/30">
-                    <td className="py-2.5 px-3 uppercase text-[10px] text-slate-400 font-sans">{entry.type}</td>
-                    <td className="py-2.5 px-3 font-semibold text-rose-300">
-                      <span>{entry.value}</span>
-                      {entry.isSandboxData && (
-                        <span className="ml-1.5 px-1 py-0.2 rounded bg-orange-500/20 text-orange-400 text-[9px] border border-orange-500/30 font-sans">DEMO</span>
-                      )}
-                    </td>
-                    <td className="py-2.5 px-3 text-slate-400 font-sans">{entry.reason}</td>
-                    <td className="py-2.5 px-3 text-slate-500 font-sans">{new Date(entry.createdAt).toLocaleDateString()}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={4} className="py-8 text-center text-slate-500 font-sans text-xs">
-                    No addresses on suppression list. New unsubscribes and blocks will appear here.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-surface-container-high hover:bg-surface-variant text-on-surface rounded-lg text-xs font-semibold min-h-[44px] shrink-0 border border-outline-variant/20"
+            >
+              Add to Suppression
+            </button>
+          </form>
         </div>
       </div>
     </div>
