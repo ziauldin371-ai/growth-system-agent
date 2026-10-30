@@ -65,6 +65,13 @@ export function generatePlatformPitch(params: {
       break;
     }
 
+    case 'whatsapp': {
+      // Rule: Concise, respectful, professional WhatsApp message with soft CTA
+      pitchText = `Hi ${business.name} team, Zia here. I noticed your commercial profile in ${business.city || business.country}. As an AI & Web Developer, I build automated intake systems and mobile web solutions for growing businesses. If helpful, I'd love to share a quick 2-minute diagnostic idea for your team!`;
+      touchOrder = 2;
+      break;
+    }
+
     case 'instagram':
     case 'facebook': {
       // Rule: 30-60 words, direct, professional, factual, no links, no fake flattery

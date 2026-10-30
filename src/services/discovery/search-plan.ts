@@ -71,6 +71,17 @@ export const SEED_COUNTRIES_AND_CITIES: Record<string, { region: string; cities:
     { region: 'Italy', cities: ['Rome', 'Milan'] },
     { region: 'Sweden', cities: ['Stockholm', 'Gothenburg'] },
   ],
+  PK: [
+    { region: 'Punjab', cities: ['Lahore', 'Faisalabad', 'Rawalpindi', 'Multan'] },
+    { region: 'Sindh', cities: ['Karachi', 'Hyderabad'] },
+    { region: 'Islamabad Capital Territory', cities: ['Islamabad'] },
+  ],
+  GLOBAL: [
+    { region: 'North America', cities: ['New York City', 'Toronto', 'Austin', 'Vancouver'] },
+    { region: 'Europe & UK', cities: ['London', 'Berlin', 'Manchester', 'Amsterdam'] },
+    { region: 'Middle East & Asia', cities: ['Dubai', 'Singapore', 'Riyadh', 'Doha'] },
+    { region: 'Oceania', cities: ['Sydney', 'Melbourne', 'Auckland'] },
+  ],
 };
 
 export const SEED_INDUSTRIES = [

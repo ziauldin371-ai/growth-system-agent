@@ -57,10 +57,11 @@ function LoginForm() {
           <div className="relative">
             <input
               type="email"
+              name="admin-email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              autoComplete="email"
+              autoComplete="username"
               className="w-full px-3.5 py-2.5 rounded-lg bg-surface-container-lowest border border-outline-variant/30 text-[16px] sm:text-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary-container transition-all"
               placeholder="operator@domain.com"
             />
@@ -69,19 +70,24 @@ function LoginForm() {
 
         <div>
           <label className="block text-xs font-medium text-on-surface mb-1.5 flex justify-between">
-            <span>Account Password</span>
+            <span>System Admin Password</span>
+            <span className="text-[11px] text-on-surface-variant font-normal">App-specific key</span>
           </label>
           <div className="relative">
             <input
               type="password"
+              name="admin-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               autoComplete="current-password"
               className="w-full px-3.5 py-2.5 rounded-lg bg-surface-container-lowest border border-outline-variant/30 text-[16px] sm:text-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary-container transition-all"
-              placeholder="••••••••••••"
+              placeholder="Enter system admin password"
             />
           </div>
+          <p className="mt-1.5 text-[11px] text-on-surface-variant leading-relaxed">
+            Enter your configured <code className="text-primary font-mono font-medium">ADMIN_PASSWORD</code>. Do <strong>not</strong> enter your personal Google/Gmail account password.
+          </p>
         </div>
 
         <button

@@ -33,6 +33,10 @@ export function BusinessDetailsDrawer({
   const email = business.contacts?.find((c) => c.email)?.email;
   const isPhoneVerified = Boolean(phone);
   const isEmailVerified = Boolean(email);
+  const linkedInUrl =
+    business.contacts?.find((c) => c.linkedinUrl)?.linkedinUrl ||
+    business.websiteCheck?.socialUrls?.find((u) => u.includes('linkedin.com'));
+  const instagramUrl = business.websiteCheck?.socialUrls?.find((u) => u.includes('instagram.com'));
   const website = (business as any).website || (business.domain ? `https://${business.domain}` : null);
   const matchScore = business.score?.overallScore || 85;
 
@@ -276,6 +280,79 @@ Autonomous Growth Agent`;
                 </p>
               )}
             </div>
+
+            {/* Channel 3: Direct Client Hunting Channels (LinkedIn, WhatsApp, Instagram) */}
+            {(linkedInUrl || instagramUrl || isPhoneVerified) && (
+              <div className="p-3.5 rounded-xl bg-surface-container border border-outline-variant/20 flex flex-col gap-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-primary text-[18px]">hub</span>
+                    <span className="text-xs font-bold text-on-surface">Direct Client Outreach Channels</span>
+                  </div>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary-container/20 text-primary font-semibold">
+                    Multi-Platform
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-2 text-xs">
+                  {linkedInUrl && (
+                    <div className="flex items-center justify-between p-2 rounded-lg bg-surface-container-lowest border border-blue-500/30">
+                      <div className="flex items-center gap-2 truncate">
+                        <span className="material-symbols-outlined text-blue-400 text-[16px]">work</span>
+                        <span className="font-semibold text-on-surface truncate">LinkedIn Profile</span>
+                      </div>
+                      <a
+                        href={linkedInUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1 rounded bg-blue-600 text-white font-bold text-[11px] flex items-center gap-1 shrink-0"
+                      >
+                        <span>Open</span>
+                        <span className="material-symbols-outlined text-[12px]">open_in_new</span>
+                      </a>
+                    </div>
+                  )}
+
+                  {isPhoneVerified && phone && (
+                    <div className="flex items-center justify-between p-2 rounded-lg bg-surface-container-lowest border border-emerald-500/30">
+                      <div className="flex items-center gap-2 truncate">
+                        <span className="material-symbols-outlined text-emerald-400 text-[16px]">chat</span>
+                        <span className="font-semibold text-on-surface truncate">WhatsApp Direct Chat</span>
+                      </div>
+                      <a
+                        href={`https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+                          `Hi ${business.name}, I noticed your profile and built a quick 2-page preview website for your business. Can I send the link here?`
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1 rounded bg-emerald-600 text-white font-bold text-[11px] flex items-center gap-1 shrink-0"
+                      >
+                        <span>WhatsApp</span>
+                        <span className="material-symbols-outlined text-[12px]">send</span>
+                      </a>
+                    </div>
+                  )}
+
+                  {instagramUrl && (
+                    <div className="flex items-center justify-between p-2 rounded-lg bg-surface-container-lowest border border-pink-500/30">
+                      <div className="flex items-center gap-2 truncate">
+                        <span className="material-symbols-outlined text-pink-400 text-[16px]">photo_camera</span>
+                        <span className="font-semibold text-on-surface truncate">Instagram Profile</span>
+                      </div>
+                      <a
+                        href={instagramUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1 rounded bg-pink-600 text-white font-bold text-[11px] flex items-center gap-1 shrink-0"
+                      >
+                        <span>Open DM</span>
+                        <span className="material-symbols-outlined text-[12px]">open_in_new</span>
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </section>
 
           {/* Section 4: Actions & Mark Contacted */}

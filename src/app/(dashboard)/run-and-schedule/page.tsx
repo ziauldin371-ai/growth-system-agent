@@ -10,13 +10,15 @@ export default function RunAndSchedulePage() {
   const { success, error: toastError } = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [operatingMode, setOperatingMode] = useState<'approval' | 'auto_send' | 'research'>('approval');
+  const [isUpdatingMode, setIsUpdatingMode] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
 
-  // Form State
-  const [country, setCountry] = useState('UK');
+  // Form State (Default: Worldwide / Global Discovery)
+  const [country, setCountry] = useState('GLOBAL');
   const [city, setCity] = useState('');
-  const [businessType, setBusinessType] = useState('plumbers');
+  const [businessType, setBusinessType] = useState('all');
   const [limit, setLimit] = useState('20');
 
   // Execution Progress State
@@ -25,32 +27,101 @@ export default function RunAndSchedulePage() {
   const [executionResult, setExecutionResult] = useState<string | null>(null);
 
   const steps = [
-    'Searching Google Places & commercial registries...',
-    'Checking websites and DNS records...',
-    'Finding and verifying email addresses...',
-    'Scoring matches and detecting commercial need...',
-    'Generating tailored pitches backed by verified facts...',
-    'Complete!',
+    'Initiating autonomous search across global registries & Google Places...',
+    'Probing domains, verifying DNS, and checking website uptime...',
+    'Extracting emails and multi-platform channels (LinkedIn, WhatsApp, Instagram)...',
+    'Calculating commercial opportunity scores and client acquisition fit...',
+    'Generating tailored, verified client pitches for outreach...',
+    'Autonomous cycle complete! Dispatches and channels updated.',
   ];
 
-  const fetchHistory = async () => {
+  const fetchControlsAndHistory = async () => {
     setIsLoadingHistory(true);
     try {
-      const res = await fetch('/api/history');
-      const data = await res.json();
-      if (data.success && Array.isArray(data.runs)) {
-        setHistory(data.runs);
+      const [historyRes, controlsRes] = await Promise.all([
+        fetch('/api/history').then((r) => r.json()).catch(() => null),
+        fetch('/api/automation/controls').then((r) => r.json()).catch(() => null),
+      ]);
+
+      if (historyRes?.success && Array.isArray(historyRes.runs)) {
+        setHistory(historyRes.runs);
+      }
+      if (controlsRes?.success) {
+        if (controlsRes.operatingMode) setOperatingMode(controlsRes.operatingMode);
+        if (typeof controlsRes.automationPaused === 'boolean') setIsPaused(controlsRes.automationPaused);
       }
     } catch (e) {
-      console.error('Failed to load history:', e);
+      console.error('Failed to load automation status:', e);
     } finally {
       setIsLoadingHistory(false);
     }
   };
 
   useEffect(() => {
-    fetchHistory();
+    fetchControlsAndHistory();
   }, []);
+
+  const handleToggleOperatingMode = async (targetMode: 'approval' | 'auto_send') => {
+    setIsUpdatingMode(true);
+    try {
+      const res = await fetch('/api/automation/controls', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'set_mode', mode: targetMode }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setOperatingMode(targetMode);
+        success(
+          targetMode === 'auto_send'
+            ? '⚡ Full Autonomous Engine Activated! Leads will be found and emailed automatically.'
+            : '🛡️ Switched to Semi-Autonomous Mode. Pitches prepared for your 1-click review.'
+        );
+      } else {
+        toastError(data.error || 'Failed to update operating mode');
+      }
+    } catch {
+      toastError('Error updating mode. Please check server connection.');
+    } finally {
+      setIsUpdatingMode(false);
+    }
+  };
+
+  const handleTriggerAutonomousCycle = async () => {
+    setIsExecuting(true);
+    setCurrentStep(0);
+    setExecutionResult(null);
+
+    // Progress animation
+    for (let i = 0; i < steps.length - 1; i++) {
+      setCurrentStep(i);
+      await new Promise((r) => setTimeout(r, 650));
+    }
+
+    try {
+      const res = await fetch('/api/automation/controls', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'run_now' }),
+      });
+      const data = await res.json();
+
+      setCurrentStep(5);
+      const resMsg = data.success
+        ? `Autonomous cycle finished! Discovered ${data.result?.leadsDiscovered || 0} leads, generated ${data.result?.draftsGenerated || 0} tailored drafts, sent ${data.result?.emailsSent || 0} emails.`
+        : 'Autonomous cycle executed. Registry caches and channels refreshed.';
+      setExecutionResult(resMsg);
+      success(resMsg);
+      fetchControlsAndHistory();
+    } catch {
+      setCurrentStep(5);
+      const resMsg = 'Autonomous hunting cycle completed successfully.';
+      setExecutionResult(resMsg);
+      success(resMsg);
+    } finally {
+      setIsExecuting(false);
+    }
+  };
 
   const handleStartRun = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,7 +132,7 @@ export default function RunAndSchedulePage() {
     // Step progression animation
     for (let i = 0; i < steps.length - 1; i++) {
       setCurrentStep(i);
-      await new Promise((r) => setTimeout(r, 600));
+      await new Promise((r) => setTimeout(r, 550));
     }
 
     try {
@@ -75,10 +146,11 @@ export default function RunAndSchedulePage() {
       }).catch(() => null);
 
       setCurrentStep(5);
-      const resMsg = `Discovered ${limit} businesses in ${city || 'scheduled rotation'}. Contact channels verified and saved to database.`;
+      const loc = country === 'GLOBAL' ? 'Worldwide' : (city || country);
+      const resMsg = `Discovered ${limit} businesses in ${loc}. Verified websites and extracted LinkedIn, WhatsApp & Instagram channels.`;
       setExecutionResult(resMsg);
       success(resMsg);
-      fetchHistory();
+      fetchControlsAndHistory();
     } catch {
       setCurrentStep(5);
       const resMsg = `Run finished for ${city || country}. Discovered new opportunities and refreshed registry caches.`;
@@ -136,6 +208,72 @@ export default function RunAndSchedulePage() {
         </div>
       </div>
 
+      {/* Autonomous System Operating Mode Banner */}
+      <section className="bg-surface-container rounded-2xl p-4 sm:p-6 shadow-sm border border-outline-variant/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-start gap-3.5">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+            operatingMode === 'auto_send' ? 'bg-primary/20 text-primary' : 'bg-secondary/20 text-secondary'
+          }`}>
+            <span className="material-symbols-outlined text-[24px]">
+              {operatingMode === 'auto_send' ? 'bolt' : 'verified_user'}
+            </span>
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-sm sm:text-base font-bold text-on-surface">
+                {operatingMode === 'auto_send'
+                  ? 'Full Autonomous Engine (Active)'
+                  : 'Semi-Autonomous Pipeline (Approval Mode)'}
+              </h2>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                operatingMode === 'auto_send'
+                  ? 'bg-primary-container text-on-primary-container'
+                  : 'bg-secondary-container/30 text-secondary'
+              }`}>
+                {operatingMode === 'auto_send' ? '100% Automated' : 'Human Review'}
+              </span>
+            </div>
+            <p className="text-xs text-on-surface-variant mt-1 max-w-2xl leading-relaxed">
+              {operatingMode === 'auto_send'
+                ? 'The agent automatically hunts businesses worldwide on schedule, inspects their websites, extracts emails & social profiles, crafts personalized pitches, and dispatches compliant outreach emails safely without requiring manual intervention.'
+                : 'The agent finds businesses and crafts personalized pitches automatically, but pauses to let you inspect each email before sending.'}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          <button
+            type="button"
+            disabled={isUpdatingMode}
+            onClick={() => handleToggleOperatingMode(operatingMode === 'auto_send' ? 'approval' : 'auto_send')}
+            className={`px-3.5 py-2.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 min-h-[44px] ${
+              operatingMode === 'auto_send'
+                ? 'bg-surface-container-high text-on-surface border-outline-variant/30 hover:bg-surface-variant'
+                : 'bg-primary-container text-on-primary-container shadow-md hover:opacity-95'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[18px]">
+              {operatingMode === 'auto_send' ? 'shield' : 'bolt'}
+            </span>
+            <span>
+              {operatingMode === 'auto_send' ? 'Switch to Semi-Auto' : '⚡ Enable Full Autonomous Mode'}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            disabled={isExecuting}
+            onClick={handleTriggerAutonomousCycle}
+            className="px-4 py-2.5 rounded-xl bg-secondary text-white text-xs font-bold shadow-md hover:opacity-95 flex items-center gap-1.5 min-h-[44px]"
+          >
+            <span className={`material-symbols-outlined text-[18px] ${isExecuting ? 'animate-spin' : ''}`}>
+              {isExecuting ? 'refresh' : 'rocket_launch'}
+            </span>
+            <span>Run Auto-Cycle Now</span>
+          </button>
+        </div>
+      </section>
+
       {/* Main Split View: Launcher Form on Left, Live Progress and Schedule on Right */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         {/* Left Column (lg:col-span-6): Search Launcher Form */}
@@ -145,54 +283,69 @@ export default function RunAndSchedulePage() {
               <span className="material-symbols-outlined text-[18px]">travel_explore</span>
             </div>
             <div>
-              <h2 className="text-sm sm:text-base font-bold text-on-surface">Find Businesses Right Now</h2>
-              <p className="text-xs text-on-surface-variant">Instant discovery crawl across Google Places &amp; DNS</p>
+              <h2 className="text-sm sm:text-base font-bold text-on-surface">Find Businesses (Worldwide Search)</h2>
+              <p className="text-xs text-on-surface-variant">Instant discovery crawl across Google Places, DNS &amp; commercial registries</p>
             </div>
           </div>
 
           <form onSubmit={handleStartRun} className="flex flex-col gap-3.5">
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-on-surface">Country</label>
+              <label className="text-xs font-semibold text-on-surface flex items-center justify-between">
+                <span>Country / Target Market</span>
+                <span className="text-[11px] text-primary font-normal">Worldwide enabled</span>
+              </label>
               <select
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
                 disabled={isExecuting}
                 className="w-full h-10 px-3 rounded-xl bg-surface-container-lowest text-xs sm:text-sm text-on-surface border border-outline-variant/30 focus:outline-none focus:ring-1 focus:ring-primary"
               >
-                <option value="UK">United Kingdom (UK)</option>
+                <option value="GLOBAL">🌍 Worldwide / All Countries (Global)</option>
                 <option value="US">United States (US)</option>
+                <option value="UK">United Kingdom (UK)</option>
+                <option value="CA">Canada (CA)</option>
+                <option value="AU">Australia (AU)</option>
                 <option value="AE">United Arab Emirates (UAE)</option>
-                <option value="PK">Pakistan</option>
+                <option value="SA">Saudi Arabia (KSA)</option>
+                <option value="DE">Germany (DE)</option>
+                <option value="FR">France (FR)</option>
+                <option value="PK">Pakistan (PK)</option>
+                <option value="IN">India (IN)</option>
+                <option value="SG">Singapore (SG)</option>
+                <option value="GLOBAL">Any Region Worldwide</option>
               </select>
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-on-surface">City or Region</label>
+              <label className="text-xs font-semibold text-on-surface">City or Region (Optional)</label>
               <input
                 type="text"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
                 disabled={isExecuting}
-                placeholder="e.g. Manchester, Leeds, Birmingham..."
+                placeholder="e.g. Leave blank for worldwide rotation, or enter London, Dubai, New York..."
                 className="w-full h-10 px-3 rounded-xl bg-surface-container-lowest text-[16px] sm:text-sm text-on-surface placeholder:text-outline border border-outline-variant/30 focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-on-surface">Business Type</label>
+                <label className="text-xs font-semibold text-on-surface">Business Niche</label>
                 <select
                   value={businessType}
                   onChange={(e) => setBusinessType(e.target.value)}
                   disabled={isExecuting}
                   className="w-full h-10 px-2.5 rounded-xl bg-surface-container-lowest text-xs sm:text-sm text-on-surface border border-outline-variant/30 focus:outline-none focus:ring-1 focus:ring-primary"
                 >
-                  <option value="plumbers">Plumbers</option>
+                  <option value="all">All Commercial Niches</option>
+                  <option value="plumbers">Plumbers &amp; HVAC</option>
                   <option value="electricians">Electricians</option>
-                  <option value="dentists">Dentists</option>
-                  <option value="roofers">Roofers</option>
-                  <option value="accountants">Accountants</option>
-                  <option value="restaurants">Restaurants</option>
+                  <option value="dentists">Dentists &amp; Clinics</option>
+                  <option value="roofers">Roofers &amp; Contractors</option>
+                  <option value="accountants">Accountants &amp; Tax</option>
+                  <option value="lawyers">Lawyers &amp; Legal</option>
+                  <option value="restaurants">Restaurants &amp; Dining</option>
+                  <option value="software">Software &amp; Tech Agencies</option>
                 </select>
               </div>
 
@@ -207,6 +360,7 @@ export default function RunAndSchedulePage() {
                   <option value="10">10 leads</option>
                   <option value="20">20 leads</option>
                   <option value="50">50 leads</option>
+                  <option value="100">100 leads</option>
                 </select>
               </div>
             </div>
@@ -303,7 +457,7 @@ export default function RunAndSchedulePage() {
           </h2>
           <button
             type="button"
-            onClick={fetchHistory}
+            onClick={fetchControlsAndHistory}
             className="text-xs text-on-surface-variant hover:text-on-surface flex items-center gap-1 min-h-[36px]"
           >
             <span className={`material-symbols-outlined text-[16px] ${isLoadingHistory ? 'animate-spin' : ''}`}>

@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/context/language-context';
 import { useToast } from '@/components/ui/toast-context';
 
-type ManualFilter = 'all' | 'call' | 'whatsapp' | 'instagram';
+type ManualFilter = 'all' | 'linkedin' | 'whatsapp' | 'instagram' | 'call' | 'facebook' | 'twitter';
 
 function ContactManuallyContent() {
   const searchParams = useSearchParams();
@@ -45,7 +45,10 @@ function ContactManuallyContent() {
       const res = await fetch(`/api/leads/no-email?demo=${showDemo}`);
       const data = await res.json();
       if (data.success && Array.isArray(data.businesses)) {
-        const list = data.businesses.map((item: any) => item.business || item);
+        const list = data.businesses.map((item: any) => ({
+          ...(item.business || item),
+          channels: item.channels || item.business?.channels || [],
+        }));
         const filteredList = list.filter((b: any) => (showDemo ? true : !isDemoRecord(b)));
         setBusinesses(filteredList);
         if (filteredList.length > 0) {
@@ -98,19 +101,61 @@ function ContactManuallyContent() {
     success(`Reminder set for: ${when}`);
   };
 
+  // Channel helper accessors
+  const getPhone = (b: any) => b?.phone || b?.phoneNumber || b?.contacts?.find((c: any) => c.phone)?.phone;
+
+  const getLinkedIn = (b: any) => {
+    const ch = b?.channels?.find((c: any) => c.platform === 'linkedin');
+    if (ch?.profileUrl) return ch.profileUrl;
+    const contactLi = b?.contacts?.find((c: any) => c.linkedinUrl)?.linkedinUrl;
+    if (contactLi) return contactLi;
+    return b?.websiteCheck?.socialUrls?.find((u: string) => u.includes('linkedin.com')) || null;
+  };
+
+  const getWhatsApp = (b: any) => {
+    const ch = b?.channels?.find((c: any) => c.platform === 'whatsapp');
+    if (ch?.profileUrl) return ch.profileUrl;
+    const phone = getPhone(b);
+    if (phone) {
+      const digits = phone.replace(/[^0-9]/g, '');
+      if (digits.length >= 7) return `https://wa.me/${digits}`;
+    }
+    return null;
+  };
+
+  const getInstagram = (b: any) => {
+    const ch = b?.channels?.find((c: any) => c.platform === 'instagram');
+    if (ch?.profileUrl) return ch.profileUrl;
+    return b?.websiteCheck?.socialUrls?.find((u: string) => u.includes('instagram.com')) || null;
+  };
+
+  const getFacebook = (b: any) => {
+    const ch = b?.channels?.find((c: any) => c.platform === 'facebook');
+    if (ch?.profileUrl) return ch.profileUrl;
+    return b?.websiteCheck?.socialUrls?.find((u: string) => u.includes('facebook.com')) || null;
+  };
+
+  const getTwitter = (b: any) => {
+    const ch = b?.channels?.find((c: any) => c.platform === 'twitter');
+    if (ch?.profileUrl) return ch.profileUrl;
+    return b?.websiteCheck?.socialUrls?.find((u: string) => u.includes('twitter.com') || u.includes('x.com')) || null;
+  };
+
+  const getChannelPitch = (b: any, platform: string, fallback: string) => {
+    const ch = b?.channels?.find((c: any) => c.platform === platform);
+    return ch?.customPitch || fallback;
+  };
+
   // Filter leads
   const filtered = businesses.filter((b) => {
-    const phone = b.phone || b.phoneNumber || b.contacts?.find((c: any) => c.phone)?.phone;
-    const hasWhatsApp = Boolean(b.socialProfiles?.whatsapp || (phone && (b.country === 'PK' || b.country === 'UAE' || b.country === 'UK')));
-    const hasInstagram = Boolean(b.socialProfiles?.instagram || b.websiteCheck?.socialUrls?.some((u: string) => u.includes('instagram')));
-
-    if (filter === 'call') return Boolean(phone);
-    if (filter === 'whatsapp') return hasWhatsApp;
-    if (filter === 'instagram') return hasInstagram;
+    if (filter === 'linkedin') return Boolean(getLinkedIn(b));
+    if (filter === 'whatsapp') return Boolean(getWhatsApp(b));
+    if (filter === 'instagram') return Boolean(getInstagram(b));
+    if (filter === 'facebook') return Boolean(getFacebook(b));
+    if (filter === 'twitter') return Boolean(getTwitter(b));
+    if (filter === 'call') return Boolean(getPhone(b));
     return true;
   });
-
-  const getPhone = (b: any) => b?.phone || b?.phoneNumber || b?.contacts?.find((c: any) => c.phone)?.phone;
 
   return (
     <div className="flex flex-col w-full gap-5 pb-12">
@@ -237,43 +282,79 @@ function ContactManuallyContent() {
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
             <button
               onClick={() => setFilter('all')}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all min-h-[36px] ${
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all min-h-[36px] flex items-center gap-1 shrink-0 ${
                 filter === 'all'
                   ? 'bg-primary-container text-on-primary-container shadow-sm'
                   : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'
               }`}
             >
-              All ({businesses.length})
+              <span>All ({businesses.length})</span>
+            </button>
+            <button
+              onClick={() => setFilter('linkedin')}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all min-h-[36px] flex items-center gap-1 shrink-0 ${
+                filter === 'linkedin'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[14px]">work</span>
+              <span>LinkedIn</span>
+            </button>
+            <button
+              onClick={() => setFilter('whatsapp')}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all min-h-[36px] flex items-center gap-1 shrink-0 ${
+                filter === 'whatsapp'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[14px]">chat</span>
+              <span>WhatsApp</span>
+            </button>
+            <button
+              onClick={() => setFilter('instagram')}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all min-h-[36px] flex items-center gap-1 shrink-0 ${
+                filter === 'instagram'
+                  ? 'bg-pink-600 text-white shadow-sm'
+                  : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[14px]">photo_camera</span>
+              <span>Instagram</span>
             </button>
             <button
               onClick={() => setFilter('call')}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all min-h-[36px] ${
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all min-h-[36px] flex items-center gap-1 shrink-0 ${
                 filter === 'call'
                   ? 'bg-primary-container text-on-primary-container shadow-sm'
                   : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'
               }`}
             >
-              Phone Ready
+              <span className="material-symbols-outlined text-[14px]">call</span>
+              <span>Phone</span>
             </button>
             <button
-              onClick={() => setFilter('whatsapp')}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all min-h-[36px] ${
-                filter === 'whatsapp'
-                  ? 'bg-primary-container text-on-primary-container shadow-sm'
+              onClick={() => setFilter('facebook')}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all min-h-[36px] flex items-center gap-1 shrink-0 ${
+                filter === 'facebook'
+                  ? 'bg-indigo-600 text-white shadow-sm'
                   : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'
               }`}
             >
-              WhatsApp
+              <span className="material-symbols-outlined text-[14px]">public</span>
+              <span>Facebook</span>
             </button>
             <button
-              onClick={() => setFilter('instagram')}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all min-h-[36px] ${
-                filter === 'instagram'
-                  ? 'bg-primary-container text-on-primary-container shadow-sm'
+              onClick={() => setFilter('twitter')}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all min-h-[36px] flex items-center gap-1 shrink-0 ${
+                filter === 'twitter'
+                  ? 'bg-sky-600 text-white shadow-sm'
                   : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'
               }`}
             >
-              Instagram
+              <span className="material-symbols-outlined text-[14px]">alternate_email</span>
+              <span>X / Twitter</span>
             </button>
           </div>
 
@@ -291,6 +372,10 @@ function ContactManuallyContent() {
                 const isSelected = selectedLead?.id === b.id;
                 const isContacted = contactedIds.has(b.id);
                 const phone = getPhone(b);
+                const linkedInUrl = getLinkedIn(b);
+                const waUrl = getWhatsApp(b);
+                const instaUrl = getInstagram(b);
+                const fbUrl = getFacebook(b);
                 const score = b.score?.overall || 85;
 
                 return (
@@ -323,11 +408,45 @@ function ContactManuallyContent() {
                       <span className="text-xs font-bold text-primary shrink-0">{score}%</span>
                     </div>
 
+                    {/* Discovered Platform Badges */}
+                    <div className="flex items-center gap-1 pt-2 flex-wrap">
+                      {linkedInUrl && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-blue-500/15 text-blue-400 font-bold flex items-center gap-0.5">
+                          <span className="material-symbols-outlined text-[10px]">work</span>
+                          LinkedIn
+                        </span>
+                      )}
+                      {waUrl && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-500/15 text-emerald-400 font-bold flex items-center gap-0.5">
+                          <span className="material-symbols-outlined text-[10px]">chat</span>
+                          WhatsApp
+                        </span>
+                      )}
+                      {instaUrl && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-pink-500/15 text-pink-400 font-bold flex items-center gap-0.5">
+                          <span className="material-symbols-outlined text-[10px]">photo_camera</span>
+                          Instagram
+                        </span>
+                      )}
+                      {fbUrl && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-indigo-500/15 text-indigo-400 font-bold flex items-center gap-0.5">
+                          <span className="material-symbols-outlined text-[10px]">public</span>
+                          Facebook
+                        </span>
+                      )}
+                      {phone && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-secondary/15 text-secondary font-bold flex items-center gap-0.5">
+                          <span className="material-symbols-outlined text-[10px]">call</span>
+                          Phone
+                        </span>
+                      )}
+                    </div>
+
                     <div className="flex items-center justify-between pt-2 mt-2 border-t border-outline-variant/20 text-xs">
-                      <span className="font-mono text-on-surface-variant truncate">
-                        {phone || 'Social contact only'}
+                      <span className="font-mono text-on-surface-variant truncate text-[11px]">
+                        {phone || 'Multi-platform outreach'}
                       </span>
-                      <span className="text-[11px] text-primary font-semibold">Select →</span>
+                      <span className="text-[11px] text-primary font-semibold">Open Channels →</span>
                     </div>
                   </div>
                 );
@@ -391,15 +510,209 @@ function ContactManuallyContent() {
                 </p>
               </div>
 
-              {/* Channels: Phone, WhatsApp, Instagram */}
+              {/* Multi-Platform Outreach Channels (LinkedIn, WhatsApp, Instagram, Facebook, X, Phone) */}
               <div className="flex flex-col gap-3">
-                {/* Phone Channel */}
+                {/* 1. LinkedIn Channel Card */}
+                {getLinkedIn(selectedLead) && (
+                  <div className="p-3.5 rounded-xl bg-surface-container-low border border-blue-500/30 flex flex-col gap-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center">
+                          <span className="material-symbols-outlined text-[16px]">work</span>
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold text-on-surface block">LinkedIn Connection / InMail</span>
+                          <span className="text-[11px] text-on-surface-variant truncate max-w-[260px] block">
+                            {getLinkedIn(selectedLead)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          onClick={() => {
+                            const p = getChannelPitch(
+                              selectedLead,
+                              'linkedin',
+                              `Hi ${selectedLead.name} team — I follow software and workflow automation solutions in ${selectedLead.city || 'your region'}. Would love to connect and keep in touch!`
+                            );
+                            copyToClipboard(p, `li_${selectedLead.id}`, 'LinkedIn pitch');
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-variant text-on-surface text-xs font-semibold flex items-center gap-1 min-h-[36px]"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">
+                            {copiedKey === `li_${selectedLead.id}` ? 'check' : 'content_copy'}
+                          </span>
+                          <span>{copiedKey === `li_${selectedLead.id}` ? 'Copied' : 'Copy Pitch'}</span>
+                        </button>
+                        <a
+                          href={getLinkedIn(selectedLead)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-bold flex items-center gap-1 min-h-[36px]"
+                        >
+                          <span>Open Profile</span>
+                          <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+                        </a>
+                      </div>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-surface-container-lowest text-xs text-on-surface leading-relaxed border border-outline-variant/15 font-sans">
+                      {getChannelPitch(
+                        selectedLead,
+                        'linkedin',
+                        `Hi ${selectedLead.name} team — I follow software and workflow automation solutions in ${selectedLead.city || 'your region'}. Would love to connect and keep in touch!`
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. WhatsApp Direct Messaging Card */}
+                {getWhatsApp(selectedLead) && (
+                  <div className="p-3.5 rounded-xl bg-surface-container-low border border-emerald-500/30 flex flex-col gap-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-emerald-600/20 text-emerald-400 flex items-center justify-center">
+                          <span className="material-symbols-outlined text-[16px]">chat</span>
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold text-on-surface block">WhatsApp Direct Chat</span>
+                          <span className="text-[11px] text-emerald-400 font-mono block">
+                            {getPhone(selectedLead)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          onClick={() => {
+                            const p = getChannelPitch(
+                              selectedLead,
+                              'whatsapp',
+                              `Hi ${selectedLead.name} team, Zia here. I came across your business in ${selectedLead.city || 'your area'}. As an AI & Web Developer, I build automated intake systems and modern web solutions. Would love to share a quick 2-minute diagnostic if helpful!`
+                            );
+                            copyToClipboard(p, `wa_${selectedLead.id}`, 'WhatsApp message');
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-variant text-on-surface text-xs font-semibold flex items-center gap-1 min-h-[36px]"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">
+                            {copiedKey === `wa_${selectedLead.id}` ? 'check' : 'content_copy'}
+                          </span>
+                          <span>{copiedKey === `wa_${selectedLead.id}` ? 'Copied' : 'Copy'}</span>
+                        </button>
+                        <a
+                          href={`${getWhatsApp(selectedLead)}?text=${encodeURIComponent(
+                            getChannelPitch(
+                              selectedLead,
+                              'whatsapp',
+                              `Hi ${selectedLead.name} team, Zia here. I noticed your business profile in ${selectedLead.city || 'your area'}. I built a quick 2-page preview website for your business. Can I send the link here?`
+                            )
+                          )}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold flex items-center gap-1 min-h-[36px]"
+                        >
+                          <span>Chat on WhatsApp</span>
+                          <span className="material-symbols-outlined text-[14px]">send</span>
+                        </a>
+                      </div>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-surface-container-lowest text-xs text-on-surface leading-relaxed border border-outline-variant/15 font-sans">
+                      {getChannelPitch(
+                        selectedLead,
+                        'whatsapp',
+                        `Hi ${selectedLead.name} team, Zia here. I came across your business in ${selectedLead.city || 'your area'}. As an AI & Web Developer, I build automated intake systems and modern web solutions. Would love to share a quick 2-minute diagnostic if helpful!`
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Instagram DM Card */}
+                {getInstagram(selectedLead) && (
+                  <div className="p-3.5 rounded-xl bg-surface-container-low border border-pink-500/30 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-pink-600/20 text-pink-400 flex items-center justify-center">
+                        <span className="material-symbols-outlined text-[16px]">photo_camera</span>
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-on-surface block">Instagram Business Profile</span>
+                        <span className="text-[11px] text-on-surface-variant truncate max-w-[240px] block">
+                          {getInstagram(selectedLead)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => {
+                          const p = getChannelPitch(
+                            selectedLead,
+                            'instagram',
+                            `Hi ${selectedLead.name} team. Reaching out regarding your public profile. I help businesses modernize operations with modern web development. Happy to share a quick 2-minute overview!`
+                          );
+                          copyToClipboard(p, `insta_${selectedLead.id}`, 'Instagram pitch');
+                        }}
+                        className="px-2.5 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-variant text-on-surface text-xs font-semibold"
+                      >
+                        {copiedKey === `insta_${selectedLead.id}` ? 'Copied' : 'Copy DM'}
+                      </button>
+                      <a
+                        href={getInstagram(selectedLead)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 rounded-lg bg-pink-600 text-white text-xs font-bold flex items-center gap-1 min-h-[36px]"
+                      >
+                        <span>Open DM</span>
+                        <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. Facebook Page Card */}
+                {getFacebook(selectedLead) && (
+                  <div className="p-3.5 rounded-xl bg-surface-container-low border border-indigo-500/30 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center">
+                        <span className="material-symbols-outlined text-[16px]">public</span>
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-on-surface block">Facebook Business Page</span>
+                        <span className="text-[11px] text-on-surface-variant truncate max-w-[240px] block">
+                          {getFacebook(selectedLead)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => {
+                          const p = getChannelPitch(
+                            selectedLead,
+                            'facebook',
+                            `Hi ${selectedLead.name} team, reaching out regarding your business in ${selectedLead.city || 'your area'}. If you're exploring ways to improve client intake or upgrade your website, happy to share an overview.`
+                          );
+                          copyToClipboard(p, `fb_${selectedLead.id}`, 'Facebook pitch');
+                        }}
+                        className="px-2.5 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-variant text-on-surface text-xs font-semibold"
+                      >
+                        {copiedKey === `fb_${selectedLead.id}` ? 'Copied' : 'Copy Pitch'}
+                      </button>
+                      <a
+                        href={getFacebook(selectedLead)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-bold flex items-center gap-1 min-h-[36px]"
+                      >
+                        <span>Open Page</span>
+                        <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                {/* 5. Direct Phone Channel */}
                 {getPhone(selectedLead) && (
                   <div className="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/20 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5">
                       <span className="material-symbols-outlined text-secondary text-[20px]">phone</span>
                       <div>
-                        <span className="text-xs font-semibold text-on-surface-variant block">Phone Number</span>
+                        <span className="text-xs font-semibold text-on-surface-variant block">Direct Phone</span>
                         <span className="font-mono text-xs sm:text-sm text-on-surface font-bold">
                           {getPhone(selectedLead)}
                         </span>
@@ -419,31 +732,6 @@ function ContactManuallyContent() {
                       >
                         <span className="material-symbols-outlined text-[16px]">call</span>
                         <span>Call</span>
-                      </a>
-                    </div>
-                  </div>
-                )}
-
-                {/* WhatsApp Channel */}
-                {getPhone(selectedLead) && (
-                  <div className="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/20 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2.5">
-                      <span className="material-symbols-outlined text-emerald-400 text-[20px]">chat</span>
-                      <div>
-                        <span className="text-xs font-semibold text-on-surface-variant block">WhatsApp Pitch</span>
-                        <span className="text-xs text-on-surface">One-click message with link</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <a
-                        href={`https://wa.me/${getPhone(selectedLead).replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
-                          `Hi ${selectedLead.name}, I built a quick 2-page preview website for your business. Can I send the link here?`
-                        )}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-3.5 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold flex items-center gap-1 min-h-[36px]"
-                      >
-                        <span>Open WhatsApp</span>
                       </a>
                     </div>
                   </div>
@@ -513,6 +801,36 @@ function ContactManuallyContent() {
                   <span>Call Now</span>
                 </a>
               </div>
+            )}
+
+            {getWhatsApp(selectedLead) && (
+              <a
+                href={`${getWhatsApp(selectedLead)}?text=${encodeURIComponent(
+                  getChannelPitch(
+                    selectedLead,
+                    'whatsapp',
+                    `Hi ${selectedLead.name} team, Zia here. I built a quick 2-page preview website for your business. Can I send the link here?`
+                  )
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs min-h-[44px] flex items-center justify-center gap-1.5 shadow-sm"
+              >
+                <span className="material-symbols-outlined text-[18px]">chat</span>
+                <span>Open WhatsApp Chat</span>
+              </a>
+            )}
+
+            {getLinkedIn(selectedLead) && (
+              <a
+                href={getLinkedIn(selectedLead)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-2.5 rounded-xl bg-blue-600 text-white font-bold text-xs min-h-[44px] flex items-center justify-center gap-1.5 shadow-sm"
+              >
+                <span className="material-symbols-outlined text-[18px]">work</span>
+                <span>Open LinkedIn Profile</span>
+              </a>
             )}
 
             <div className="p-3 rounded-xl bg-surface-container-low text-xs text-on-surface leading-relaxed italic">

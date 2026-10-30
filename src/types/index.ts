@@ -221,6 +221,7 @@ export interface EmailDraftEntity {
 
 export type AlternativeChannelPlatform = 
   | 'linkedin' 
+  | 'whatsapp'
   | 'contact_form' 
   | 'instagram' 
   | 'facebook' 

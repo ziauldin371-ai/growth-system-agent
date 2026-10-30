@@ -9,7 +9,7 @@ import { normalizeBusinessName, isDuplicateBusiness } from '../crm/normalization
 import { autoSendGuard } from '../email/auto-send-guard';
 import { gmailInboxSyncService } from '../email/gmail-inbox-sync';
 import { generatePlatformPitch } from '../ai/platform-pitch-generator';
-import { AlternativeChannelEntity, SchedulerRunHistoryEntity, GrowthEvidenceEntity } from '@/types';
+import { AlternativeChannelEntity, AlternativeChannelPlatform, SchedulerRunHistoryEntity, GrowthEvidenceEntity } from '@/types';
 import crypto from 'crypto';
 
 export interface ScheduledRunResult {
@@ -25,7 +25,7 @@ export interface ScheduledRunResult {
   checkpoint?: any;
 }
 
-const TARGET_MARKETS = ['US', 'UK', 'CA', 'AU'];
+const TARGET_MARKETS = ['GLOBAL', 'US', 'UK', 'CA', 'AU', 'EU', 'AE', 'PK'];
 const TARGET_INDUSTRIES = [
   'Software & Technology Services',
   'Dental & Healthcare Clinics',
@@ -303,38 +303,83 @@ export class AutomationRunner {
           }
         }
 
-        // 6. Extract & Save Alternative Channels
+        // 6. Extract & Save All Outreach Channels (LinkedIn, WhatsApp, Instagram, Facebook, X, etc.)
         const channelsForBiz: string[] = [];
         const channelPitches: Record<string, string> = {};
-        if (raw.socialUrls && raw.socialUrls.length > 0) {
-          for (const sUrl of raw.socialUrls) {
-            let platform: any = 'other';
-            if (sUrl.includes('linkedin.com')) platform = 'linkedin';
-            else if (sUrl.includes('instagram.com')) platform = 'instagram';
-            else if (sUrl.includes('facebook.com')) platform = 'facebook';
-            else if (sUrl.includes('twitter.com') || sUrl.includes('x.com')) platform = 'twitter';
-            else if (sUrl.includes('youtube.com')) platform = 'youtube';
 
-            const chId = crypto.randomUUID();
+        // Merge raw.socialUrls + webCheckResult.socialUrls + primaryContact.linkedinUrl
+        const allSocialUrls = new Set<string>(raw.socialUrls || []);
+        if (webCheckResult?.socialUrls && Array.isArray(webCheckResult.socialUrls)) {
+          webCheckResult.socialUrls.forEach((u: string) => allSocialUrls.add(u));
+        }
+        if (primaryContact?.linkedinUrl) {
+          allSocialUrls.add(primaryContact.linkedinUrl);
+        }
+
+        for (const sUrl of Array.from(allSocialUrls)) {
+          let platform: AlternativeChannelPlatform = 'other';
+          if (sUrl.includes('linkedin.com')) platform = 'linkedin';
+          else if (sUrl.includes('wa.me') || sUrl.includes('whatsapp.com')) platform = 'whatsapp';
+          else if (sUrl.includes('instagram.com')) platform = 'instagram';
+          else if (sUrl.includes('facebook.com')) platform = 'facebook';
+          else if (sUrl.includes('twitter.com') || sUrl.includes('x.com')) platform = 'twitter';
+          else if (sUrl.includes('youtube.com')) platform = 'youtube';
+
+          const chId = crypto.randomUUID();
+          const pitchGen = generatePlatformPitch({
+            business: newBiz,
+            platform,
+            profileUrl: sUrl,
+            sourceType: 'website_link',
+            verifiedObservation: evList[0]?.summary,
+            serviceOffer: scored.targetPipeline === 'website_opportunities'
+              ? 'custom modern web application development with automated client intake'
+              : 'custom Python AI automation and LLM workflow pipelines',
+          });
+
+          await dataStore.saveAlternativeChannel({
+            id: chId,
+            businessId: bizId,
+            businessName: raw.name,
+            country: raw.country || currentMarket,
+            platform,
+            profileUrl: sUrl,
+            sourceName: 'Discovery & Verification Engine',
+            isUsable: true,
+            customPitch: pitchGen.pitch,
+            status: 'not_contacted',
+            lastCheckedAt: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          });
+          channelsForBiz.push(platform);
+          channelPitches[platform] = pitchGen.pitch;
+          totalChannelsFound++;
+        }
+
+        // Auto-generate WhatsApp direct channel if business has a phone and WhatsApp not yet attached
+        if (raw.phone && !channelsForBiz.includes('whatsapp')) {
+          const cleanPhone = raw.phone.replace(/[^0-9]/g, '');
+          if (cleanPhone.length >= 7) {
+            const waUrl = `https://wa.me/${cleanPhone}`;
             const pitchGen = generatePlatformPitch({
               business: newBiz,
-              platform,
-              profileUrl: sUrl,
+              platform: 'whatsapp',
+              profileUrl: waUrl,
               sourceType: 'google_places',
               verifiedObservation: evList[0]?.summary,
-              serviceOffer: scored.targetPipeline === 'website_opportunities'
-                ? 'custom modern web application development with automated client intake'
-                : 'custom Python AI automation and LLM workflow pipelines',
             });
 
+            const chId = crypto.randomUUID();
             await dataStore.saveAlternativeChannel({
               id: chId,
               businessId: bizId,
               businessName: raw.name,
               country: raw.country || currentMarket,
-              platform,
-              profileUrl: sUrl,
-              sourceName: 'Discovery Engine',
+              platform: 'whatsapp',
+              profileUrl: waUrl,
+              handleOrIdentifier: raw.phone,
+              sourceName: 'Direct Phone & WhatsApp',
               isUsable: true,
               customPitch: pitchGen.pitch,
               status: 'not_contacted',
@@ -342,8 +387,8 @@ export class AutomationRunner {
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             });
-            channelsForBiz.push(platform);
-            channelPitches[platform] = pitchGen.pitch;
+            channelsForBiz.push('whatsapp');
+            channelPitches['whatsapp'] = pitchGen.pitch;
             totalChannelsFound++;
           }
         }

@@ -20,11 +20,18 @@ export function BusinessCard({ business, showDemoBadge }: BusinessCardProps) {
   const isBroken = webStatus === 'parked' || webStatus === 'broken';
   const isNeedsAi = business.pipelineType === 'ai_software_opportunities';
 
-  // Contact info
+  // Contact info & reachout channels
   const verifiedEmail = business.contacts?.find((c) => c.email)?.email;
   const phone = business.phone || business.contacts?.find((c) => c.phone)?.phone;
   const rating = (business as any).rating || (business.evidence?.[0]?.metadata as any)?.rating;
   const reviewCount = (business as any).reviewCount || (business.evidence?.[0]?.metadata as any)?.userRatingsTotal;
+
+  const linkedInUrl =
+    business.contacts?.find((c) => c.linkedinUrl)?.linkedinUrl ||
+    business.websiteCheck?.socialUrls?.find((u) => u.includes('linkedin.com'));
+  const phoneDigits = phone ? phone.replace(/[^0-9]/g, '') : null;
+  const whatsAppUrl = phoneDigits && phoneDigits.length >= 7 ? `https://wa.me/${phoneDigits}` : null;
+  const instagramUrl = business.websiteCheck?.socialUrls?.find((u) => u.includes('instagram.com'));
 
   // Opportunity text from evidence only (Honesty Rule 3)
   const oppSummary =
@@ -137,6 +144,48 @@ export function BusinessCard({ business, showDemoBadge }: BusinessCardProps) {
         <div className="flex items-center gap-1.5 px-space-xs py-1 rounded bg-surface-container-high text-on-surface-variant font-label-md text-xs">
           <span className="material-symbols-outlined text-[16px]">info</span>
           <span>Direct search lead (requires manual review before contact)</span>
+        </div>
+      )}
+
+      {/* Discovered Outreach Channels (LinkedIn, WhatsApp, Instagram) */}
+      {(linkedInUrl || whatsAppUrl || instagramUrl) && (
+        <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+          {linkedInUrl && (
+            <a
+              href={linkedInUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 flex items-center gap-1 transition-colors"
+              title="Open LinkedIn"
+            >
+              <span className="material-symbols-outlined text-[12px]">work</span>
+              <span>LinkedIn</span>
+            </a>
+          )}
+          {whatsAppUrl && (
+            <a
+              href={whatsAppUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 flex items-center gap-1 transition-colors"
+              title="Chat on WhatsApp"
+            >
+              <span className="material-symbols-outlined text-[12px]">chat</span>
+              <span>WhatsApp</span>
+            </a>
+          )}
+          {instagramUrl && (
+            <a
+              href={instagramUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-2 py-0.5 rounded text-[10px] font-bold bg-pink-500/15 text-pink-400 hover:bg-pink-500/25 flex items-center gap-1 transition-colors"
+              title="Open Instagram"
+            >
+              <span className="material-symbols-outlined text-[12px]">photo_camera</span>
+              <span>Instagram</span>
+            </a>
+          )}
         </div>
       )}
 

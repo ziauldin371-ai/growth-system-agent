@@ -58,6 +58,45 @@ function extractHtmlMetadata(html: string): { title?: string; description?: stri
 }
 
 /**
+ * Extracts external social media and messaging links from HTML.
+ */
+export function extractSocialUrlsFromHtml(html: string): string[] {
+  if (!html || typeof html !== 'string') return [];
+  const platforms = [
+    'linkedin.com',
+    'instagram.com',
+    'facebook.com',
+    'twitter.com',
+    'x.com',
+    'wa.me',
+    'whatsapp.com',
+    'youtube.com',
+    'tiktok.com',
+  ];
+  const found = new Set<string>();
+  const hrefRegex = /href=["'](https?:\/\/[^"'\s>]+)["']/gi;
+  let match;
+  while ((match = hrefRegex.exec(html)) !== null) {
+    const rawUrl = match[1];
+    const lower = rawUrl.toLowerCase();
+    for (const p of platforms) {
+      if (lower.includes(p)) {
+        if (
+          !lower.includes('sharer') &&
+          !lower.includes('/share') &&
+          !lower.includes('/intent/tweet') &&
+          !lower.includes('plugins/') &&
+          !lower.includes('widgets.js')
+        ) {
+          found.add(rawUrl);
+        }
+      }
+    }
+  }
+  return Array.from(found);
+}
+
+/**
  * Normalizes a raw domain or website input into a clean hostname.
  */
 export function normalizeDomain(raw?: string | null): string | null {
@@ -171,6 +210,8 @@ export async function verifyWebsite(options: VerifyWebsiteOptions): Promise<Webs
     });
 
     const metadata = extractHtmlMetadata(probe.body);
+    const htmlSocials = extractSocialUrlsFromHtml(probe.body);
+    const combinedSocialUrls = Array.from(new Set([...(socialUrls || []), ...htmlSocials]));
 
     // Check if redirected to a social network
     const finalUrlLower = probe.finalUrl.toLowerCase();
@@ -183,7 +224,7 @@ export async function verifyWebsite(options: VerifyWebsiteOptions): Promise<Webs
           ipAddress: probe.ipAddress,
           isPrivateIp: false,
           redirectChain: probe.redirectChain,
-          socialUrls: [probe.finalUrl],
+          socialUrls: Array.from(new Set([...combinedSocialUrls, probe.finalUrl])),
           pageTitle: metadata.title,
           verificationLatencyMs: probe.latencyMs,
           errorDetails: `Domain redirected to social media URL: ${probe.finalUrl}`,
@@ -205,6 +246,7 @@ export async function verifyWebsite(options: VerifyWebsiteOptions): Promise<Webs
         ipAddress: probe.ipAddress,
         isPrivateIp: false,
         redirectChain: probe.redirectChain,
+        socialUrls: combinedSocialUrls,
         pageTitle: metadata.title,
         metaDescription: metadata.description,
         verificationLatencyMs: probe.latencyMs,
@@ -224,6 +266,7 @@ export async function verifyWebsite(options: VerifyWebsiteOptions): Promise<Webs
           tlsValid: probe.tlsValid,
           ipAddress: probe.ipAddress,
           isPrivateIp: false,
+          socialUrls: combinedSocialUrls,
           pageTitle: metadata.title,
           verificationLatencyMs: probe.latencyMs,
           errorDetails: 'HTTP 200 returned but page is completely blank / lacks HTML content.',
@@ -238,6 +281,7 @@ export async function verifyWebsite(options: VerifyWebsiteOptions): Promise<Webs
         ipAddress: probe.ipAddress,
         isPrivateIp: false,
         redirectChain: probe.redirectChain,
+        socialUrls: combinedSocialUrls,
         pageTitle: metadata.title,
         metaDescription: metadata.description,
         verificationLatencyMs: probe.latencyMs,
@@ -252,6 +296,7 @@ export async function verifyWebsite(options: VerifyWebsiteOptions): Promise<Webs
         ipAddress: probe.ipAddress,
         isPrivateIp: false,
         redirectChain: probe.redirectChain,
+        socialUrls: combinedSocialUrls,
         verificationLatencyMs: probe.latencyMs,
         errorDetails: `Server returned HTTP server error ${probe.statusCode}.`,
       };
@@ -261,11 +306,15 @@ export async function verifyWebsite(options: VerifyWebsiteOptions): Promise<Webs
       domain,
       status: 'broken',
       httpStatusCode: probe.statusCode,
+      tlsValid: probe.tlsValid,
       ipAddress: probe.ipAddress,
       isPrivateIp: false,
       redirectChain: probe.redirectChain,
+      socialUrls: combinedSocialUrls,
+      pageTitle: metadata.title,
+      metaDescription: metadata.description,
       verificationLatencyMs: probe.latencyMs,
-      errorDetails: `HTTP client error ${probe.statusCode}.`,
+      errorDetails: `HTTP request completed with unexpected status code ${probe.statusCode}.`,
     };
 
   } catch (probeErr: any) {
