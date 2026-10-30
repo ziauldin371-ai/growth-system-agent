@@ -40,6 +40,7 @@ export class SupabaseDataStore implements IDataStore {
     country?: string;
     limit?: number;
     offset?: number;
+    includeDemo?: boolean;
   }): Promise<{ businesses: BusinessEntity[]; total: number }> {
     const supabase = this.getClient(false);
     if (!supabase) {
@@ -280,7 +281,7 @@ export class SupabaseDataStore implements IDataStore {
   }
 
   // --- Drafts ---
-  public async getDrafts(filter?: { status?: string; campaignId?: string }): Promise<EmailDraftEntity[]> {
+  public async getDrafts(filter?: { status?: string; campaignId?: string; limit?: number; offset?: number; includeDemo?: boolean }): Promise<EmailDraftEntity[]> {
     const supabase = this.getClient(false);
     if (!supabase) return process.env.NODE_ENV === 'production' ? [] : this.fallback.getDrafts(filter);
 
@@ -674,29 +675,29 @@ export class SupabaseDataStore implements IDataStore {
     return this.fallback.getWorldwideLeads(filters);
   }
 
-  public async getReadyForEmailLeads(): Promise<Array<any>> {
+  public async getReadyForEmailLeads(options?: any): Promise<Array<any>> {
     if (process.env.NODE_ENV === 'production' && !this.getClient(false)) return [];
-    return this.fallback.getReadyForEmailLeads();
+    return this.fallback.getReadyForEmailLeads(options);
   }
 
-  public async getSentEmails(): Promise<Array<any>> {
+  public async getSentEmails(options?: any): Promise<Array<any>> {
     if (process.env.NODE_ENV === 'production' && !this.getClient(false)) return [];
-    return this.fallback.getSentEmails();
+    return this.fallback.getSentEmails(options);
   }
 
-  public async getOtherOutreachOpportunities(): Promise<Array<any>> {
+  public async getOtherOutreachOpportunities(options?: any): Promise<Array<any>> {
     if (process.env.NODE_ENV === 'production' && !this.getClient(false)) return [];
-    return this.fallback.getOtherOutreachOpportunities();
+    return this.fallback.getOtherOutreachOpportunities(options);
   }
 
-  public async getEmailSentPlusOtherChannels(): Promise<Array<any>> {
+  public async getEmailSentPlusOtherChannels(options?: any): Promise<Array<any>> {
     if (process.env.NODE_ENV === 'production' && !this.getClient(false)) return [];
-    return this.fallback.getEmailSentPlusOtherChannels();
+    return this.fallback.getEmailSentPlusOtherChannels(options);
   }
 
-  public async getNoEmailBusinesses(): Promise<Array<any>> {
+  public async getNoEmailBusinesses(options?: any): Promise<Array<any>> {
     if (process.env.NODE_ENV === 'production' && !this.getClient(false)) return [];
-    return this.fallback.getNoEmailBusinesses();
+    return this.fallback.getNoEmailBusinesses(options);
   }
 
   public async lockAllChannelsForBusiness(businessId: string, reason: string): Promise<void> {
@@ -909,7 +910,7 @@ export class SupabaseDataStore implements IDataStore {
     }
   }
 
-  public async getPlatformStats(): Promise<any> {
+  public async getPlatformStats(options?: any): Promise<any> {
     const supabase = this.getClient(false);
     if (!supabase && process.env.NODE_ENV === 'production') {
       return {
@@ -933,9 +934,23 @@ export class SupabaseDataStore implements IDataStore {
         operatingMode: 'approval',
         automationPaused: false,
         lastSchedulerRun: null,
+        timelineSentences: ['Nothing yet. Start by connecting your services.'],
       };
     }
-    return this.fallback.getPlatformStats();
+    return this.fallback.getPlatformStats(options);
+  }
+
+  public seedDemoData(): void {
+    if (process.env.NODE_ENV === 'production') return;
+    this.fallback.seedDemoData?.();
+  }
+
+  public clearDemoData(): void {
+    this.fallback.clearDemoData?.();
+  }
+
+  public hasDemoData(): boolean {
+    return this.fallback.hasDemoData?.() ?? false;
   }
 
   public resetToSeedData(): void {

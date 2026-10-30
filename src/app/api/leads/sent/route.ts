@@ -1,9 +1,11 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { dataStore } from '@/services/repository/data-store';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const sent = await dataStore.getSentEmails();
+    const { searchParams } = new URL(request.url);
+    const includeDemo = searchParams.get('demo') === 'true' || searchParams.get('demo') === '1';
+    const sent = await dataStore.getSentEmails({ includeDemo });
     return NextResponse.json({
       success: true,
       total: sent.length,
@@ -16,4 +18,3 @@ export async function GET() {
     );
   }
 }
-

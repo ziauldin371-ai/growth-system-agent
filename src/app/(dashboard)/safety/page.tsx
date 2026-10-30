@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   ShieldCheck, 
   AlertOctagon, 
@@ -19,29 +19,46 @@ import { useLanguage } from '@/context/language-context';
 
 export default function SafetyPage() {
   const { t } = useLanguage();
+  const [showDemo, setShowDemo] = useState(false);
   const [isEmergencyStopped, setIsEmergencyStopped] = useState(false);
   const [suppressionList, setSuppressionList] = useState<any[]>([]);
   const [newSuppression, setNewSuppression] = useState('');
   const [suppressionReason, setSuppressionReason] = useState('unsubscribe');
   const [dailyLimit, setDailyLimit] = useState(50);
-  const [sentToday, setSentToday] = useState(6);
-  const [bounceRate, setBounceRate] = useState(0.8); // 0.8%
+  const [sentToday, setSentToday] = useState(0);
+  const [bounceRate, setBounceRate] = useState(0.0);
 
-  const fetchSafetyData = async () => {
+  const fetchSafetyData = useCallback(async () => {
     try {
-      const res = await fetch('/api/compliance/suppression');
+      const res = await fetch(`/api/compliance/suppression?demo=${showDemo}`);
       const data = await res.json();
       if (data.success && Array.isArray(data.suppressionList)) {
         setSuppressionList(data.suppressionList);
       }
+
+      // Fetch real sent & bounce stats
+      const sentRes = await fetch(`/api/leads/sent?demo=${showDemo}`);
+      const sentData = await sentRes.json();
+      if (sentData.success && Array.isArray(sentData.emails)) {
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const sentTodayCount = sentData.emails.filter((e: any) => 
+          (e.sentAt || e.createdAt)?.startsWith(todayStr)
+        ).length;
+        setSentToday(sentTodayCount);
+
+        const bouncedCount = sentData.emails.filter((e: any) => e.status === 'bounced').length;
+        const total = sentData.emails.length;
+        const rate = total > 0 ? (bouncedCount / total) * 100 : 0.0;
+        setBounceRate(parseFloat(rate.toFixed(1)));
+      }
     } catch (e) {
       // Fallback
     }
-  };
+  }, [showDemo]);
 
   useEffect(() => {
     fetchSafetyData();
-  }, []);
+  }, [fetchSafetyData]);
 
   const handleToggleEmergencyStop = () => {
     setIsEmergencyStopped(!isEmergencyStopped);
@@ -70,6 +87,25 @@ export default function SafetyPage() {
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-12">
+      {/* Demo Banner */}
+      {showDemo && (
+        <div className="p-4 rounded-2xl bg-orange-500/15 border border-orange-500/40 flex items-center justify-between gap-4 text-orange-200">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-orange-400 shrink-0" />
+            <div>
+              <span className="font-bold text-sm">Demo data is shown; these are not real businesses</span>
+              <span className="text-xs text-orange-300 ml-2">Simulated sandbox records. Outreach is blocked.</span>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowDemo(false)}
+            className="px-3.5 py-1.5 rounded-lg bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/40 text-orange-300 text-xs font-semibold shrink-0"
+          >
+            Hide Demo Data
+          </button>
+        </div>
+      )}
+
       {/* Page Header */}
       <PageHeader
         title="How are we staying safe and legal?"
@@ -91,6 +127,18 @@ export default function SafetyPage() {
             'Time Window: Emails sirf us mulk ke karobaari auqaat (subah 9 se shaam 5) ke doran jati hain.',
           ],
         }}
+        actions={
+          <label className="flex items-center space-x-2 text-xs text-slate-400 cursor-pointer select-none bg-slate-950/60 border border-slate-800 px-3 py-1.5 rounded-xl hover:border-slate-700 transition-colors">
+            <input
+              type="checkbox"
+              checked={showDemo}
+              onChange={(e) => setShowDemo(e.target.checked)}
+              className="rounded border-slate-700 bg-slate-950 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5"
+            />
+            <span>Show demo data</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded bg-orange-500/20 text-orange-400 font-bold border border-orange-500/30">DEMO</span>
+          </label>
+        }
       />
 
       {/* Emergency Stop Hero Card */}
@@ -143,7 +191,7 @@ export default function SafetyPage() {
             <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
               <div 
                 className="bg-indigo-600 h-full rounded-full transition-all duration-500" 
-                style={{ width: `${(sentToday / dailyLimit) * 100}%` }}
+                style={{ width: `${dailyLimit > 0 ? (sentToday / dailyLimit) * 100 : 0}%` }}
               />
             </div>
             <p className="text-[11px] text-slate-400">
@@ -159,14 +207,14 @@ export default function SafetyPage() {
               <Gauge className="w-4 h-4 text-emerald-400" />
               <h3 className="font-bold text-white text-sm">Bounce Protection Gauge</h3>
             </div>
-            <StatusChip variant="success" label={`${bounceRate}% Bounce Rate`} />
+            <StatusChip variant={bounceRate > 3 ? 'error' : 'success'} label={`${bounceRate}% Bounce Rate`} />
           </div>
 
           <div className="space-y-2">
             <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
               <div 
                 className="bg-emerald-500 h-full rounded-full" 
-                style={{ width: `${(bounceRate / 5) * 100}%` }}
+                style={{ width: `${Math.min(100, (bounceRate / 5) * 100)}%` }}
               />
             </div>
             <div className="flex justify-between text-[10px] text-slate-400">
@@ -199,106 +247,115 @@ export default function SafetyPage() {
           <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1">
             <div className="font-semibold text-emerald-400 flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4" />
-              <span>UK PECR Business Exemption</span>
+              <span>UK PECR &amp; GDPR Rules</span>
             </div>
             <p className="text-slate-300 text-[11px] leading-relaxed">
-              UK sole traders and individuals are excluded by default. The system strictly reaches out to registered corporate entities (LLPs and Ltds) with legitimate business interest.
+              Excludes sole traders and unverified personal inboxes by default. Sends only to registered corporate entities with legitimate commercial interest.
             </p>
           </div>
 
           <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1">
             <div className="font-semibold text-emerald-400 flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4" />
-              <span>48-Hour Freshness Check</span>
+              <span>Recipient Local Working Hours</span>
             </div>
             <p className="text-slate-300 text-[11px] leading-relaxed">
-              A business is only emailed if its active operational status, website check, and MX records were re-verified within the last 48 hours. Closed businesses are rejected automatically.
+              All emails are sent exclusively between 9:00 AM and 5:00 PM in the prospect’s real local timezone (US Eastern, Pacific, UK GMT, EU CET, Australian AEST).
             </p>
           </div>
 
           <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1">
             <div className="font-semibold text-emerald-400 flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4" />
-              <span>Recipient Timezone Guard</span>
+              <span>Automatic Reputation Safeguards</span>
             </div>
             <p className="text-slate-300 text-[11px] leading-relaxed">
-              The system calculates the recipient&apos;s real local time (US Eastern/Pacific, UK GMT, EU CET, AU AEST) and dispatches only between 9:00 AM and 5:00 PM local business hours.
+              Real-time MX record verification, syntax inspection, and automated 2–5 minute spacing between emails prevents Gmail rate-limiting.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Do-Not-Contact List (Suppression) */}
-      <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+      {/* Do-Not-Contact (Suppression) List */}
+      <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-3">
           <div>
             <h3 className="font-bold text-white text-sm flex items-center gap-2">
               <UserX className="w-4 h-4 text-rose-400" />
-              <span>Do-Not-Contact List (Global Opt-Out)</span>
+              <span>Do-Not-Contact List (Unsubscribes &amp; Competitors)</span>
             </h3>
-            <p className="text-xs text-slate-400">Emails or domains added here are permanently blocked from any outreach.</p>
+            <p className="text-xs text-slate-400">
+              Emails or domains added here are permanently blocked from receiving outreach.
+            </p>
           </div>
-          <span className="text-xs text-slate-400">{suppressionList.length} suppressed records</span>
+          <span className="text-xs text-slate-400 font-semibold">{suppressionList.length} suppressed</span>
         </div>
 
         {/* Add Entry Form */}
-        <form onSubmit={handleAddSuppression} className="flex gap-2">
+        <form onSubmit={handleAddSuppression} className="flex flex-col sm:flex-row gap-2">
           <input
             type="text"
             value={newSuppression}
-            onChange={e => setNewSuppression(e.target.value)}
-            placeholder="Add email (e.g. name@company.com) or domain (e.g. competitor.com)..."
-            className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
+            onChange={(e) => setNewSuppression(e.target.value)}
+            placeholder="Add email (john@example.com) or domain (competitor.com)..."
+            className="flex-1 bg-slate-950/80 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
           />
           <select
             value={suppressionReason}
-            onChange={e => setSuppressionReason(e.target.value)}
-            className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300"
+            onChange={(e) => setSuppressionReason(e.target.value)}
+            className="bg-slate-950/80 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
           >
-            <option value="unsubscribe">Unsubscribe request</option>
-            <option value="bounce">Hard bounce</option>
+            <option value="unsubscribe">Unsubscribed</option>
             <option value="competitor">Competitor</option>
-            <option value="manual_block">Operator block</option>
+            <option value="do_not_contact">Do Not Contact</option>
+            <option value="bounced">Hard Bounced</option>
           </select>
           <button
             type="submit"
-            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shrink-0"
+            className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shrink-0"
           >
-            Add to List
+            <Plus className="w-3.5 h-3.5" />
+            <span>Add Block</span>
           </button>
         </form>
 
-        {/* List Table */}
-        {suppressionList.length > 0 ? (
-          <div className="rounded-xl border border-slate-800 overflow-hidden text-xs">
-            <table className="w-full text-left">
-              <thead className="bg-slate-950/60 text-slate-400 border-b border-slate-800">
-                <tr>
-                  <th className="py-2.5 px-4">Blocked Email or Domain</th>
-                  <th className="py-2.5 px-4">Reason</th>
-                  <th className="py-2.5 px-4">Added When</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60 text-slate-300">
-                {suppressionList.map((item, idx) => (
-                  <tr key={idx} className="hover:bg-slate-800/40">
-                    <td className="py-2.5 px-4 font-mono font-bold text-white">{item.value}</td>
-                    <td className="py-2.5 px-4 capitalize">{item.reason || 'Unsubscribe'}</td>
-                    <td className="py-2.5 px-4 text-slate-400">
-                      {new Date(item.createdAt).toLocaleDateString()}
+        {/* Suppression Table */}
+        <div className="rounded-xl border border-slate-800 overflow-hidden bg-slate-950/40">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-950/80 text-slate-400 border-b border-slate-800 font-medium">
+              <tr>
+                <th className="py-2.5 px-3">Type</th>
+                <th className="py-2.5 px-3">Value</th>
+                <th className="py-2.5 px-3">Reason</th>
+                <th className="py-2.5 px-3">Added</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800/60 text-slate-300 font-mono text-[11px]">
+              {suppressionList.length > 0 ? (
+                suppressionList.map((entry, idx) => (
+                  <tr key={idx} className="hover:bg-slate-800/30">
+                    <td className="py-2.5 px-3 uppercase text-[10px] text-slate-400 font-sans">{entry.type}</td>
+                    <td className="py-2.5 px-3 font-semibold text-rose-300">
+                      <span>{entry.value}</span>
+                      {entry.isSandboxData && (
+                        <span className="ml-1.5 px-1 py-0.2 rounded bg-orange-500/20 text-orange-400 text-[9px] border border-orange-500/30 font-sans">DEMO</span>
+                      )}
                     </td>
+                    <td className="py-2.5 px-3 text-slate-400 font-sans">{entry.reason}</td>
+                    <td className="py-2.5 px-3 text-slate-500 font-sans">{new Date(entry.createdAt).toLocaleDateString()}</td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="p-8 text-center text-xs text-slate-500 bg-slate-950/40 rounded-xl border border-slate-800">
-            No entries on the do-not-contact list. Unsubscribed recipients and manual blocks will appear here.
-          </div>
-        )}
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={4} className="py-8 text-center text-slate-500 font-sans text-xs">
+                    No addresses on suppression list. New unsubscribes and blocks will appear here.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
 }
-

@@ -20,8 +20,9 @@ export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
   const status = searchParams.get('status') || undefined;
   const campaignId = searchParams.get('campaignId') || undefined;
+  const includeDemo = searchParams.get('demo') === 'true' || searchParams.get('demo') === '1';
 
-  const drafts = await dataStore.getDrafts({ status, campaignId });
+  const drafts = await dataStore.getDrafts({ status, campaignId, includeDemo });
   return NextResponse.json({
     success: true,
     total: drafts.length,

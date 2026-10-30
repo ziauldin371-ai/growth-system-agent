@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { dataStore } from '@/services/repository/data-store';
+import { isDemoOrSandboxRecord, computeHomeStats } from '@/services/repository/demo-guard';
 import { BusinessCard } from '@/components/dashboard/business-card';
 import { PageHeader, StatusChip } from '@/components/ui/design-system';
 import { 
@@ -21,22 +22,15 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-export default async function HomePage() {
-  const stats = await dataStore.getPlatformStats();
-  const { businesses: allBusinesses } = await dataStore.getBusinesses({ limit: 50 });
-  const drafts = await dataStore.getDrafts();
-  const lastRun = await dataStore.getLastSchedulerRun();
+interface PageProps {
+  searchParams?: Promise<{ demo?: string }>;
+}
 
-  // Sort best 5 opportunities by score
-  const topOpportunities = [...allBusinesses]
-    .sort((a, b) => {
-      const scoreA = a.score?.overallScore || a.heatScore || 0;
-      const scoreB = b.score?.overallScore || b.heatScore || 0;
-      return scoreB - scoreA;
-    })
-    .slice(0, 5);
+export default async function HomePage(props: PageProps) {
+  const searchParams = props.searchParams ? await props.searchParams : {};
+  const showDemo = searchParams.demo === 'true' || searchParams.demo === '1';
 
-  // Status banner logic
+  // Status flags
   const isEmergencyStop = process.env.EMERGENCY_STOP === 'true';
   const isGmailConfigured = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_REFRESH_TOKEN);
   const isPlacesConfigured = Boolean(process.env.GOOGLE_PLACES_API_KEY);
@@ -45,13 +39,44 @@ export default async function HomePage() {
   const isDbDisconnectedInProd = isProduction && !isSupabaseConfigured;
   const hasMockProvider = process.env.EMAIL_PROVIDER === 'mock' || !isGmailConfigured;
 
+  // In dev: if user turned on demo data, ensure seed exists
+  if (showDemo && !isProduction && dataStore.hasDemoData && !dataStore.hasDemoData()) {
+    if (dataStore.seedDemoData) {
+      await dataStore.seedDemoData();
+    }
+  }
+
+  // Fetch data
+  const { businesses: rawBusinesses } = await dataStore.getBusinesses({ limit: 100, includeDemo: showDemo });
+  const rawDrafts = await dataStore.getDrafts({ limit: 100, includeDemo: showDemo });
+  const lastRun = await dataStore.getLastSchedulerRun();
+
+  // Compute strictly consistent stats
+  const stats = computeHomeStats({
+    businesses: rawBusinesses,
+    drafts: rawDrafts,
+    isGmailConnected: isGmailConfigured,
+    showDemo,
+  });
+
+  // Top 5 opportunities
+  const topOpportunities = rawBusinesses
+    .filter(b => (showDemo ? true : !isDemoOrSandboxRecord(b)))
+    .sort((a, b) => {
+      const scoreA = a.score?.overallScore || a.heatScore || 0;
+      const scoreB = b.score?.overallScore || b.heatScore || 0;
+      return scoreB - scoreA;
+    })
+    .slice(0, 5);
+
   // Check if real test email to ziauldin371@gmail.com is confirmed in Gmail Sent
-  const sentEmails = await dataStore.getSentEmails();
+  const sentEmails = await dataStore.getSentEmails({ includeDemo: showDemo });
   const hasConfirmedTestEmail = sentEmails.some(
     (d: any) =>
       d.recipientEmail?.toLowerCase() === 'ziauldin371@gmail.com' &&
       (d.deliveryStatus === 'delivered' || d.status === 'sent') &&
-      Boolean(d.gmailMessageId)
+      Boolean(d.gmailMessageId) &&
+      !isDemoOrSandboxRecord(d)
   );
   const isAutoSendWaitingForTest = isProduction && !hasConfirmedTestEmail;
 
@@ -87,9 +112,9 @@ export default async function HomePage() {
       priority: 'medium',
     });
   }
-  if (stats.alternativeChannelsCount > 0 || stats.noEmailCount > 0) {
+  if (stats.manualOutreachCount > 0) {
     checklist.push({
-      title: `Review ${stats.alternativeChannelsCount || stats.noEmailCount} Businesses to Contact Manually`,
+      title: `Review ${stats.manualOutreachCount} Businesses to Contact Manually`,
       desc: 'These businesses have no email but active Facebook, Instagram, LinkedIn, or phone numbers.',
       buttonText: 'Open Manual Outreach',
       href: '/contact-manually',
@@ -107,20 +132,28 @@ export default async function HomePage() {
   }
   const nextActions = checklist.slice(0, 3);
 
-  // Plain-sentence timeline of today's activities
-  const timelineSentences = [
-    `Discovered ${stats.totalBusinesses} businesses across target global markets.`,
-    `${stats.noEmailCount || Math.round(stats.totalBusinesses * 0.4)} businesses have no website or only social media.`,
-    `Verified ${stats.eligibleEmailContacts} businesses matching 8-point strict safety rules.`,
-    `Sent ${stats.sentCount} emails confirmed in Gmail with verified message IDs.`,
-    `${stats.alternativeChannelsCount || stats.noEmailCount} businesses waiting for manual phone or social media outreach.`,
-  ];
-
-  const blockedDraftsCount = drafts.filter(d => (d as any).deliveryStatus === 'blocked' || d.status === 'rejected').length;
-
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-12">
-      {/* Top Banner (Only when needed) */}
+      {/* Demo Banner */}
+      {showDemo && (
+        <div className="p-4 rounded-2xl bg-orange-500/15 border border-orange-500/40 flex items-center justify-between gap-4 text-orange-200 shadow-md">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-orange-400 shrink-0" />
+            <div>
+              <span className="font-bold text-sm">Demo data is shown; these are not real businesses</span>
+              <span className="text-xs text-orange-300 ml-2">Simulated sandbox records for previewing workflow. Real outreach is blocked.</span>
+            </div>
+          </div>
+          <Link
+            href="/"
+            className="px-3.5 py-1.5 rounded-lg bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/40 text-orange-300 text-xs font-semibold shrink-0 transition-colors"
+          >
+            Hide Demo Data
+          </Link>
+        </div>
+      )}
+
+      {/* Production / Safety Top Banners */}
       {isDbDisconnectedInProd ? (
         <div className="p-4 rounded-2xl bg-rose-500/15 border border-rose-500/40 flex items-center justify-between gap-4 text-rose-200">
           <div className="flex items-center gap-3">
@@ -180,7 +213,7 @@ export default async function HomePage() {
         </div>
       )}
 
-      {/* Page Header */}
+      {/* Page Header with Demo Toggle */}
       <PageHeader
         title="Today at a glance"
         subtitle="Live metrics, what happened today, and what you should do next."
@@ -204,13 +237,30 @@ export default async function HomePage() {
           ],
         }}
         actions={
-          <Link
-            href="/run-and-schedule"
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md shadow-indigo-600/30 transition-all hover:scale-105"
-          >
-            <Sparkles className="w-4 h-4" />
-            <span>Find Businesses Now</span>
-          </Link>
+          <div className="flex items-center gap-3">
+            {!isProduction && (
+              <Link
+                href={showDemo ? '/' : '/?demo=true'}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium transition-colors select-none ${
+                  showDemo
+                    ? 'bg-orange-500/20 text-orange-300 border-orange-500/40 shadow-sm'
+                    : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-white'
+                }`}
+              >
+                <span className={`w-2 h-2 rounded-full ${showDemo ? 'bg-orange-400' : 'bg-slate-600'}`} />
+                <span>Show demo data</span>
+                <span className="text-[10px] px-1 py-0.2 rounded bg-orange-500/20 text-orange-400 font-bold border border-orange-500/30">DEMO</span>
+              </Link>
+            )}
+
+            <Link
+              href="/run-and-schedule"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md shadow-indigo-600/30 transition-all hover:scale-105"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Find Businesses Now</span>
+            </Link>
+          </div>
         }
       />
 
@@ -226,10 +276,10 @@ export default async function HomePage() {
             <Building2 className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" />
           </div>
           <div className="text-3xl font-extrabold text-white mt-2 tracking-tight">
-            {stats.totalBusinesses ?? 0}
+            {stats.totalBusinesses}
           </div>
           <div className="text-xs text-indigo-300 mt-1 flex items-center gap-1">
-            <span>{stats.qualifiedTotal ?? 0} qualified matches</span>
+            <span>{stats.qualifiedTotal} qualified matches</span>
             <ArrowUpRight className="w-3 h-3" />
           </div>
         </Link>
@@ -244,7 +294,7 @@ export default async function HomePage() {
             <CheckCircle2 className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
           </div>
           <div className="text-3xl font-extrabold text-emerald-400 mt-2 tracking-tight">
-            {stats.eligibleEmailContacts ?? 0}
+            {stats.eligibleEmailContacts}
           </div>
           <div className="text-xs text-slate-400 mt-1 flex items-center gap-1">
             <span>Passed 8 safety checks</span>
@@ -252,7 +302,7 @@ export default async function HomePage() {
           </div>
         </Link>
 
-        {/* 3. Emails Sent */}
+        {/* 3. Emails Sent (Confirmed in Gmail) */}
         <Link 
           href="/emails" 
           className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-indigo-500/50 hover:bg-slate-900 transition-all group block shadow-sm"
@@ -262,11 +312,13 @@ export default async function HomePage() {
             <Send className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" />
           </div>
           <div className="text-3xl font-extrabold text-white mt-2 tracking-tight">
-            {stats.sentCount ?? 0}
+            {isGmailConfigured ? stats.sentCount : 0}
           </div>
-          <div className="text-xs text-indigo-300 mt-1 flex items-center gap-1">
-            <span>{stats.confirmedDeliveries ?? 0} confirmed in Gmail</span>
-            <ArrowUpRight className="w-3 h-3" />
+          <div className="text-xs mt-1 flex items-center gap-1">
+            <span className={isGmailConfigured ? 'text-indigo-300' : 'text-amber-400 font-medium'}>
+              {isGmailConfigured ? `${stats.confirmedDeliveries} confirmed in Gmail` : 'Gmail not connected'}
+            </span>
+            <ArrowUpRight className="w-3 h-3 text-slate-500" />
           </div>
         </Link>
 
@@ -280,7 +332,7 @@ export default async function HomePage() {
             <MessageSquare className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
           </div>
           <div className="text-3xl font-extrabold text-white mt-2 tracking-tight">
-            {stats.repliesCount ?? 0}
+            {isGmailConfigured ? stats.repliesCount : 0}
           </div>
           <div className="text-xs mt-1 flex items-center gap-1">
             <span className={isGmailConfigured ? 'text-slate-400' : 'text-amber-400 font-medium'}>
@@ -301,7 +353,7 @@ export default async function HomePage() {
           <div className="space-y-1">
             <span className="text-xs text-slate-400 font-medium">Contact manually (waiting for you)</span>
             <div className="text-xl font-bold text-amber-300">
-              {(stats.alternativeChannelsCount || stats.noEmailCount) ?? 0} businesses
+              {stats.manualOutreachCount} businesses
             </div>
             <div className="text-[11px] text-slate-500">Facebook, Instagram, WhatsApp, phone</div>
           </div>
@@ -316,7 +368,7 @@ export default async function HomePage() {
           <div className="space-y-1">
             <span className="text-xs text-slate-400 font-medium">Blocked emails (why)</span>
             <div className="text-xl font-bold text-rose-300">
-              {blockedDraftsCount ?? 0} drafts blocked
+              {stats.blockedDraftsCount} drafts blocked
             </div>
             <div className="text-[11px] text-slate-500">View exact reasons (hours, demo, MX)</div>
           </div>
@@ -360,7 +412,7 @@ export default async function HomePage() {
           </div>
           <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
             <div className="text-slate-400 text-[11px]">Replied</div>
-            <div className="text-lg font-bold text-emerald-400 mt-1">0</div>
+            <div className="text-lg font-bold text-emerald-400 mt-1">{stats.repliesCount}</div>
           </div>
           <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
             <div className="text-emerald-300 text-[11px] font-semibold">Client</div>
@@ -413,7 +465,7 @@ export default async function HomePage() {
           </div>
 
           <ul className="space-y-2.5">
-            {timelineSentences.map((sentence, idx) => (
+            {stats.timelineSentences.map((sentence, idx) => (
               <li key={idx} className="flex items-start gap-2.5 text-xs text-slate-300">
                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0 mt-1.5" />
                 <span>{sentence}</span>
@@ -443,7 +495,7 @@ export default async function HomePage() {
             ))
           ) : (
             <div className="p-8 text-center text-slate-500 text-xs bg-slate-900/40 rounded-2xl border border-slate-800">
-              No businesses discovered yet. Click &quot;Find Businesses Now&quot; to begin.
+              No real businesses discovered yet. Click &quot;Find Businesses Now&quot; to begin.
             </div>
           )}
         </div>

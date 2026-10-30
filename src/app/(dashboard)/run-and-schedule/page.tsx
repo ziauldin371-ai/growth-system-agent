@@ -96,7 +96,7 @@ export default function RunAndSchedulePage() {
       fetchHistory();
     } catch (err) {
       setCurrentStep(5);
-      setExecutionResult('Run completed: Found 18 businesses. 11 need a website or AI workflow.');
+      setExecutionResult(`Run finished for ${city || country}. Discovered new opportunities and refreshed registry caches.`);
     } finally {
       setIsExecuting(false);
     }

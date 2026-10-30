@@ -33,14 +33,17 @@ interface EmailItem {
   blockedReason?: string;
   gmailMessageId?: string;
   gmailThreadId?: string;
+  isDemo?: boolean;
 }
 
 function EmailsContent() {
   const searchParams = useSearchParams();
   const { t } = useLanguage();
   const initialTab = (searchParams.get('tab') as EmailTab) || 'sent';
+  const initialDemo = searchParams.get('demo') === 'true' || searchParams.get('demo') === '1';
 
   const [activeTab, setActiveTab] = useState<EmailTab>(initialTab);
+  const [showDemo, setShowDemo] = useState(initialDemo);
   const [emails, setEmails] = useState<EmailItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSendingTest, setIsSendingTest] = useState(false);
@@ -50,17 +53,34 @@ function EmailsContent() {
   const loadEmails = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/leads/sent');
+      const res = await fetch(`/api/leads/sent?demo=${showDemo}`);
       const data = await res.json();
       
-      const resDrafts = await fetch('/api/drafts').catch(() => ({ json: () => ({ drafts: [] }) }));
+      const resDrafts = await fetch(`/api/drafts?demo=${showDemo}`).catch(() => ({ json: () => ({ drafts: [] }) }));
       const draftsData = await resDrafts.json();
 
       const combined: EmailItem[] = [];
 
+      // Helper to identify demo emails
+      const isDemoRecord = (e: any) =>
+        Boolean(
+          e.isSandboxData ||
+          e.isDemo ||
+          e.recipientEmail?.includes('.mock') ||
+          e.recipientEmail?.includes('.internal') ||
+          e.recipientEmail?.includes('docusynclogistics.io') ||
+          e.businessName?.includes('FinFlow') ||
+          e.businessName?.includes('DocuSync') ||
+          e.businessName?.includes('Vanguard') ||
+          e.id?.includes('draft-00')
+        );
+
       // 1. Sent emails
       if (data.success && Array.isArray(data.emails)) {
         data.emails.forEach((e: any) => {
+          const demo = isDemoRecord(e);
+          if (!showDemo && demo) return;
+
           combined.push({
             id: e.id,
             businessName: e.businessName || 'Business',
@@ -72,6 +92,7 @@ function EmailsContent() {
             statusLabel: 'Sent (confirmed)',
             gmailMessageId: e.gmailMessageId,
             gmailThreadId: e.gmailThreadId,
+            isDemo: demo,
           });
         });
       }
@@ -79,6 +100,9 @@ function EmailsContent() {
       // 2. Drafts (waiting or blocked)
       if (draftsData.drafts && Array.isArray(draftsData.drafts)) {
         draftsData.drafts.forEach((d: any) => {
+          const demo = isDemoRecord(d);
+          if (!showDemo && demo) return;
+
           const isBlocked = d.deliveryStatus === 'blocked' || d.status === 'rejected';
           combined.push({
             id: d.id,
@@ -89,6 +113,7 @@ function EmailsContent() {
             status: isBlocked ? 'blocked' : 'waiting',
             statusLabel: isBlocked ? 'Blocked' : 'Waiting to Send',
             blockedReason: d.rejectionReason || 'Pending automated safety checks or outside business hours',
+            isDemo: demo,
           });
         });
       }
@@ -99,7 +124,7 @@ function EmailsContent() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [showDemo]);
 
   useEffect(() => {
     loadEmails();
@@ -161,6 +186,25 @@ function EmailsContent() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
+      {/* Demo Banner */}
+      {showDemo && (
+        <div className="p-4 rounded-2xl bg-orange-500/15 border border-orange-500/40 flex items-center justify-between gap-4 text-orange-200">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-orange-400 shrink-0" />
+            <div>
+              <span className="font-bold text-sm">Demo data is shown; these are not real businesses</span>
+              <span className="text-xs text-orange-300 ml-2">Simulated sandbox records. Outreach is blocked.</span>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowDemo(false)}
+            className="px-3.5 py-1.5 rounded-lg bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/40 text-orange-300 text-xs font-semibold shrink-0"
+          >
+            Hide Demo Data
+          </button>
+        </div>
+      )}
+
       {/* Page Header */}
       <PageHeader
         title="Who did we email?"
@@ -184,6 +228,17 @@ function EmailsContent() {
         }}
         actions={
           <div className="flex items-center gap-2">
+            <label className="flex items-center space-x-2 text-xs text-slate-400 cursor-pointer select-none bg-slate-950/60 border border-slate-800 px-3 py-1.5 rounded-xl hover:border-slate-700 transition-colors mr-2">
+              <input
+                type="checkbox"
+                checked={showDemo}
+                onChange={(e) => setShowDemo(e.target.checked)}
+                className="rounded border-slate-700 bg-slate-950 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5"
+              />
+              <span>Show demo data</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded bg-orange-500/20 text-orange-400 font-bold border border-orange-500/30">DEMO</span>
+            </label>
+
             <button
               onClick={handleSyncGmail}
               disabled={isSyncing}
@@ -304,7 +359,12 @@ function EmailsContent() {
                 {filtered.map((item) => (
                   <tr key={item.id} className="hover:bg-slate-800/40 transition-colors">
                     <td className="py-3.5 px-4 font-bold text-white max-w-xs truncate">
-                      {item.businessName}
+                      <span>{item.businessName}</span>
+                      {item.isDemo && (
+                        <span className="ml-2 px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400 font-bold text-[10px] border border-orange-500/30">
+                          DEMO
+                        </span>
+                      )}
                     </td>
                     <td className="py-3.5 px-4 font-mono text-[11px] text-slate-400">
                       {item.recipientEmail}
@@ -373,7 +433,7 @@ function EmailsContent() {
           }
           description={
             activeTab === 'sent'
-              ? 'When the system sends an email, it appears here and in your real Gmail Sent folder.'
+              ? 'When the system sends a real email via Gmail, it appears here and in your real Gmail Sent folder.'
               : activeTab === 'blocked'
               ? 'Great news! All verified drafts passed automated safety checks.'
               : 'Sync your Gmail inbox or send a test email to verify your connection.'
@@ -393,4 +453,3 @@ export default function EmailsPage() {
     </Suspense>
   );
 }
-

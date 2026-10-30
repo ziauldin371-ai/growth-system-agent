@@ -21,6 +21,7 @@ import { IDataStore } from './interface';
 import { normalizeBusinessName, normalizeEmail } from '../crm/normalization';
 import { normalizeDomain } from '../website/verifier';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { isDemoOrSandboxRecord, isRealVerifiedSentEmail, computeHomeStats } from './demo-guard';
 
 export class DataStore implements IDataStore {
   private persistenceFilePath: string;
@@ -148,6 +149,9 @@ export class DataStore implements IDataStore {
   }
 
   private seedInitialData(): void {
+    if (process.env.NODE_ENV === 'production') {
+      return;
+    }
     // Lead 1: Pipeline A (Website Opportunity)
     const b1Id = 'biz-001-vanguard-hvac';
     const b1: BusinessEntity = {
@@ -948,7 +952,54 @@ ziauldin371@gmail.com`,
     // Label all initial sandbox seed records
     for (const b of Array.from(this.businesses.values())) {
       b.isSandboxData = true;
+      (b as any).isDemo = true;
     }
+    for (const d of Array.from(this.drafts.values())) {
+      (d as any).isSandboxData = true;
+      (d as any).isDemo = true;
+    }
+    for (const ch of Array.from(this.alternativeChannels.values())) {
+      (ch as any).isSandboxData = true;
+      (ch as any).isDemo = true;
+    }
+    for (const s of Array.from(this.suppression.values())) {
+      (s as any).isSandboxData = true;
+      (s as any).isDemo = true;
+    }
+  }
+
+  public seedDemoData(): void {
+    if (process.env.NODE_ENV === 'production') return;
+    this.seedInitialData();
+    this.persistState();
+  }
+
+  public clearDemoData(): void {
+    for (const [id, b] of Array.from(this.businesses.entries())) {
+      if (isDemoOrSandboxRecord(b)) {
+        this.businesses.delete(id);
+      }
+    }
+    for (const [id, d] of Array.from(this.drafts.entries())) {
+      if (isDemoOrSandboxRecord(d)) {
+        this.drafts.delete(id);
+      }
+    }
+    for (const [id, ch] of Array.from(this.alternativeChannels.entries())) {
+      if (isDemoOrSandboxRecord(ch)) {
+        this.alternativeChannels.delete(id);
+      }
+    }
+    for (const [id, s] of Array.from(this.suppression.entries())) {
+      if (isDemoOrSandboxRecord(s)) {
+        this.suppression.delete(id);
+      }
+    }
+    this.persistState();
+  }
+
+  public hasDemoData(): boolean {
+    return Array.from(this.businesses.values()).some(b => isDemoOrSandboxRecord(b));
   }
 
   // --- Businesses ---
@@ -959,8 +1010,13 @@ ziauldin371@gmail.com`,
     country?: string;
     limit?: number;
     offset?: number;
+    includeDemo?: boolean;
   }): { businesses: BusinessEntity[]; total: number } {
     let list = Array.from(this.businesses.values());
+
+    if (!filter?.includeDemo) {
+      list = list.filter(b => !isDemoOrSandboxRecord(b));
+    }
 
     if (filter?.pipeline && filter.pipeline !== 'all') {
       list = list.filter(b => b.pipelineType === filter.pipeline);
@@ -1033,8 +1089,11 @@ ziauldin371@gmail.com`,
   }
 
   // --- Drafts & Approvals ---
-  public getDrafts(filter?: { status?: string; campaignId?: string }): EmailDraftEntity[] {
+  public getDrafts(filter?: { status?: string; campaignId?: string; limit?: number; offset?: number; includeDemo?: boolean }): EmailDraftEntity[] {
     let list = Array.from(this.drafts.values());
+    if (!filter?.includeDemo) {
+      list = list.filter(d => !isDemoOrSandboxRecord(d));
+    }
     if (filter?.status && filter.status !== 'all') {
       list = list.filter(d => d.status === filter.status);
     }
@@ -1197,8 +1256,13 @@ ziauldin371@gmail.com`,
     hasEmail?: boolean;
     industry?: string;
     search?: string;
+    includeDemo?: boolean;
   }): BusinessEntity[] {
     let result = Array.from(this.businesses.values());
+
+    if (filters?.includeDemo === false) {
+      result = result.filter(b => !isDemoOrSandboxRecord(b));
+    }
 
     if (filters?.country && filters.country !== 'all') {
       result = result.filter(b => b.country.toLowerCase() === filters.country?.toLowerCase());
@@ -1247,7 +1311,7 @@ ziauldin371@gmail.com`,
   /**
    * 2. Ready for Email: Contacts meeting 100% of sending criteria
    */
-  public getReadyForEmailLeads(): Array<{
+  public getReadyForEmailLeads(options?: { includeDemo?: boolean }): Array<{
     business: BusinessEntity;
     contact: ContactEntity;
     score: LeadScoreEntity;
@@ -1255,7 +1319,10 @@ ziauldin371@gmail.com`,
     reasons: string[];
   }> {
     const list: Array<any> = [];
-    const businesses = Array.from(this.businesses.values()).filter(b => b.qualificationStatus === 'qualified');
+    let businesses = Array.from(this.businesses.values()).filter(b => b.qualificationStatus === 'qualified');
+    if (options?.includeDemo === false) {
+      businesses = businesses.filter(b => !isDemoOrSandboxRecord(b));
+    }
 
     for (const b of businesses) {
       const contacts = this.contacts.get(b.id) || [];
@@ -1297,8 +1364,12 @@ ziauldin371@gmail.com`,
   /**
    * 3. Sent Emails: Message history with Gmail Sent links
    */
-  public getSentEmails(): Array<EmailDraftEntity & { businessName: string; country: string; domain?: string | null }> {
-    const sentDrafts = Array.from(this.drafts.values()).filter(d => d.status === 'sent');
+  public getSentEmails(options?: { includeDemo?: boolean }): Array<EmailDraftEntity & { businessName: string; country: string; domain?: string | null }> {
+    let sentDrafts = Array.from(this.drafts.values()).filter(d => d.status === 'sent');
+    if (options?.includeDemo === false) {
+      const isGmailConnected = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_REFRESH_TOKEN);
+      sentDrafts = sentDrafts.filter(d => isRealVerifiedSentEmail(d, isGmailConnected));
+    }
     return sentDrafts.map(d => {
       const b = this.businesses.get(d.businessId);
       const contacts = this.contacts.get(d.businessId) || [];
@@ -1315,12 +1386,16 @@ ziauldin371@gmail.com`,
   /**
    * 4. Other Outreach Opportunities: Businesses with professional channels beyond email
    */
-  public getOtherOutreachOpportunities(): Array<{
+  public getOtherOutreachOpportunities(options?: { includeDemo?: boolean }): Array<{
     business: BusinessEntity;
     channels: AlternativeChannelEntity[];
   }> {
     const result: Array<any> = [];
-    for (const b of Array.from(this.businesses.values())) {
+    let list = Array.from(this.businesses.values());
+    if (options?.includeDemo === false) {
+      list = list.filter(b => !isDemoOrSandboxRecord(b));
+    }
+    for (const b of list) {
       const channels = this.getAlternativeChannels(b.id);
       if (channels.length > 0) {
         result.push({
@@ -1339,13 +1414,17 @@ ziauldin371@gmail.com`,
   /**
    * 5. Email Sent + Other Channels: Multi-touch prospective clients
    */
-  public getEmailSentPlusOtherChannels(): Array<{
+  public getEmailSentPlusOtherChannels(options?: { includeDemo?: boolean }): Array<{
     business: BusinessEntity;
     draft: EmailDraftEntity;
     channels: AlternativeChannelEntity[];
   }> {
     const result: Array<any> = [];
-    const sentDrafts = Array.from(this.drafts.values()).filter(d => d.status === 'sent');
+    let sentDrafts = Array.from(this.drafts.values()).filter(d => d.status === 'sent');
+    if (options?.includeDemo === false) {
+      const isGmailConnected = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_REFRESH_TOKEN);
+      sentDrafts = sentDrafts.filter(d => isRealVerifiedSentEmail(d, isGmailConnected));
+    }
 
     for (const d of sentDrafts) {
       const b = this.businesses.get(d.businessId);
@@ -1368,12 +1447,16 @@ ziauldin371@gmail.com`,
   /**
    * 6. No Email Available: Businesses without usable business email
    */
-  public getNoEmailBusinesses(): Array<{
+  public getNoEmailBusinesses(options?: { includeDemo?: boolean }): Array<{
     business: BusinessEntity;
     channels: AlternativeChannelEntity[];
   }> {
     const result: Array<any> = [];
-    for (const b of Array.from(this.businesses.values())) {
+    let list = Array.from(this.businesses.values());
+    if (options?.includeDemo === false) {
+      list = list.filter(b => !isDemoOrSandboxRecord(b));
+    }
+    for (const b of list) {
       const contacts = this.contacts.get(b.id) || [];
       const hasEmail = contacts.some(c => c.email && c.email.includes('@'));
       if (!hasEmail) {
@@ -1508,44 +1591,47 @@ ziauldin371@gmail.com`,
   }
 
   // --- Analytics & Stats ---
-  public getPlatformStats() {
-    const allBiz = Array.from(this.businesses.values());
+  public getPlatformStats(options?: { includeDemo?: boolean }) {
+    const isGmailConnected = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_REFRESH_TOKEN);
+    const homeStats = computeHomeStats({
+      businesses: Array.from(this.businesses.values()),
+      drafts: Array.from(this.drafts.values()),
+      isGmailConnected,
+      showDemo: options?.includeDemo ?? false,
+    });
+
+    let allBiz = Array.from(this.businesses.values());
+    let drafts = Array.from(this.drafts.values());
+    if (!options?.includeDemo) {
+      allBiz = allBiz.filter(b => !isDemoOrSandboxRecord(b));
+      drafts = drafts.filter(d => !isDemoOrSandboxRecord(d));
+    }
     const pipeA = allBiz.filter(b => b.pipelineType === 'website_opportunities');
     const pipeB = allBiz.filter(b => b.pipelineType === 'ai_software_opportunities');
-    const drafts = Array.from(this.drafts.values());
     const approvedDrafts = drafts.filter(d => d.status === 'approved');
-    const sentDrafts = drafts.filter(d => d.status === 'sent');
-    const suppressionCount = this.suppression.size;
-
-    const readyForEmail = this.getReadyForEmailLeads();
-    const sentPlusChannels = this.getEmailSentPlusOtherChannels();
-    const noEmail = this.getNoEmailBusinesses();
-    const otherOpportunities = this.getOtherOutreachOpportunities();
-    const confirmedDeliveries = sentDrafts.filter(d => d.deliveryStatus === 'delivered' || d.status === 'sent').length;
-    const failuresCount = sentDrafts.filter(d => d.deliveryStatus === 'failed').length;
-    const repliesCount = sentDrafts.filter(d => d.deliveryStatus === 'replied').length;
 
     return {
-      totalBusinesses: allBiz.length,
+      totalBusinesses: homeStats.totalBusinesses,
       pipelineAOpportunities: pipeA.length,
       pipelineBOpportunities: pipeB.length,
-      qualifiedTotal: allBiz.filter(b => b.qualificationStatus === 'qualified').length,
+      qualifiedTotal: homeStats.qualifiedTotal,
       totalDrafts: drafts.length,
       approvedDrafts: approvedDrafts.length,
-      sentCount: sentDrafts.length,
-      confirmedDeliveries,
-      failuresCount,
-      repliesCount,
-      suppressionCount,
-      eligibleEmailContacts: readyForEmail.length,
-      alternativeChannelsCount: this.alternativeChannels.size,
-      otherOutreachCount: otherOpportunities.length,
-      emailSentPlusChannelsCount: sentPlusChannels.length,
-      noEmailCount: noEmail.length,
+      sentCount: homeStats.sentCount,
+      confirmedDeliveries: homeStats.confirmedDeliveries,
+      failuresCount: drafts.filter(d => d.deliveryStatus === 'failed').length,
+      repliesCount: homeStats.repliesCount,
+      suppressionCount: this.suppression.size,
+      eligibleEmailContacts: homeStats.eligibleEmailContacts,
+      alternativeChannelsCount: homeStats.manualOutreachCount,
+      otherOutreachCount: homeStats.manualOutreachCount,
+      emailSentPlusChannelsCount: 0,
+      noEmailCount: homeStats.manualOutreachCount,
       activeCampaigns: Array.from(this.campaigns.values()).filter(c => c.status === 'running' || c.status === 'scheduled').length,
       operatingMode: this.operatingMode,
       automationPaused: this.automationPaused,
       lastSchedulerRun: this.getLastSchedulerRun(),
+      timelineSentences: homeStats.timelineSentences,
     };
   }
 }

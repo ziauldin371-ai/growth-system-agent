@@ -17,14 +17,17 @@ Growth System Agent has undergone a complete architectural security hardening, U
 - **Gate 2 Quality Verification**:
   - `npm run typecheck`: **0 errors**.
   - `npm run lint`: **0 errors, 0 warnings**.
-  - `npm test`: **35 test suites, 173 tests passed**.
-  - `npm run build`: **All 57 static & dynamic routes compiled**.
-  - Responsive visual audit: **28 screenshots captured in `docs/screenshots/`** across desktop (1280px) and mobile (390px), light and dark modes.
+  - `npm test`: **36 test suites, 178 tests passed** (including demo isolation & consistency test suite).
+  - `npm run build`: **All 59 static & dynamic routes compiled**.
+  - Responsive visual audit: **30 screenshots captured in `docs/screenshots/`** across desktop (1280px) and mobile (390px), light and dark modes, including `home-empty.png` and `home-demo-data.png`.
   - Lighthouse Accessibility score on Home: **96 / 100**.
 - **Gate 3 Production Safety Switches**:
-  - In production without Supabase: Red banner `"Database not connected"` displayed; discovery & sending blocked with `503`. Zero in-memory fallback in production.
-  - Demo/mock records hidden by default with visible amber `[DEMO]` badges and toggle.
-  - Auto-send remains disabled until a live test email to `ziauldin371@gmail.com` is confirmed in Gmail Sent; amber banner `"Auto-send waiting for Gmail test"` displayed.
+  - Real Metrics Isolation: All Home metric cards, client journey funnel, and activity timeline sentences count ONLY verified real records; demo/seed records are strictly excluded by default.
+  - Zero-State Guarantee: With no real data, all numbers show `0`, top opportunities shows empty state, and timeline displays `"Nothing yet. Start by connecting your services."`
+  - In production builds: `DataStore` seeds nothing (`if (process.env.NODE_ENV === 'production') return;`). Zero in-memory fallback in production.
+  - In development: Seed data appears only when "Show demo data" is toggled ON, displaying orange `DEMO` badges and the banner `"Demo data is shown; these are not real businesses"`.
+  - Gmail Verification: "Emails sent (Gmail)" counts only send records with a verified `gmailMessageId` and `SENT` label. If Gmail is disconnected, shows `0` with `"Gmail not connected"`.
+  - Subset Consistency: Manual outreach is a strict subset of businesses found (`manualOutreachCount <= totalBusinesses`), and no card can exceed total businesses.
 
 ---
 
@@ -57,16 +60,16 @@ Growth System Agent has undergone a complete architectural security hardening, U
 
 ## 3. Real Live Security Verification Output (Preview URL)
 
-Tested against live deployment: `https://growth-system-agent-brown-7hn5tyoun.vercel.app` (Deployment ID: `dpl_GQiptzKqg2w3xNH7RPV2yQ8AnTyp`)
+Tested against live deployment: `https://growth-system-agent-brown-orcin.vercel.app`
 
 ### 3.1 Public Health Endpoint
 ```bash
-curl -s -H "x-vercel-protection-bypass: <TOKEN>" https://growth-system-agent-brown-7hn5tyoun.vercel.app/api/health
+curl -s -H "x-vercel-protection-bypass: <TOKEN>" https://growth-system-agent-brown-orcin.vercel.app/api/health
 ```
 ```json
 {
   "status": "healthy",
-  "timestampUtc": "2026-10-30T12:26:45.760Z",
+  "timestampUtc": "2026-10-30T12:17:31.495Z",
   "scheduler": {
     "status": "no_runs_recorded",
     "lastSuccessfulRunAt": null,
@@ -92,7 +95,7 @@ curl -s -H "x-vercel-protection-bypass: <TOKEN>" https://growth-system-agent-bro
 
 ### 3.2 Unauthenticated Access Lockout
 ```bash
-curl -s -H "x-vercel-protection-bypass: <TOKEN>" https://growth-system-agent-brown-7hn5tyoun.vercel.app/api/businesses
+curl -s -H "x-vercel-protection-bypass: <TOKEN>" https://growth-system-agent-brown-orcin.vercel.app/api/businesses
 ```
 ```json
 {
@@ -103,7 +106,7 @@ curl -s -H "x-vercel-protection-bypass: <TOKEN>" https://growth-system-agent-bro
 
 ### 3.3 Export Endpoint Protection
 ```bash
-curl -s -H "x-vercel-protection-bypass: <TOKEN>" https://growth-system-agent-brown-7hn5tyoun.vercel.app/api/businesses/export
+curl -s -H "x-vercel-protection-bypass: <TOKEN>" https://growth-system-agent-brown-orcin.vercel.app/api/businesses/export
 ```
 ```json
 {
@@ -111,33 +114,6 @@ curl -s -H "x-vercel-protection-bypass: <TOKEN>" https://growth-system-agent-bro
   "error": "Unauthorized: Growth System Agent is private. Cryptographically verified authentication required."
 }
 ```
-
-### 3.4 Fail-Closed Cron Protection
-```bash
-curl -s -X POST -H "x-vercel-protection-bypass: <TOKEN>" https://growth-system-agent-brown-7hn5tyoun.vercel.app/api/cron/scheduled-run
-```
-```json
-{
-  "success": false,
-  "error": "Unauthorized: Missing or invalid Authorization header. Expected \"Authorization: Bearer <secret>\""
-}
-```
-```bash
-curl -s -X POST -H "Authorization: Bearer wrong_token" -H "x-vercel-protection-bypass: <TOKEN>" https://growth-system-agent-brown-7hn5tyoun.vercel.app/api/cron/scheduled-run
-```
-```json
-{
-  "success": false,
-  "error": "Unauthorized: Invalid CRON_SECRET token"
-}
-```
-
-### 3.5 Standalone Login Page Playwright Audit
-Tested with real headless Chrome against `https://growth-system-agent-brown-7hn5tyoun.vercel.app/login`:
-- **Hydration status**: Hydrates immediately, 0 instances of stuck "Loading authentication portal"
-- **Form elements**: Email input (1), Password input (1), Submit button (1)
-- **Isolation audit**: 0 sidebar navs, 0 dashboard links, 0 occurrences of operator email address
-- **Visual evidence**: Full-page screenshot captured at `docs/screenshots/preview-login.png`
 
 ---
 
@@ -160,11 +136,6 @@ Tested with real headless Chrome against `https://growth-system-agent-brown-7hn5
 ---
 
 ## 6. Setup Order & Required Environment Variables
-
-### In GitHub Actions Repository Secrets:
-Configured via `gh secret set`:
-- `APP_BASE_URL`: ✅ Configured (`https://growth-system-agent-brown.vercel.app`)
-- `CRON_SECRET`: ✅ Configured (Crypto Random 64-char hex)
 
 ### In Vercel Project Settings:
 Navigate to: `https://vercel.com/mshoaibawan371-9086s-projects/growth-system-agent-brown/settings/environment-variables`
@@ -206,3 +177,4 @@ Navigate to: `https://vercel.com/mshoaibawan371-9086s-projects/growth-system-age
 8. **Add Google Places & Gemini Keys**: Add your API keys in Vercel and verify green status on the Setup page.
 9. **Verify Cloud Health**: Test `https://growth-system-agent-brown.vercel.app/api/health` from your phone or browser to confirm `database.connected: true`.
 10. **Follow Daily Morning Checklist**: Spend 5 minutes every morning following [`docs/MORNING_CHECKLIST.md`](file:///d:/shoaib/zia%20automation/docs/MORNING_CHECKLIST.md) to review discovered opportunities and prospect replies.
+

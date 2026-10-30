@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { 
   MessageSquareShare, 
   Phone, 
@@ -13,32 +14,48 @@ import {
   ArrowRight,
   Globe,
   Share2,
-  CheckCircle2
+  CheckCircle2,
+  AlertTriangle
 } from 'lucide-react';
 import { PageHeader, EmptyState, StatusChip, MatchChip } from '@/components/ui/design-system';
 import { useLanguage } from '@/context/language-context';
 
-export default function ContactManuallyPage() {
+function ContactManuallyContent() {
+  const searchParams = useSearchParams();
   const { t } = useLanguage();
+  const initialDemo = searchParams.get('demo') === 'true' || searchParams.get('demo') === '1';
+
+  const [showDemo, setShowDemo] = useState(initialDemo);
   const [businesses, setBusinesses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [contactedIds, setContactedIds] = useState<Set<string>>(new Set());
 
+  const isDemoRecord = (b: any) =>
+    Boolean(
+      b.isSandboxData ||
+      b.isDemo ||
+      b.sourceProvider === 'b2b_mock' ||
+      (b.domain && (b.domain.includes('.mock') || b.domain.includes('.internal'))) ||
+      b.organizationId === 'org-demo-001'
+    );
+
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/leads/no-email');
+      const res = await fetch(`/api/leads/no-email?demo=${showDemo}`);
       const data = await res.json();
       if (data.success && Array.isArray(data.businesses)) {
-        setBusinesses(data.businesses);
+        const list = data.businesses.map((item: any) => item.business || item);
+        const filtered = list.filter((b: any) => (showDemo ? true : !isDemoRecord(b)));
+        setBusinesses(filtered);
       }
     } catch (err) {
       console.error('Failed to load manual outreach leads:', err);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [showDemo]);
 
   useEffect(() => {
     loadData();
@@ -56,6 +73,25 @@ export default function ContactManuallyPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
+      {/* Demo Banner */}
+      {showDemo && (
+        <div className="p-4 rounded-2xl bg-orange-500/15 border border-orange-500/40 flex items-center justify-between gap-4 text-orange-200">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-orange-400 shrink-0" />
+            <div>
+              <span className="font-bold text-sm">Demo data is shown; these are not real businesses</span>
+              <span className="text-xs text-orange-300 ml-2">Simulated sandbox records. Outreach is blocked.</span>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowDemo(false)}
+            className="px-3.5 py-1.5 rounded-lg bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/40 text-orange-300 text-xs font-semibold shrink-0"
+          >
+            Hide Demo Data
+          </button>
+        </div>
+      )}
+
       {/* Page Header */}
       <PageHeader
         title="Who should I contact myself?"
@@ -78,13 +114,26 @@ export default function ContactManuallyPage() {
           ],
         }}
         actions={
-          <Link
-            href="/run-and-schedule"
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md shadow-indigo-600/30 transition-all hover:scale-105"
-          >
-            <Sparkles className="w-4 h-4" />
-            <span>Find More Businesses</span>
-          </Link>
+          <div className="flex items-center gap-2">
+            <label className="flex items-center space-x-2 text-xs text-slate-400 cursor-pointer select-none bg-slate-950/60 border border-slate-800 px-3 py-1.5 rounded-xl hover:border-slate-700 transition-colors mr-2">
+              <input
+                type="checkbox"
+                checked={showDemo}
+                onChange={(e) => setShowDemo(e.target.checked)}
+                className="rounded border-slate-700 bg-slate-950 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5"
+              />
+              <span>Show demo data</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded bg-orange-500/20 text-orange-400 font-bold border border-orange-500/30">DEMO</span>
+            </label>
+
+            <Link
+              href="/run-and-schedule"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md shadow-indigo-600/30 transition-all hover:scale-105"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Find More Businesses</span>
+            </Link>
+          </div>
         }
       />
 
@@ -101,6 +150,7 @@ export default function ContactManuallyPage() {
             const isContacted = contactedIds.has(id);
             const score = item.score?.overallScore || item.heatScore || 70;
             const phone = item.phone;
+            const isDemo = isDemoRecord(item);
             const websiteStatus = item.websiteCheck?.status || (!item.domain ? 'No website found' : 'functional');
             const socialUrls: string[] = item.websiteCheck?.socialUrls || [];
 
@@ -127,6 +177,11 @@ export default function ContactManuallyPage() {
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="text-base font-bold text-white">{item.name}</h3>
+                      {isDemo && (
+                        <span className="px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400 font-bold text-[10px] border border-orange-500/30">
+                          DEMO
+                        </span>
+                      )}
                       <StatusChip 
                         variant={item.domain ? 'neutral' : 'error'} 
                         label={item.domain ? 'Website works' : 'No website found'} 
@@ -183,9 +238,9 @@ export default function ContactManuallyPage() {
                   {phone && (
                     <a
                       href={`tel:${phone}`}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20 text-xs font-semibold"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold"
                     >
-                      <Phone className="w-3.5 h-3.5" />
+                      <Phone className="w-3.5 h-3.5 text-indigo-400" />
                       <span>{phone}</span>
                     </a>
                   )}
@@ -195,10 +250,10 @@ export default function ContactManuallyPage() {
                       href={facebook}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/20 text-xs font-semibold"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 border border-blue-500/20 text-xs font-semibold"
                     >
-                      <Globe className="w-3.5 h-3.5" />
-                      <span>Facebook Profile</span>
+                      <Share2 className="w-3.5 h-3.5" />
+                      <span>Facebook Page</span>
                       <ExternalLink className="w-3 h-3" />
                     </a>
                   )}
@@ -221,32 +276,31 @@ export default function ContactManuallyPage() {
                       href={linkedIn}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 border border-blue-500/20 text-xs font-semibold"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/20 text-xs font-semibold"
                     >
                       <Share2 className="w-3.5 h-3.5" />
-                      <span>LinkedIn</span>
+                      <span>LinkedIn Profile</span>
                       <ExternalLink className="w-3 h-3" />
                     </a>
                   )}
                 </div>
 
-                {/* Pre-written Ready Pitch */}
-                <div className="mt-4 p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-3">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-indigo-300 uppercase tracking-wider text-[11px]">
-                      Ready Pitch
-                    </span>
-                    <span className="text-slate-500">60-80 words, zero spam phrases</span>
+                {/* Pre-written Pitch Box */}
+                <div className="mt-4 p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span className="font-semibold text-slate-300">Pre-written tailored pitch:</span>
+                    <span className="text-[11px] text-slate-500">Ready to copy and paste</span>
                   </div>
-                  <p className="text-xs text-slate-200 font-mono leading-relaxed select-all">
+                  <p className="text-xs text-slate-200 leading-relaxed font-mono bg-slate-900/60 p-3 rounded-lg border border-slate-800/80">
                     {pitch}
                   </p>
+
                   <div className="flex items-center justify-between pt-2">
                     <button
                       onClick={() => handleCopy(id, pitch)}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-sm transition-all"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-sm transition-colors"
                     >
-                      {copiedId === id ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copiedId === id ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5" />}
                       <span>{copiedId === id ? 'Copied to Clipboard!' : 'Copy Pitch'}</span>
                     </button>
 
@@ -308,5 +362,13 @@ export default function ContactManuallyPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function ContactManuallyPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-xs text-slate-500">Loading manual outreach leads...</div>}>
+      <ContactManuallyContent />
+    </Suspense>
   );
 }

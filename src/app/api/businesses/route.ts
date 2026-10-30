@@ -10,6 +10,7 @@ export async function GET(req: NextRequest) {
   const country = searchParams.get('country') || undefined;
   const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!, 10) : 50;
   const offset = searchParams.get('offset') ? parseInt(searchParams.get('offset')!, 10) : 0;
+  const includeDemo = searchParams.get('demo') === 'true' || searchParams.get('demo') === '1';
 
   const result = await dataStore.getBusinesses({
     pipeline,
@@ -18,6 +19,7 @@ export async function GET(req: NextRequest) {
     country,
     limit,
     offset,
+    includeDemo,
   });
 
   return NextResponse.json({

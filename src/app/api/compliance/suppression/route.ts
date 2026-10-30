@@ -3,8 +3,18 @@ import { dataStore } from '@/services/repository/data-store';
 import { SuppressionInputSchema } from '@/lib/validation/schemas';
 import crypto from 'crypto';
 
-export async function GET() {
-  const list = await dataStore.getSuppressionList();
+export async function GET(req: NextRequest) {
+  const includeDemo = req.nextUrl.searchParams.get('demo') === 'true' || req.nextUrl.searchParams.get('demo') === '1';
+  let list = await dataStore.getSuppressionList();
+  if (!includeDemo) {
+    list = list.filter(
+      (s: any) =>
+        !s.isSandboxData &&
+        !s.isDemo &&
+        s.organizationId !== 'org-demo-001' &&
+        !s.value?.includes('competitor.com')
+    );
+  }
   return NextResponse.json({
     success: true,
     total: list.length,

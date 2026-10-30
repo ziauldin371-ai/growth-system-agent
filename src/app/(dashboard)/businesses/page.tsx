@@ -2,42 +2,45 @@
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { 
   Building2, 
   Search, 
+  Sparkles, 
+  ExternalLink, 
+  MapPin, 
   Globe, 
-  AlertTriangle, 
-  Cpu, 
+  AlertCircle, 
+  CheckCircle2, 
   Flame, 
-  Sparkles,
-  ArrowRight
+  Filter,
+  Check,
+  AlertTriangle
 } from 'lucide-react';
 import { BusinessEntity } from '@/types';
-import { PageHeader, EmptyState } from '@/components/ui/design-system';
 import { BusinessCard } from '@/components/dashboard/business-card';
+import { PageHeader, EmptyState, StatusChip } from '@/components/ui/design-system';
 import { useLanguage } from '@/context/language-context';
 
 type TabKey = 'all' | 'no_website' | 'broken_website' | 'needs_ai' | 'hot_requests';
 
 function BusinessesContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
-  const { t, language } = useLanguage();
-
+  const { t } = useLanguage();
   const initialTab = (searchParams.get('tab') as TabKey) || 'all';
   const initialQuery = searchParams.get('q') || '';
+  const initialDemo = searchParams.get('demo') === 'true' || searchParams.get('demo') === '1';
 
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
   const [searchTerm, setSearchTerm] = useState(initialQuery);
-  const [showDemo, setShowDemo] = useState(false);
+  const [showDemo, setShowDemo] = useState(initialDemo);
   const [businesses, setBusinesses] = useState<BusinessEntity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchBusinesses = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/leads');
+      const res = await fetch(`/api/leads?demo=${showDemo}`);
       const data = await res.json();
       if (data.success && Array.isArray(data.leads)) {
         setBusinesses(data.leads);
@@ -47,18 +50,22 @@ function BusinessesContent() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [showDemo]);
 
   useEffect(() => {
     fetchBusinesses();
   }, [fetchBusinesses]);
 
-  // Tab Filtering Logic
-  const filteredBusinesses = businesses.filter((b) => {
-    // 0. Demo Data Guard (Hidden by default; never sendable)
-    const isDemoLead = b.sourceProvider === 'b2b_mock' || (b as any).isDemo === true || (b.domain && (b.domain.includes('.mock') || b.domain.includes('.internal')));
-    if (!showDemo && isDemoLead) return false;
+  const isDemo = (b: any) =>
+    b.isSandboxData === true ||
+    b.isDemo === true ||
+    b.sourceProvider === 'b2b_mock' ||
+    (b.domain && (b.domain.includes('.mock') || b.domain.includes('.internal')));
 
+  const visibleBusinesses = businesses.filter(b => showDemo || !isDemo(b));
+
+  // Tab Filtering Logic
+  const filteredBusinesses = visibleBusinesses.filter((b) => {
     // 1. Text Search Filter
     if (searchTerm.trim()) {
       const q = searchTerm.toLowerCase();
@@ -90,15 +97,34 @@ function BusinessesContent() {
   });
 
   const counts = {
-    all: businesses.length,
-    no_website: businesses.filter(b => !b.domain || b.websiteCheck?.status === 'apparently_absent' || b.websiteCheck?.status === 'social_only').length,
-    broken_website: businesses.filter(b => b.websiteCheck?.status === 'parked' || b.websiteCheck?.status === 'broken').length,
-    needs_ai: businesses.filter(b => b.pipelineType === 'ai_software_opportunities').length,
-    hot_requests: businesses.filter(b => (b.heatScore || 0) >= 75 || b.sourceProvider === 'hacker_news' || b.sourceProvider === 'reddit').length,
+    all: visibleBusinesses.length,
+    no_website: visibleBusinesses.filter(b => !b.domain || b.websiteCheck?.status === 'apparently_absent' || b.websiteCheck?.status === 'social_only').length,
+    broken_website: visibleBusinesses.filter(b => b.websiteCheck?.status === 'parked' || b.websiteCheck?.status === 'broken').length,
+    needs_ai: visibleBusinesses.filter(b => b.pipelineType === 'ai_software_opportunities').length,
+    hot_requests: visibleBusinesses.filter(b => (b.heatScore || 0) >= 75 || b.sourceProvider === 'hacker_news' || b.sourceProvider === 'reddit').length,
   };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
+      {/* Demo Banner */}
+      {showDemo && (
+        <div className="p-4 rounded-2xl bg-orange-500/15 border border-orange-500/40 flex items-center justify-between gap-4 text-orange-200">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-orange-400 shrink-0" />
+            <div>
+              <span className="font-bold text-sm">Demo data is shown; these are not real businesses</span>
+              <span className="text-xs text-orange-300 ml-2">Simulated sandbox records. Outreach is blocked.</span>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowDemo(false)}
+            className="px-3.5 py-1.5 rounded-lg bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/40 text-orange-300 text-xs font-semibold shrink-0"
+          >
+            Hide Demo Data
+          </button>
+        </div>
+      )}
+
       {/* Page Header */}
       <PageHeader
         title="Who did we find?"
@@ -139,12 +165,13 @@ function BusinessesContent() {
         <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0">
           <button
             onClick={() => setActiveTab('all')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-2 ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 shrink-0 ${
               activeTab === 'all'
                 ? 'bg-indigo-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
             }`}
           >
+            <Building2 className="w-3.5 h-3.5" />
             <span>All</span>
             <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-800 text-slate-300">
               {counts.all}
@@ -153,12 +180,13 @@ function BusinessesContent() {
 
           <button
             onClick={() => setActiveTab('no_website')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-2 ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 shrink-0 ${
               activeTab === 'no_website'
                 ? 'bg-indigo-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
             }`}
           >
+            <Globe className="w-3.5 h-3.5 text-rose-400" />
             <span>No Website</span>
             <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-800 text-slate-300">
               {counts.no_website}
@@ -167,12 +195,13 @@ function BusinessesContent() {
 
           <button
             onClick={() => setActiveTab('broken_website')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-2 ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 shrink-0 ${
               activeTab === 'broken_website'
                 ? 'bg-indigo-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
             }`}
           >
+            <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
             <span>Website Has Problems</span>
             <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-800 text-slate-300">
               {counts.broken_website}
@@ -181,12 +210,13 @@ function BusinessesContent() {
 
           <button
             onClick={() => setActiveTab('needs_ai')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-2 ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 shrink-0 ${
               activeTab === 'needs_ai'
                 ? 'bg-indigo-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
             }`}
           >
+            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
             <span>Needs AI / Software</span>
             <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-800 text-slate-300">
               {counts.needs_ai}
@@ -195,7 +225,7 @@ function BusinessesContent() {
 
           <button
             onClick={() => setActiveTab('hot_requests')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-2 ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 shrink-0 ${
               activeTab === 'hot_requests'
                 ? 'bg-indigo-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
@@ -254,7 +284,9 @@ function BusinessesContent() {
           description={
             searchTerm
               ? `No businesses matching "${searchTerm}". Try another search term.`
-              : 'The system has not discovered any businesses matching this category yet. Run a discovery search now.'
+              : showDemo
+              ? 'No demo businesses match this filter. Try selecting "All".'
+              : 'No real businesses found in this category yet. Click "Find More Businesses" or turn on "Show demo data" to preview sample records.'
           }
           actionText="Find Businesses Now"
           actionHref="/run-and-schedule"

@@ -24,6 +24,7 @@ export interface IDataStore {
     country?: string;
     limit?: number;
     offset?: number;
+    includeDemo?: boolean;
   }): { businesses: BusinessEntity[]; total: number } | Promise<{ businesses: BusinessEntity[]; total: number }>;
 
   getBusinessById(id: string): (BusinessEntity | null) | Promise<BusinessEntity | null>;
@@ -34,7 +35,7 @@ export interface IDataStore {
   saveContact(contact: ContactEntity): void | Promise<void>;
 
   // Drafts
-  getDrafts(filter?: { status?: string; campaignId?: string }): EmailDraftEntity[] | Promise<EmailDraftEntity[]>;
+  getDrafts(filter?: { status?: string; campaignId?: string; limit?: number; offset?: number; includeDemo?: boolean }): EmailDraftEntity[] | Promise<EmailDraftEntity[]>;
   getDraftById(id: string): (EmailDraftEntity | null) | Promise<EmailDraftEntity | null>;
   saveDraft(draft: EmailDraftEntity): void | Promise<void>;
   updateDraftStatus(
@@ -78,11 +79,11 @@ export interface IDataStore {
 
   // Views & Queries
   getWorldwideLeads(filters?: any): BusinessEntity[] | Promise<BusinessEntity[]>;
-  getReadyForEmailLeads(): Array<any> | Promise<Array<any>>;
-  getSentEmails(): Array<any> | Promise<Array<any>>;
-  getOtherOutreachOpportunities(): Array<any> | Promise<Array<any>>;
-  getEmailSentPlusOtherChannels(): Array<any> | Promise<Array<any>>;
-  getNoEmailBusinesses(): Array<any> | Promise<Array<any>>;
+  getReadyForEmailLeads(options?: any): Array<any> | Promise<Array<any>>;
+  getSentEmails(options?: any): Array<any> | Promise<Array<any>>;
+  getOtherOutreachOpportunities(options?: any): Array<any> | Promise<Array<any>>;
+  getEmailSentPlusOtherChannels(options?: any): Array<any> | Promise<Array<any>>;
+  getNoEmailBusinesses(options?: any): Array<any> | Promise<Array<any>>;
   lockAllChannelsForBusiness(businessId: string, reason: string): void | Promise<void>;
   recordChannelContact(channelId: string, contactedAt?: string): void | Promise<void>;
 
@@ -94,6 +95,9 @@ export interface IDataStore {
   recordSchedulerRun(run: any): void | Promise<void>;
   getSchedulerRuns(): any[] | Promise<any[]>;
   getLastSchedulerRun(): any | null | Promise<any | null>;
-  getPlatformStats(): any | Promise<any>;
+  getPlatformStats(options?: any): any | Promise<any>;
+  seedDemoData?(): void | Promise<void>;
+  clearDemoData?(): void | Promise<void>;
+  hasDemoData?(): boolean | Promise<boolean>;
 }
 
