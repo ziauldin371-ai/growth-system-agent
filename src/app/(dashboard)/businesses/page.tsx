@@ -474,11 +474,18 @@ function BusinessesContent() {
               onChange={(e) => setFilterCountry(e.target.value)}
               className="w-full h-9 px-2.5 rounded-lg bg-surface-container-low text-xs sm:text-sm text-on-surface border border-outline-variant/30 focus:outline-none focus:ring-1 focus:ring-primary"
             >
-              <option value="all">All Countries</option>
+              <option value="all">🌍 Worldwide / All Countries</option>
+              <option value="US">United States (US)</option>
               <option value="UK">United Kingdom (UK)</option>
-              <option value="USA">United States (USA)</option>
-              <option value="UAE">United Arab Emirates (UAE)</option>
-              <option value="Pakistan">Pakistan</option>
+              <option value="CA">Canada (CA)</option>
+              <option value="AU">Australia (AU)</option>
+              <option value="AE">United Arab Emirates (UAE)</option>
+              <option value="SA">Saudi Arabia (KSA)</option>
+              <option value="DE">Germany (DE)</option>
+              <option value="FR">France (FR)</option>
+              <option value="PK">Pakistan (PK)</option>
+              <option value="IN">India (IN)</option>
+              <option value="SG">Singapore (SG)</option>
             </select>
           </div>
 

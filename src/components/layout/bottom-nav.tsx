@@ -45,8 +45,8 @@ export function BottomNav({ onOpenHelp }: { onOpenHelp?: () => void }) {
     },
     {
       href: '/contact-manually',
-      label: 'Manual',
-      sublabel: 'Calls & Social',
+      label: 'Direct',
+      sublabel: 'WhatsApp & Calls',
       icon: 'call',
       exact: false,
     },

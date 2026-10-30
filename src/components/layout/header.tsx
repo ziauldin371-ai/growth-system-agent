@@ -92,18 +92,7 @@ export function Header({
 
           {/* Right Header Controls */}
           <div className="flex items-center gap-1 sm:gap-1.5">
-            {/* Laptop Emergency Stop Red Button (with confirm dialog) */}
-            {onOpenEmergencyStop && (
-              <button
-                type="button"
-                onClick={onOpenEmergencyStop}
-                className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-error-container text-on-error-container hover:bg-error hover:text-white transition-all text-xs font-bold border border-error/40 min-h-[44px] shadow-sm shadow-error/10 focus-visible:ring-2 focus-visible:ring-error focus-visible:outline-none"
-                title="Emergency Pause: Freeze all sending and scraping"
-              >
-                <span className="material-symbols-outlined text-[18px]">emergency_home</span>
-                <span>Emergency Stop</span>
-              </button>
-            )}
+
 
             {/* Quick Command Palette Button (⌘K) on Laptop */}
             {onOpenCommandPalette && (

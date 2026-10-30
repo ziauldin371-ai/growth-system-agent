@@ -187,14 +187,14 @@ function ContactManuallyContent() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-base sm:text-lg font-bold text-on-surface">
-                Contact Manually (Calls &amp; Social)
+                Direct Leads (Calls &amp; Social Media)
               </h1>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary-container/20 text-primary font-semibold">
-                Direct Channel
+                AI Auto-Discovered
               </span>
             </div>
             <p className="text-xs text-on-surface-variant mt-0.5">
-              Verified businesses without public email. Ready for phone calls, WhatsApp, or Instagram DMs.
+              Businesses found automatically by AI worldwide that lack an email address. 1-click WhatsApp, LinkedIn InMail, and Phone links.
             </p>
           </div>
 

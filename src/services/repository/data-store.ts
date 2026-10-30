@@ -36,7 +36,7 @@ export class DataStore implements IDataStore {
   private jobs: Map<string, AutomationJobEntity> = new Map(); // jobId -> job
   private alternativeChannels: Map<string, AlternativeChannelEntity> = new Map(); // channelId -> channel
   private auditLogs: Array<any> = [];
-  private operatingMode: OperatingMode = 'approval'; // 'research' | 'approval' | 'auto_send'
+  private operatingMode: OperatingMode = (process.env.DEFAULT_SEND_MODE as OperatingMode) || 'auto_send';
   private automationPaused: boolean = false;
   private distributedLocks: Map<string, number> = new Map(); // lockName -> expiresAt
   private schedulerRuns: Array<SchedulerRunHistoryEntity> = [];
@@ -141,7 +141,7 @@ export class DataStore implements IDataStore {
     this.jobs.clear();
     this.alternativeChannels.clear();
     this.auditLogs = [];
-    this.operatingMode = 'approval';
+    this.operatingMode = (process.env.DEFAULT_SEND_MODE as OperatingMode) || 'auto_send';
     this.automationPaused = false;
     this.distributedLocks.clear();
     this.schedulerRuns = [];

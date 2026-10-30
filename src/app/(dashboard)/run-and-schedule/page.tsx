@@ -548,16 +548,24 @@ export default function RunAndSchedulePage() {
               setIsModalOpen(false);
             }} className="flex flex-col gap-3">
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-on-surface">Country</label>
+                <label className="text-xs font-semibold text-on-surface">Target Region / Country</label>
                 <select
                   value={country}
                   onChange={(e) => setCountry(e.target.value)}
                   className="w-full h-10 px-3 rounded-xl bg-surface-container-lowest text-xs text-on-surface border border-outline-variant/30"
                 >
-                  <option value="UK">United Kingdom (UK)</option>
+                  <option value="GLOBAL">🌍 Worldwide / Global (All Countries)</option>
                   <option value="US">United States (US)</option>
+                  <option value="UK">United Kingdom (UK)</option>
+                  <option value="CA">Canada (CA)</option>
+                  <option value="AU">Australia (AU)</option>
                   <option value="AE">United Arab Emirates (UAE)</option>
-                  <option value="PK">Pakistan</option>
+                  <option value="SA">Saudi Arabia (KSA)</option>
+                  <option value="DE">Germany (DE)</option>
+                  <option value="FR">France (FR)</option>
+                  <option value="PK">Pakistan (PK)</option>
+                  <option value="IN">India (IN)</option>
+                  <option value="SG">Singapore (SG)</option>
                 </select>
               </div>
 
