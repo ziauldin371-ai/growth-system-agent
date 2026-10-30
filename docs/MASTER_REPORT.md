@@ -57,16 +57,16 @@ Growth System Agent has undergone a complete architectural security hardening, U
 
 ## 3. Real Live Security Verification Output (Preview URL)
 
-Tested against live deployment: `https://growth-system-agent-brown-orcin.vercel.app`
+Tested against live deployment: `https://growth-system-agent-brown-7hn5tyoun.vercel.app` (Deployment ID: `dpl_GQiptzKqg2w3xNH7RPV2yQ8AnTyp`)
 
 ### 3.1 Public Health Endpoint
 ```bash
-curl -s -H "x-vercel-protection-bypass: <TOKEN>" https://growth-system-agent-brown-orcin.vercel.app/api/health
+curl -s -H "x-vercel-protection-bypass: <TOKEN>" https://growth-system-agent-brown-7hn5tyoun.vercel.app/api/health
 ```
 ```json
 {
   "status": "healthy",
-  "timestampUtc": "2026-10-30T12:17:31.495Z",
+  "timestampUtc": "2026-10-30T12:26:45.760Z",
   "scheduler": {
     "status": "no_runs_recorded",
     "lastSuccessfulRunAt": null,
@@ -92,7 +92,7 @@ curl -s -H "x-vercel-protection-bypass: <TOKEN>" https://growth-system-agent-bro
 
 ### 3.2 Unauthenticated Access Lockout
 ```bash
-curl -s -H "x-vercel-protection-bypass: <TOKEN>" https://growth-system-agent-brown-orcin.vercel.app/api/businesses
+curl -s -H "x-vercel-protection-bypass: <TOKEN>" https://growth-system-agent-brown-7hn5tyoun.vercel.app/api/businesses
 ```
 ```json
 {
@@ -103,7 +103,7 @@ curl -s -H "x-vercel-protection-bypass: <TOKEN>" https://growth-system-agent-bro
 
 ### 3.3 Export Endpoint Protection
 ```bash
-curl -s -H "x-vercel-protection-bypass: <TOKEN>" https://growth-system-agent-brown-orcin.vercel.app/api/businesses/export
+curl -s -H "x-vercel-protection-bypass: <TOKEN>" https://growth-system-agent-brown-7hn5tyoun.vercel.app/api/businesses/export
 ```
 ```json
 {
@@ -111,6 +111,33 @@ curl -s -H "x-vercel-protection-bypass: <TOKEN>" https://growth-system-agent-bro
   "error": "Unauthorized: Growth System Agent is private. Cryptographically verified authentication required."
 }
 ```
+
+### 3.4 Fail-Closed Cron Protection
+```bash
+curl -s -X POST -H "x-vercel-protection-bypass: <TOKEN>" https://growth-system-agent-brown-7hn5tyoun.vercel.app/api/cron/scheduled-run
+```
+```json
+{
+  "success": false,
+  "error": "Unauthorized: Missing or invalid Authorization header. Expected \"Authorization: Bearer <secret>\""
+}
+```
+```bash
+curl -s -X POST -H "Authorization: Bearer wrong_token" -H "x-vercel-protection-bypass: <TOKEN>" https://growth-system-agent-brown-7hn5tyoun.vercel.app/api/cron/scheduled-run
+```
+```json
+{
+  "success": false,
+  "error": "Unauthorized: Invalid CRON_SECRET token"
+}
+```
+
+### 3.5 Standalone Login Page Playwright Audit
+Tested with real headless Chrome against `https://growth-system-agent-brown-7hn5tyoun.vercel.app/login`:
+- **Hydration status**: Hydrates immediately, 0 instances of stuck "Loading authentication portal"
+- **Form elements**: Email input (1), Password input (1), Submit button (1)
+- **Isolation audit**: 0 sidebar navs, 0 dashboard links, 0 occurrences of operator email address
+- **Visual evidence**: Full-page screenshot captured at `docs/screenshots/preview-login.png`
 
 ---
 
@@ -133,6 +160,11 @@ curl -s -H "x-vercel-protection-bypass: <TOKEN>" https://growth-system-agent-bro
 ---
 
 ## 6. Setup Order & Required Environment Variables
+
+### In GitHub Actions Repository Secrets:
+Configured via `gh secret set`:
+- `APP_BASE_URL`: ✅ Configured (`https://growth-system-agent-brown.vercel.app`)
+- `CRON_SECRET`: ✅ Configured (Crypto Random 64-char hex)
 
 ### In Vercel Project Settings:
 Navigate to: `https://vercel.com/mshoaibawan371-9086s-projects/growth-system-agent-brown/settings/environment-variables`
