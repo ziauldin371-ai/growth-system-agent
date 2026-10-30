@@ -26,21 +26,22 @@ import {
 import { useRouter } from 'next/navigation';
 
 const NAV_ITEMS = [
-  { href: '/', label: 'Overview & Analytics', icon: LayoutDashboard },
-  { href: '/hot-opportunities', label: 'Hot Intent Radar', icon: Flame, badge: 'Warm Leads' },
-  { href: '/leads', label: 'Worldwide Leads', icon: Users, badge: 'All Sources' },
-  { href: '/ready-for-email', label: 'Ready for Email', icon: CheckCircle2, badge: 'Eligible' },
-  { href: '/sent-emails', label: 'Sent Emails', icon: Mail, badge: 'Gmail Sent' },
-  { href: '/other-channels', label: 'Other Outreach Channels', icon: Share2, badge: 'Social/Forms' },
-  { href: '/email-sent-plus-channels', label: 'Email Sent + Other Channels', icon: Layers, badge: 'Multi-Touch' },
-  { href: '/no-email', label: 'No Email Available', icon: HelpCircle, badge: 'Channels Only' },
-  { href: '/pipeline-a', label: 'Pipeline A: Web Dev', icon: Globe },
-  { href: '/pipeline-b', label: 'Pipeline B: AI & Software', icon: Cpu },
-  { href: '/approval-queue', label: 'Outreach & Approval', icon: MailCheck, badge: 'Review' },
-  { href: '/campaigns', label: 'Campaigns & Automation', icon: Send },
-  { href: '/history', label: 'Run History & Errors', icon: History },
-  { href: '/compliance', label: 'Compliance & Suppression', icon: ShieldAlert },
-  { href: '/settings', label: 'Integrations & Safety', icon: Settings },
+  { href: '/', label: 'Today at a Glance', description: 'Overview, health & metrics', icon: LayoutDashboard },
+  { href: '/hot-opportunities', label: 'Hot Intent Radar', description: 'People asking for skills now', icon: Flame, badge: 'Warm Leads' },
+  { href: '/leads', label: 'Worldwide Leads', description: 'All discovered businesses', icon: Users, badge: 'All Sources' },
+  { href: '/ready-for-email', label: 'Ready for Email', description: 'Passed safety gates', icon: CheckCircle2, badge: 'Eligible' },
+  { href: '/sent-emails', label: 'Sent Emails', description: 'Confirmed in Gmail Sent', icon: Mail, badge: 'Gmail Sent' },
+  { href: '/other-channels', label: 'Other Outreach Channels', description: 'Outreach needed (manual)', icon: Share2, badge: 'Social/Phone' },
+  { href: '/email-sent-plus-channels', label: 'Email Sent + Other Channels', description: 'Multi-touch reminders', icon: Layers, badge: 'Multi-Touch' },
+  { href: '/no-email', label: 'No Website / Email Found', description: 'Direct contact channels', icon: HelpCircle, badge: 'Manual' },
+  { href: '/pipeline-a', label: 'Needs a Website', description: 'High-conversion web intake', icon: Globe },
+  { href: '/pipeline-b', label: 'Needs AI & Software', description: 'LLM & Python workflows', icon: Cpu },
+  { href: '/approval-queue', label: 'Review First (Safe)', description: 'Draft review and gate check', icon: MailCheck, badge: 'Review' },
+  { href: '/deliverability', label: 'Deliverability Center', description: 'SPF, DKIM & seed placement', icon: ShieldAlert, badge: 'DNS/Seeds' },
+  { href: '/campaigns', label: 'Campaigns & Automation', description: 'Outreach schedules', icon: Send },
+  { href: '/history', label: 'Run History & Watchdog', description: '14h watchdog & logs', icon: History },
+  { href: '/compliance', label: 'Compliance & Suppression', description: 'Global opt-out list', icon: ShieldAlert },
+  { href: '/settings', label: 'Integrations & Safety', description: 'API credentials & setup', icon: Settings },
 ];
 
 export function Sidebar() {
@@ -92,7 +93,12 @@ export function Sidebar() {
             >
               <div className="flex items-center space-x-3 truncate">
                 <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                <span className="truncate">{item.label}</span>
+                <div className="truncate">
+                  <div className="truncate leading-tight">{item.label}</div>
+                  <div className={`text-[10px] truncate ${isActive ? 'text-indigo-200' : 'text-slate-500'}`}>
+                    {item.description}
+                  </div>
+                </div>
               </div>
               {item.badge && (
                 <span

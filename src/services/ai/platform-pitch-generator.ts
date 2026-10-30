@@ -46,7 +46,7 @@ export function generatePlatformPitch(params: {
   }
 
   const observation = params.verifiedObservation ||
-    (business.evidence?.[0]?.summary || `noticed your commercial growth in ${business.city || business.country}`);
+    (business.evidence?.[0]?.summary || `public business operations listed in ${business.city || business.country}`);
 
   const offer = params.serviceOffer ||
     (business.pipelineType === 'website_opportunities'
@@ -59,7 +59,7 @@ export function generatePlatformPitch(params: {
   switch (platform) {
     case 'linkedin': {
       // Rule: LinkedIn connection note <= 300 chars, no pitch, 1 genuine point, no link
-      const note = `Hi ${business.name} team — ${observation.toLowerCase().replace(/\.$/, '')}. As a Full Stack AI Developer & Automation Architect, I follow tech implementations across ${business.city || 'your region'}. Would love to connect and keep in touch.`;
+      const note = `Hi ${business.name} team — ${observation.toLowerCase().replace(/\.$/, '')}. As a Full Stack AI Developer & Automation Architect, I follow engineering and digital solutions in ${business.city || 'your region'}. Would love to connect and keep in touch.`;
       pitchText = note.slice(0, 300);
       touchOrder = 2;
       break;
@@ -67,8 +67,8 @@ export function generatePlatformPitch(params: {
 
     case 'instagram':
     case 'facebook': {
-      // Rule: 30-60 words, friendly, casual yet professional, no links
-      pitchText = `Hi ${business.name} team! Impressed by your latest work. I help growing businesses streamline operations through ${offer}. If you are ever exploring ways to save team hours on repetitive workflows, let me know — happy to share a quick idea.`;
+      // Rule: 30-60 words, direct, professional, factual, no links, no fake flattery
+      pitchText = `Hi ${business.name} team. Reaching out regarding your public profile in ${business.city || business.country}. I help businesses modernize operations through ${offer}. If you are exploring ways to reduce manual intake hours or upgrade customer touchpoints, happy to share a brief technical overview.`;
       touchOrder = 3;
       break;
     }

@@ -19,6 +19,18 @@ export interface RunNotificationDetails {
     channels: string[];
     businessId: string;
   }>;
+  blockedAutoSends?: Array<{
+    businessName: string;
+    email: string;
+    reason: string;
+  }>;
+  manualOutreachOpportunities?: Array<{
+    businessName: string;
+    channels: string[];
+    score: number;
+    businessId: string;
+    pitches?: Record<string, string>;
+  }>;
   errors?: string[];
   operatingMode: string;
 }
@@ -86,6 +98,18 @@ export class RunNotifierService {
           .join('\n')
       : '  • None during this run';
 
+    const blockedAutoSendsText = (details.blockedAutoSends && details.blockedAutoSends.length > 0)
+      ? details.blockedAutoSends
+          .map(b => `  • ${b.businessName} (${b.email}): BLOCKED -> Reason: ${b.reason}`)
+          .join('\n')
+      : '  • None';
+
+    const manualOutreachText = (details.manualOutreachOpportunities && details.manualOutreachOpportunities.length > 0)
+      ? details.manualOutreachOpportunities
+          .map(o => `  • ${o.businessName} (Score: ${o.score}/100) — Channels: [${o.channels.join(', ')}]\n    Action: ${appBaseUrl}/businesses/${o.businessId}`)
+          .join('\n')
+      : '  • None during this run';
+
     const plainTextBody = `GROWTH SYSTEM AGENT — AUTOMATED RUN OPERATIONAL REPORT
 ==============================================================
 Operator: Zia Ul Din | AI & Automation Solutions
@@ -109,6 +133,14 @@ DISCOVERY & TARGETING SUMMARY
 • Skipped Records Count: ${details.skippedRecordsCount}
 Reasons:
 ${skippedReasonsText}
+
+BLOCKED AUTO-SENDS (Preserved as Drafts with Block Reasons)
+--------------------------------------------------------------
+${blockedAutoSendsText}
+
+MANUAL OUTREACH OPPORTUNITIES (No Usable Email, Verified Channels Available)
+--------------------------------------------------------------
+${manualOutreachText}
 
 MULTI-CHANNEL CLIENT TARGETS (Email Sent + Other Verified Channels)
 --------------------------------------------------------------
@@ -245,6 +277,54 @@ This alert was generated automatically by the Growth System Agent health watchdo
           body,
           draftId: 'alert_scheduler_inactive',
           idempotencyKey: `alert_inactive_${Math.floor(Date.now() / (12 * 3600 * 1000))}`,
+        },
+        isExplicitlyApproved: true,
+        currentHour: 10,
+      });
+      return { success: res.success, error: res.error };
+    } catch (err: any) {
+      return { success: false, error: err?.message };
+    }
+  }
+
+  /**
+   * Dispatches an instant high-priority alert for leads with score >= 80 with alternative channels.
+   */
+  public async sendHighPriorityLeadAlert(params: {
+    businessName: string;
+    score: number;
+    pipeline: string;
+    channels: Array<{ platform: string; profileUrl: string; pitch: string }>;
+    businessId: string;
+  }): Promise<{ success: boolean; error?: string }> {
+    const appBaseUrl = process.env.APP_BASE_URL || 'https://growth-system-agent.vercel.app';
+    const subject = `HIGH-PRIORITY LEAD ALERT (Score ${params.score}/100): ${params.businessName}`;
+    const channelsList = params.channels
+      .map(c => `• ${c.platform.toUpperCase()}: ${c.profileUrl}\n  Ready Pitch: "${c.pitch}"`)
+      .join('\n\n');
+    const body = `HIGH-PRIORITY OUTREACH OPPORTUNITY
+--------------------------------------------------
+Business: ${params.businessName}
+Opportunity Score: ${params.score}/100
+Pipeline: ${params.pipeline}
+
+This business does not have an active verified email, but has verified active direct outreach channels.
+Because their score exceeds the 80/100 threshold, here is your ready-to-copy outreach pitch:
+
+${channelsList}
+
+Open lead in dashboard: ${appBaseUrl}/businesses/${params.businessId}
+
+Operator: Zia Ul Din | Growth System Agent`;
+
+    try {
+      const res = await emailService.dispatchOutreachEmail({
+        payload: {
+          to: this.recipient,
+          subject,
+          body,
+          draftId: `alert_lead_${params.businessId}`,
+          idempotencyKey: `alert_lead_${params.businessId}`,
         },
         isExplicitlyApproved: true,
         currentHour: 10,

@@ -28,7 +28,7 @@ export class B2BMockProvider implements IDiscoveryProvider {
         companyType: 'Commercial Services LLC',
         employeeCountRange: '10-25',
         annualRevenueRange: '$1M - $3M',
-        sourceProvider: 'google_places_b2b_licensed',
+        sourceProvider: 'b2b_mock',
         sourceIdentifier: 'gplace_vanguard_hvac_78701',
         socialUrls: ['https://facebook.com/vanguardhvacatx'],
         evidence: [
@@ -88,7 +88,7 @@ export class B2BMockProvider implements IDiscoveryProvider {
         companyType: 'Private Limited Company',
         employeeCountRange: '15-30',
         annualRevenueRange: '£800k - £2M',
-        sourceProvider: 'uk_companies_house',
+        sourceProvider: 'b2b_mock',
         sourceIdentifier: 'uk_ch_12984712',
         socialUrls: ['https://instagram.com/apexartisanlondon'],
         evidence: [
@@ -138,7 +138,7 @@ export class B2BMockProvider implements IDiscoveryProvider {
         companyType: 'Professional Practice',
         employeeCountRange: '5-15',
         annualRevenueRange: '$800K - $1.5M CAD',
-        sourceProvider: 'google_places_b2b_licensed',
+        sourceProvider: 'b2b_mock',
         sourceIdentifier: 'gplace_starlight_dental_toronto',
         evidence: [
           {
@@ -191,7 +191,7 @@ export class B2BMockProvider implements IDiscoveryProvider {
         companyType: 'B2B SaaS Startup',
         employeeCountRange: '15-40',
         annualRevenueRange: '$2M - $5M',
-        sourceProvider: 'tech_directory_licensed',
+        sourceProvider: 'b2b_mock',
         sourceIdentifier: 'techdir_docusync_chicago',
         evidence: [
           {
@@ -250,7 +250,7 @@ export class B2BMockProvider implements IDiscoveryProvider {
         companyType: 'Digital Agency',
         employeeCountRange: '20-50',
         annualRevenueRange: '£2.5M - £6M',
-        sourceProvider: 'clutch_licensed_adapter',
+        sourceProvider: 'b2b_mock',
         sourceIdentifier: 'clutch_horizongrowth_uk',
         evidence: [
           {
@@ -300,7 +300,7 @@ export class B2BMockProvider implements IDiscoveryProvider {
         companyType: 'HealthTech Scale-up',
         employeeCountRange: '30-70',
         annualRevenueRange: '$4M - $8M AUD',
-        sourceProvider: 'australian_business_register',
+        sourceProvider: 'b2b_mock',
         sourceIdentifier: 'abr_quantara_sydney',
         evidence: [
           {

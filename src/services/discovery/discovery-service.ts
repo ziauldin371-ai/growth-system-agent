@@ -42,8 +42,11 @@ export class DiscoveryService {
       } else if (this.providers.get('google_places')?.isConfigured()) {
         provider = this.providers.get('google_places')!;
       } else {
+        if (process.env.NODE_ENV === 'production') {
+          throw new Error('Live discovery credentials missing: GOOGLE_PLACES_API_KEY (or COMPANIES_HOUSE_API_KEY for UK) is required in production. Silent fallback to mock data is disabled.');
+        }
         provider = this.providers.get('b2b_mock')!;
-        warnings.push('External live discovery APIs are unconfigured (no API keys found in environment). Running via Licensed B2B Sandbox Adapter.');
+        warnings.push('External live discovery APIs are unconfigured (no API keys in environment). Running via Demo Sandbox Adapter. Records will be labeled DEMO.');
       }
     } else {
       const selected = this.providers.get(validatedRequest.provider);
@@ -51,7 +54,16 @@ export class DiscoveryService {
         throw new Error(`Discovery provider "${validatedRequest.provider}" not found.`);
       }
       if (!selected.isConfigured()) {
-        warnings.push(`Provider "${selected.name}" lacks API credentials. Falling back to Sandbox Adapter.`);
+        if (selected.id === 'google_places') {
+          throw new Error('Google Places key is missing: Configure GOOGLE_PLACES_API_KEY in environment.');
+        }
+        if (selected.id === 'companies_house') {
+          throw new Error('Companies House key is missing: Configure COMPANIES_HOUSE_API_KEY in environment.');
+        }
+        if (process.env.NODE_ENV === 'production') {
+          throw new Error(`Provider "${selected.name}" lacks credentials and cannot run in production.`);
+        }
+        warnings.push(`Provider "${selected.name}" lacks API credentials. Falling back to Demo Sandbox Adapter.`);
         provider = this.providers.get('b2b_mock')!;
       } else {
         provider = selected;
@@ -59,6 +71,11 @@ export class DiscoveryService {
     }
 
     const leads = await provider.discover(validatedRequest);
+    if (provider.id === 'b2b_mock') {
+      leads.forEach((l) => {
+        (l as any).isDemo = true;
+      });
+    }
 
     return {
       providerUsed: provider.id,

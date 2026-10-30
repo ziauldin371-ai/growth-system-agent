@@ -6,6 +6,9 @@ import { outreachService } from '../ai/outreach-service';
 import { emailService } from '../email/email-service';
 import { runNotifierService } from '../notifications/run-notifier';
 import { normalizeBusinessName, isDuplicateBusiness } from '../crm/normalization';
+import { autoSendGuard } from '../email/auto-send-guard';
+import { gmailInboxSyncService } from '../email/gmail-inbox-sync';
+import { generatePlatformPitch } from '../ai/platform-pitch-generator';
 import { AlternativeChannelEntity, SchedulerRunHistoryEntity, GrowthEvidenceEntity } from '@/types';
 import crypto from 'crypto';
 
@@ -94,6 +97,13 @@ export class AutomationRunner {
         return result;
       }
 
+      // Pre-run Inbox Sync: detect client replies, bounces, and opt-outs before dispatching
+      try {
+        await gmailInboxSyncService.syncInbox();
+      } catch (inboxErr) {
+        console.warn('[SCHEDULER] Inbox sync notice (non-fatal):', inboxErr);
+      }
+
       const operatingMode = (modeOverride as any) || dataStore.getOperatingMode();
       let totalDiscovered = 0;
       let totalQualified = 0;
@@ -107,6 +117,18 @@ export class AutomationRunner {
         email: string;
         channels: string[];
         businessId: string;
+      }> = [];
+      const blockedAutoSends: Array<{
+        businessName: string;
+        email: string;
+        reason: string;
+      }> = [];
+      const manualOutreachOpportunities: Array<{
+        businessName: string;
+        channels: string[];
+        score: number;
+        businessId: string;
+        pitches?: Record<string, string>;
       }> = [];
 
       // 4. Load Postgres Checkpoint for Bounded Batching & Resumption
@@ -283,6 +305,7 @@ export class AutomationRunner {
 
         // 6. Extract & Save Alternative Channels
         const channelsForBiz: string[] = [];
+        const channelPitches: Record<string, string> = {};
         if (raw.socialUrls && raw.socialUrls.length > 0) {
           for (const sUrl of raw.socialUrls) {
             let platform: any = 'other';
@@ -293,10 +316,16 @@ export class AutomationRunner {
             else if (sUrl.includes('youtube.com')) platform = 'youtube';
 
             const chId = crypto.randomUUID();
-            const pitch =
-              platform === 'linkedin'
-                ? `Hi ${raw.name} team — noticed your commercial expansion in ${raw.city || currentMarket}. As a Full Stack AI Developer & Automation Architect, I build custom RAG pipelines and conversion web platforms. Open to a 2-minute exchange?`
-                : `Hello ${raw.name} — impressed by your work. Reaching out from Zia Ul Din (AI Developer & Automation Architect) to share how automated workflow integrations can accelerate your operations.`;
+            const pitchGen = generatePlatformPitch({
+              business: newBiz,
+              platform,
+              profileUrl: sUrl,
+              sourceType: 'google_places',
+              verifiedObservation: evList[0]?.summary,
+              serviceOffer: scored.targetPipeline === 'website_opportunities'
+                ? 'custom modern web application development with automated client intake'
+                : 'custom Python AI automation and LLM workflow pipelines',
+            });
 
             await dataStore.saveAlternativeChannel({
               id: chId,
@@ -307,14 +336,44 @@ export class AutomationRunner {
               profileUrl: sUrl,
               sourceName: 'Discovery Engine',
               isUsable: true,
-              customPitch: pitch,
+              customPitch: pitchGen.pitch,
               status: 'not_contacted',
               lastCheckedAt: new Date().toISOString(),
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             });
             channelsForBiz.push(platform);
+            channelPitches[platform] = pitchGen.pitch;
             totalChannelsFound++;
+          }
+        }
+
+        // Leads without email but with alternative channels: register as Outreach needed (manual)
+        if (!primaryContact?.email && channelsForBiz.length > 0) {
+          manualOutreachOpportunities.push({
+            businessName: newBiz.name,
+            channels: channelsForBiz,
+            score: scored.overallScore,
+            businessId: bizId,
+            pitches: channelPitches,
+          });
+
+          // Trigger instant alert for high-intent leads (score >= 80)
+          if (scored.overallScore >= 80) {
+            const highPriChannels = Object.entries(channelPitches).map(([p, pitch]) => ({
+              platform: p,
+              profileUrl: raw.socialUrls?.find(u => u.includes(p)) || '',
+              pitch,
+            }));
+            runNotifierService
+              .sendHighPriorityLeadAlert({
+                businessName: newBiz.name,
+                score: scored.overallScore,
+                pipeline: scored.targetPipeline,
+                channels: highPriChannels,
+                businessId: bizId,
+              })
+              .catch((err) => console.warn('[ALERT] Failed to dispatch high-priority lead alert:', err));
           }
         }
 
@@ -354,33 +413,65 @@ export class AutomationRunner {
           await dataStore.saveDraft(draftEntity);
           totalDrafts++;
 
-          // 8. Controlled Auto-Send (Only if explicitly enabled and approved)
+          // 8. Controlled Auto-Send with 8-Point Automated Safeguard Engine
           if (isAutoSend && primaryContact?.email) {
-            const sendResult = await emailService.dispatchOutreachEmail({
-              payload: {
-                to: primaryContact.email,
-                subject: draftEntity.selectedSubject,
-                body: draftEntity.emailBody,
-                draftId: draftEntity.id,
-                idempotencyKey: `auto_${draftEntity.id}`,
-                metadata: { htmlBody: draftEntity.htmlBody },
-              },
-              isExplicitlyApproved: true,
-              currentHour: currentHourOverride !== undefined ? currentHourOverride : 10,
+            let dateOverride: Date | undefined;
+            if (currentHourOverride !== undefined) {
+              // Normalize to a weekday Tuesday at currentHourOverride UTC
+              dateOverride = new Date('2026-10-27T12:00:00Z');
+              dateOverride.setUTCHours(currentHourOverride, 0, 0, 0);
+            }
+
+            const guardResult = await autoSendGuard.evaluateAutoSendEligibility({
+              business: newBiz,
+              contact: primaryContact,
+              draft: draftEntity,
+              evidence: evList,
+              websiteCheckedAt: (webCheckResult as any)?.checkedAt,
+              currentDateOverride: dateOverride,
             });
 
-            if (sendResult.success) {
-              await dataStore.updateDraftStatus(draftId, 'sent');
-              totalSent++;
+            if (guardResult.eligibleForAutoSend) {
+              const sendResult = await emailService.dispatchOutreachEmail({
+                payload: {
+                  to: primaryContact.email,
+                  subject: draftEntity.selectedSubject,
+                  body: draftEntity.emailBody,
+                  draftId: draftEntity.id,
+                  idempotencyKey: `auto_${draftEntity.id}`,
+                  metadata: { htmlBody: draftEntity.htmlBody },
+                },
+                isExplicitlyApproved: true,
+                currentHour: currentHourOverride !== undefined ? currentHourOverride : 10,
+              });
 
-              if (channelsForBiz.length > 0) {
-                businessesEmailedWithOtherChannels.push({
-                  businessName: newBiz.name,
-                  email: primaryContact.email,
-                  channels: channelsForBiz,
-                  businessId: bizId,
-                });
+              if (sendResult.success) {
+                await dataStore.updateDraftStatus(draftId, 'sent');
+                totalSent++;
+
+                if (channelsForBiz.length > 0) {
+                  businessesEmailedWithOtherChannels.push({
+                    businessName: newBiz.name,
+                    email: primaryContact.email,
+                    channels: channelsForBiz,
+                    businessId: bizId,
+                  });
+                }
               }
+            } else {
+              // Blocked: save draft as 'blocked' with the exact primary block reason
+              draftEntity.status = 'draft';
+              draftEntity.deliveryStatus = 'blocked';
+              draftEntity.rejectionReason = guardResult.primaryBlockReason;
+              await dataStore.saveDraft(draftEntity);
+
+              const reasonKey = guardResult.primaryBlockReason || 'Failed automated safety gates';
+              skippedReasons[reasonKey] = (skippedReasons[reasonKey] || 0) + 1;
+              blockedAutoSends.push({
+                businessName: newBiz.name,
+                email: primaryContact.email,
+                reason: reasonKey,
+              });
             }
           }
         }
@@ -451,6 +542,8 @@ export class AutomationRunner {
         skippedRecordsCount,
         skippedReasons,
         businessesEmailedWithOtherChannels,
+        blockedAutoSends,
+        manualOutreachOpportunities,
         operatingMode,
       });
 
