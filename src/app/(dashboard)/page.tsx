@@ -10,18 +10,53 @@ import {
   ShieldCheck, 
   ArrowUpRight,
   Sparkles,
-  AlertTriangle
+  AlertTriangle,
+  AlertOctagon
 } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
-export default function OverviewPage() {
-  const stats = dataStore.getPlatformStats();
-  const { businesses: recentLeads } = dataStore.getBusinesses({ limit: 6 });
-  const pendingApprovals = dataStore.getDrafts({ status: 'draft' });
+export default async function OverviewPage() {
+  const stats = await dataStore.getPlatformStats();
+  const { businesses: recentLeads } = await dataStore.getBusinesses({ limit: 6 });
+  const pendingApprovals = await dataStore.getDrafts({ status: 'draft' });
+  const lastRun = await dataStore.getLastSchedulerRun();
+
+  let isSchedulerStopped = false;
+  let hoursSinceLastRun = 0;
+  if (lastRun && (lastRun.finishTimeUtc || lastRun.startTimeUtc)) {
+    const lastRunTs = new Date(lastRun.finishTimeUtc || lastRun.startTimeUtc).getTime();
+    hoursSinceLastRun = Number(((Date.now() - lastRunTs) / (1000 * 60 * 60)).toFixed(1));
+    if (hoursSinceLastRun > 14) {
+      isSchedulerStopped = true;
+    }
+  }
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
+      {/* 14-Hour Inactivity Alert Banner */}
+      {isSchedulerStopped && (
+        <div className="p-4 rounded-xl bg-rose-500/15 border border-rose-500/50 flex items-start gap-3.5 text-rose-200">
+          <AlertOctagon className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+          <div className="flex-1 text-xs space-y-1">
+            <div className="font-bold text-rose-300 text-sm flex items-center gap-2">
+              <span>Scheduler Stopped — No Run in {hoursSinceLastRun} Hours</span>
+              <span className="px-2 py-0.5 rounded bg-rose-500/30 text-rose-200 text-[10px] uppercase font-semibold">Overdue (&gt; 14h)</span>
+            </div>
+            <p className="text-slate-300">
+              The autonomous background scheduler has not recorded a run in the last <strong>{hoursSinceLastRun} hours</strong>. Expected runs occur at 09:00 and 17:00 Asia/Karachi (04:00 and 12:00 UTC) via GitHub Actions.
+            </p>
+            <div className="pt-1 flex flex-wrap items-center gap-4 text-[11px] text-slate-400">
+              <span>Workflow: <code>.github/workflows/scheduled-run.yml</code></span>
+              <span>Required Secrets: <strong>APP_BASE_URL</strong>, <strong>CRON_SECRET</strong></span>
+              <a href="/api/health" target="_blank" className="text-rose-400 underline hover:text-rose-300">
+                View Public Health Endpoint &rarr;
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Top Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>

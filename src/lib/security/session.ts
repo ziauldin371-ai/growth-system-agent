@@ -79,3 +79,4 @@ export async function verifySessionToken(token: string): Promise<{
     return { valid: false, error: err.message || 'Signature verification failed' };
   }
 }
+

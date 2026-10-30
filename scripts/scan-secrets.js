@@ -71,3 +71,4 @@ if (findings.length > 0) {
   console.log('[SECRET SCANNER] OK: Clean. No hardcoded credentials detected.');
   process.exit(0);
 }
+

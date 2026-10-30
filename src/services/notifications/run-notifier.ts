@@ -213,6 +213,47 @@ ${details.errors && details.errors.length > 0 ? details.errors.join('\n') : 'All
       };
     }
   }
+
+  /**
+   * Dispatches a critical inactivity alert to Zia Ul Din if no run occurred in > 14 hours.
+   */
+  public async sendSchedulerInactivityAlert(hoursSinceLastRun: number, lastRunUtc: string): Promise<{ success: boolean; error?: string }> {
+    const appBaseUrl = process.env.APP_BASE_URL || 'https://growth-system-agent.vercel.app';
+    const subject = `CRITICAL ALERT: Growth System Agent Scheduler Inactive for ${hoursSinceLastRun} Hours`;
+    const body = `CRITICAL ALERT: Growth System Agent Scheduler Inactive
+
+Operator: Zia Ul Din (ziauldin371@gmail.com)
+System Status: STOPPED / OVERDUE
+Hours Since Last Run: ${hoursSinceLastRun} hours (Threshold: 14 hours)
+Last Recorded Run: ${lastRunUtc}
+
+The autonomous background outreach runner has missed its regular 09:00 / 17:00 Asia/Karachi scheduled window.
+
+Troubleshooting Checklist:
+1. Verify GitHub Actions workflow: https://github.com/ziauldin371-ai/growth-system-agent/actions
+2. Verify repository secrets: APP_BASE_URL and CRON_SECRET.
+3. Check public health endpoint: ${appBaseUrl}/api/health
+4. Review Supabase scheduler_run_history table.
+
+This alert was generated automatically by the Growth System Agent health watchdog.`;
+
+    try {
+      const res = await emailService.dispatchOutreachEmail({
+        payload: {
+          to: this.recipient,
+          subject,
+          body,
+          draftId: 'alert_scheduler_inactive',
+          idempotencyKey: `alert_inactive_${Math.floor(Date.now() / (12 * 3600 * 1000))}`,
+        },
+        isExplicitlyApproved: true,
+        currentHour: 10,
+      });
+      return { success: res.success, error: res.error };
+    } catch (err: any) {
+      return { success: false, error: err?.message };
+    }
+  }
 }
 
 export const runNotifierService = new RunNotifierService();

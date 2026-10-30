@@ -95,3 +95,4 @@ describe('/api/auth/login endpoint security', () => {
     expect(verified.payload?.email).toBe('ziauldin371@gmail.com');
   });
 });
+

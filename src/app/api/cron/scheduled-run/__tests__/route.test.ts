@@ -84,3 +84,4 @@ describe('/api/cron/scheduled-run security and validation', () => {
     expect(automationRunner.executeScheduledRun).toHaveBeenCalledWith('vercel_cron');
   });
 });
+

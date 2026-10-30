@@ -86,9 +86,11 @@ export interface IDataStore {
   lockAllChannelsForBusiness(businessId: string, reason: string): void | Promise<void>;
   recordChannelContact(channelId: string, contactedAt?: string): void | Promise<void>;
 
-  // Locking & History
+  // Locking, Checkpoints & History
   acquireLock(name: string, ttlMs?: number): boolean | Promise<boolean>;
   releaseLock(name: string): void | Promise<void>;
+  saveCheckpoint(taskName: string, cursorData: any, itemsRemaining?: number): void | Promise<void>;
+  getCheckpoint(taskName: string): any | Promise<any>;
   recordSchedulerRun(run: any): void | Promise<void>;
   getSchedulerRuns(): any[] | Promise<any[]>;
   getLastSchedulerRun(): any | null | Promise<any | null>;

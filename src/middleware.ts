@@ -12,6 +12,7 @@ const PUBLIC_PATHS = [
   '/api/webhooks/resend',
   '/api/cron/scheduled-run',
   '/api/auth/gmail/callback',
+  '/api/health',
 ];
 
 export async function middleware(req: NextRequest) {

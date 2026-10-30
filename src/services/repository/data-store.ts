@@ -39,6 +39,7 @@ export class DataStore implements IDataStore {
   private automationPaused: boolean = false;
   private distributedLocks: Map<string, number> = new Map(); // lockName -> expiresAt
   private schedulerRuns: Array<SchedulerRunHistoryEntity> = [];
+  private checkpoints: Map<string, any> = new Map(); // taskName -> checkpoint
 
   constructor(customPersistencePath?: string) {
     const dataDir = path.join(process.cwd(), '.data');
@@ -1463,6 +1464,26 @@ ziauldin371@gmail.com`,
 
   public releaseLock(name: string): void {
     this.distributedLocks.delete(name);
+  }
+
+  // --- Scheduler Checkpoints (Bounded Batch Resumption) ---
+  public saveCheckpoint(taskName: string, cursorData: any, itemsRemaining?: number): void {
+    this.checkpoints.set(taskName, {
+      taskName,
+      cursorData,
+      itemsRemaining: itemsRemaining || 0,
+      updatedAt: new Date().toISOString(),
+    });
+    this.persistState();
+  }
+
+  public getCheckpoint(taskName: string): any | null {
+    const cp = this.checkpoints.get(taskName);
+    if (!cp) return null;
+    return {
+      ...cp,
+      cursor_data: cp.cursorData,
+    };
   }
 
   // --- Scheduler Runs History ---
