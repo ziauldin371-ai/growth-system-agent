@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
 
     if (enabled) {
       if (dataStore.seedDemoData) {
-        await dataStore.seedDemoData();
+        await dataStore.seedDemoData(true);
       }
     } else {
       if (dataStore.clearDemoData) {

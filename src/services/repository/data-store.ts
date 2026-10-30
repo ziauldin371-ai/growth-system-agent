@@ -148,8 +148,8 @@ export class DataStore implements IDataStore {
     this.seedInitialData();
   }
 
-  private seedInitialData(): void {
-    if (process.env.NODE_ENV === 'production') {
+  private seedInitialData(force = false): void {
+    if (process.env.NODE_ENV === 'production' && !force) {
       return;
     }
     // Lead 1: Pipeline A (Website Opportunity)
@@ -968,9 +968,9 @@ ziauldin371@gmail.com`,
     }
   }
 
-  public seedDemoData(): void {
-    if (process.env.NODE_ENV === 'production') return;
-    this.seedInitialData();
+  public seedDemoData(force = false): void {
+    if (process.env.NODE_ENV === 'production' && !force) return;
+    this.seedInitialData(force);
     this.persistState();
   }
 

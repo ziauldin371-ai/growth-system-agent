@@ -96,7 +96,7 @@ export interface IDataStore {
   getSchedulerRuns(): any[] | Promise<any[]>;
   getLastSchedulerRun(): any | null | Promise<any | null>;
   getPlatformStats(options?: any): any | Promise<any>;
-  seedDemoData?(): void | Promise<void>;
+  seedDemoData?(force?: boolean): void | Promise<void>;
   clearDemoData?(): void | Promise<void>;
   hasDemoData?(): boolean | Promise<boolean>;
 }

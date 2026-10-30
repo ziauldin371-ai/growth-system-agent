@@ -5,10 +5,10 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/language-context';
 
-export function BottomNav() {
+export function BottomNav({ onOpenHelp }: { onOpenHelp?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { t } = useLanguage();
+  const { language, toggleLanguage, t } = useLanguage();
   const [showMoreMenu, setShowMoreMenu] = useState(false);
 
   const handleSignOut = async () => {
@@ -59,10 +59,10 @@ export function BottomNav() {
 
   return (
     <>
-      {/* Mobile Bottom Navigation Bar (Stitch design, hidden on desktop lg:hidden) */}
+      {/* Mobile Bottom Navigation Bar (Stitch design, hidden on tablet/laptop md:hidden) */}
       <nav
         aria-label="Mobile Navigation"
-        className="fixed bottom-0 inset-x-0 z-40 pb-safe bg-surface-container-low/95 backdrop-blur-xl border-t border-outline-variant/30 shadow-[0_-1px_12px_rgba(0,0,0,0.35)] lg:hidden"
+        className="fixed bottom-0 inset-x-0 z-40 pb-safe bg-surface-container-low/95 backdrop-blur-xl border-t border-outline-variant/30 shadow-[0_-1px_12px_rgba(0,0,0,0.35)] md:hidden"
       >
         <div className="flex justify-around items-stretch h-16 px-1">
           {TABS.map((tab) => {
@@ -112,24 +112,24 @@ export function BottomNav() {
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex flex-col justify-end lg:hidden"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex flex-col justify-end md:hidden"
           onClick={() => setShowMoreMenu(false)}
         >
           <div
-            className="bg-surface-container rounded-t-2xl p-space-md border-t border-outline-variant/40 space-y-space-md pb-12 animate-in slide-in-from-bottom duration-200"
+            className="bg-surface-container rounded-t-2xl p-space-md border-t border-outline-variant/40 space-y-3 pb-safe animate-in slide-in-from-bottom duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-outline-variant/20 pb-3">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary text-[20px]">widgets</span>
-                <span className="font-headline-sm text-headline-sm text-on-surface font-semibold">
+                <span className="font-headline-sm text-sm font-semibold text-on-surface">
                   More Tools & Settings
                 </span>
               </div>
               <button
                 type="button"
                 onClick={() => setShowMoreMenu(false)}
-                className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant"
+                className="w-9 h-9 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant min-h-[44px] min-w-[44px]"
                 aria-label="Close menu"
               >
                 <span className="material-symbols-outlined text-[18px]">close</span>
@@ -145,7 +145,7 @@ export function BottomNav() {
                 <div className="flex items-center gap-3">
                   <span className="material-symbols-outlined text-primary text-[22px]">play_circle</span>
                   <div>
-                    <div className="font-label-lg text-label-lg font-semibold">Run & Schedule</div>
+                    <div className="font-label-lg text-xs font-semibold">Run & Schedule</div>
                     <div className="font-label-md text-[11px] text-on-surface-variant">
                       Find leads now & auto runs
                     </div>
@@ -162,9 +162,9 @@ export function BottomNav() {
                 <div className="flex items-center gap-3">
                   <span className="material-symbols-outlined text-secondary text-[22px]">shield</span>
                   <div>
-                    <div className="font-label-lg text-label-lg font-semibold">Safety & Rules</div>
+                    <div className="font-label-lg text-xs font-semibold">Safety & Rules</div>
                     <div className="font-label-md text-[11px] text-on-surface-variant">
-                      Emergency stop, sending limits & rules
+                      Emergency stop, limits & laws
                     </div>
                   </div>
                 </div>
@@ -179,7 +179,7 @@ export function BottomNav() {
                 <div className="flex items-center gap-3">
                   <span className="material-symbols-outlined text-tertiary text-[22px]">tune</span>
                   <div>
-                    <div className="font-label-lg text-label-lg font-semibold">Setup & Connections</div>
+                    <div className="font-label-lg text-xs font-semibold">Setup & Connections</div>
                     <div className="font-label-md text-[11px] text-on-surface-variant">
                       Gmail, API keys & database status
                     </div>
@@ -187,6 +187,54 @@ export function BottomNav() {
                 </div>
                 <span className="material-symbols-outlined text-outline text-[18px]">chevron_right</span>
               </Link>
+
+              {/* Language Switch Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  toggleLanguage();
+                  setShowMoreMenu(false);
+                }}
+                className="flex items-center justify-between p-3 rounded-xl bg-surface-container-low hover:bg-surface-container-high text-on-surface transition-colors min-h-[44px]"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="material-symbols-outlined text-primary text-[22px]">translate</span>
+                  <div className="text-left">
+                    <div className="font-label-lg text-xs font-semibold">
+                      Language: {language === 'en' ? 'English (Switch to Roman Urdu)' : 'Roman Urdu (Switch to English)'}
+                    </div>
+                    <div className="font-label-md text-[11px] text-on-surface-variant">
+                      {language === 'en' ? 'Urdu mein dekhein' : 'View in English'}
+                    </div>
+                  </div>
+                </div>
+                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-surface-container-high text-primary">
+                  {language === 'en' ? 'EN' : 'UR'}
+                </span>
+              </button>
+
+              {/* Help & Tour */}
+              {onOpenHelp && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMoreMenu(false);
+                    onOpenHelp();
+                  }}
+                  className="flex items-center justify-between p-3 rounded-xl bg-surface-container-low hover:bg-surface-container-high text-on-surface transition-colors min-h-[44px]"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-primary text-[22px]">help</span>
+                    <div className="text-left">
+                      <div className="font-label-lg text-xs font-semibold">Help & Quick Tour</div>
+                      <div className="font-label-md text-[11px] text-on-surface-variant">
+                        How the system works in 60 seconds
+                      </div>
+                    </div>
+                  </div>
+                  <span className="material-symbols-outlined text-outline text-[18px]">chevron_right</span>
+                </button>
+              )}
             </div>
 
             <div className="pt-2 border-t border-outline-variant/20 flex items-center justify-between">
@@ -202,7 +250,7 @@ export function BottomNav() {
               <button
                 type="button"
                 onClick={handleSignOut}
-                className="px-3 py-2 rounded-lg bg-error-container text-on-error-container font-label-md text-xs font-semibold flex items-center gap-1 active:opacity-90"
+                className="px-3 py-2 rounded-lg bg-error-container text-on-error-container font-label-md text-xs font-semibold flex items-center gap-1 active:opacity-90 min-h-[44px]"
               >
                 <span className="material-symbols-outlined text-[16px]">logout</span>
                 <span>{t('action.sign_out', 'Sign Out')}</span>
@@ -214,4 +262,3 @@ export function BottomNav() {
     </>
   );
 }
-

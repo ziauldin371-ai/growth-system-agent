@@ -7,9 +7,10 @@ import { useLanguage } from '@/context/language-context';
 
 interface BusinessCardProps {
   business: BusinessEntity;
+  showDemoBadge?: boolean;
 }
 
-export function BusinessCard({ business }: BusinessCardProps) {
+export function BusinessCard({ business, showDemoBadge }: BusinessCardProps) {
   const { t } = useLanguage();
   const isDemo = Boolean(business.isSandboxData || business.sourceProvider === 'b2b_mock');
 

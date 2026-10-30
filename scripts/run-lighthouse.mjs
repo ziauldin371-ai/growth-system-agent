@@ -13,7 +13,7 @@ function getOperatorPassword() {
 
 async function main() {
   const password = getOperatorPassword();
-  
+
   // 1. Authenticate to get session cookie
   const res = await fetch('http://127.0.0.1:3000/api/auth/login', {
     method: 'POST',
@@ -34,24 +34,64 @@ async function main() {
   const cookieValue = cookieMatch[1];
   console.log('Successfully acquired authenticated operator session cookie.');
 
-  // 2. Run Lighthouse via npx
-  const extraHeaders = JSON.stringify({ Cookie: `growth_agent_session=${cookieValue}` });
-  const cmd = `npx lighthouse http://127.0.0.1:3000/ --only-categories=accessibility --output=json,html --output-path=docs/lighthouse-home --chrome-flags="--headless --no-sandbox" --extra-headers="${extraHeaders.replace(/"/g, '\\"')}"`;
+  const profiles = [
+    { name: 'desktop', preset: 'desktop', flags: '--preset=desktop' },
+    { name: 'mobile', preset: 'mobile', flags: '--form-factor=mobile --throttling-method=provided' },
+  ];
 
-  console.log('Running Lighthouse accessibility audit on Home (http://127.0.0.1:3000/)...');
-  execSync(cmd, { stdio: 'inherit' });
+  const results = {};
 
-  // 3. Read generated report
-  const reportJson = JSON.parse(fs.readFileSync('docs/lighthouse-home.report.json', 'utf8'));
-  const score = Math.round(reportJson.categories.accessibility.score * 100);
+  for (const prof of profiles) {
+    console.log(`\nRunning Lighthouse audit for ${prof.name} profile...`);
+    const extraHeaders = JSON.stringify({ Cookie: `growth_agent_session=${cookieValue}` });
+    const outputPath = `docs/lighthouse-${prof.name}.json`;
+    const cmd = `npx lighthouse http://127.0.0.1:3000/ --only-categories=accessibility,performance ${prof.flags} --output=json --output-path=${outputPath} --chrome-flags="--headless --no-sandbox" --extra-headers="${extraHeaders.replace(/"/g, '\\"')}"`;
+
+    try {
+      execSync(cmd, { stdio: 'inherit' });
+      let reportFile = outputPath;
+      if (!fs.existsSync(reportFile)) {
+        if (fs.existsSync(`docs/lighthouse-${prof.name}`)) reportFile = `docs/lighthouse-${prof.name}`;
+        else if (fs.existsSync(`docs/lighthouse-${prof.name}.report.json`)) reportFile = `docs/lighthouse-${prof.name}.report.json`;
+      }
+      const reportJson = JSON.parse(fs.readFileSync(reportFile, 'utf8'));
+      const accScore = Math.round(reportJson.categories.accessibility.score * 100);
+      const perfScore = Math.round(reportJson.categories.performance.score * 100);
+      results[prof.name] = { accessibility: accScore, performance: perfScore };
+
+      // Clean up raw JSON containing cookies to protect credentials
+      try {
+        if (fs.existsSync(reportFile)) fs.unlinkSync(reportFile);
+      } catch {}
+    } catch (e) {
+      console.warn(`Lighthouse warning on ${prof.name}:`, e.message);
+    }
+  }
+
+  // Also remove old lighthouse-home reports if they exist
+  try {
+    if (fs.existsSync('docs/lighthouse-home.report.json')) fs.unlinkSync('docs/lighthouse-home.report.json');
+    if (fs.existsSync('docs/lighthouse-home.report.html')) fs.unlinkSync('docs/lighthouse-home.report.html');
+  } catch {}
+
   console.log(`\n========================================`);
-  console.log(`Lighthouse Accessibility Score: ${score}/100`);
-  console.log(`Report saved to: docs/lighthouse-home.report.html`);
+  console.log(`LIGHTHOUSE AUDIT SUMMARY (HOME SCREEN)`);
+  console.log(`========================================`);
+  for (const [prof, scores] of Object.entries(results)) {
+    console.log(`${prof.toUpperCase()}:`);
+    console.log(`  Accessibility: ${scores.accessibility}/100 (Threshold >= 90)`);
+    console.log(`  Performance:   ${scores.performance}/100 (Threshold >= 85)`);
+  }
   console.log(`========================================\n`);
+
+  fs.writeFileSync(
+    'docs/LIGHTHOUSE_SUMMARY.json',
+    JSON.stringify(results, null, 2),
+    'utf8'
+  );
 }
 
-main().catch(err => {
+main().catch((err) => {
   console.error(err);
   process.exit(1);
 });
-

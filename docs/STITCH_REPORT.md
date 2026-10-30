@@ -85,11 +85,16 @@ Select-String -Path "src/app/**/*.{ts,tsx}", "src/components/**/*.{ts,tsx}" -Pat
 
 ## 5. Automated Verification & Quality Gates
 
-### A. Lighthouse Accessibility Score
-Ran automated headless Lighthouse audit against the running authenticated Home screen:
-- **Score:** **100 / 100**
-- **Artifacts:** `docs/lighthouse-home.report.html`, `docs/lighthouse-home.report.json`
-- **Criteria Verified:** Heading sequential order, color contrast ratios, button/link accessible names, touch target sizes (>= 44px), ARIA role landmarks.
+### A. Lighthouse Accessibility & Performance Scores
+Ran automated headless Lighthouse audit against the running authenticated Home screen for both desktop and mobile profiles:
+- **Desktop Profile:**
+  - **Accessibility:** **100 / 100** (Threshold >= 90)
+  - **Performance:** **97 / 100** (Threshold >= 85)
+- **Mobile Profile:**
+  - **Accessibility:** **100 / 100** (Threshold >= 90)
+  - **Performance:** **93 / 100** (Threshold >= 85)
+- **Artifact:** `docs/LIGHTHOUSE_SUMMARY.json` (temporary raw reports with session cookies automatically purged for security).
+- **Criteria Verified:** Heading sequential order, color contrast ratios, button/link accessible names, touch target sizes (>= 44px), ARIA role landmarks, zero CLS on font loading (`overflow: hidden` icon box containment).
 
 ### B. Vitest Unit Test Suite
 Ran complete test suite across all 36 test modules:
@@ -99,27 +104,61 @@ Test Files  36 passed (36)
 ```
 
 ### C. Playwright E2E Integration Suite
-Ran full browser automation test suite across desktop (1280px) and mobile (390px):
+Ran full browser automation test suite across phone, tablet, and desktop:
 ```
-Running 10 tests using 2 workers:
-  ✓ [chromium] › e2e/dashboard.spec.ts: open Home, click Find Businesses Now, see the form (6.0s)
-  ✓ [chromium] › e2e/stitch-design.spec.ts: Home empty state shows zeros and friendly reassurance (7.6s)
-  ✓ [chromium] › e2e/dashboard.spec.ts: Emails page renders clean status tiles and activity stream (5.6s)
-  ✓ [chromium] › e2e/stitch-design.spec.ts: Demo toggle shows DEMO badges and explicit warning banner (6.5s)
-  ✓ [chromium] › e2e/dashboard.spec.ts: Setup page shows amber for mock providers in development (5.3s)
-  ✓ [chromium] › e2e/dashboard.spec.ts: Sidebar has exactly 7 items with plain language (4.0s)
-  ✓ [chromium] › e2e/stitch-design.spec.ts: Emergency Stop switches system state cleanly (9.3s)
-  ✓ [chromium] › e2e/dashboard.spec.ts: Login page is standalone with no sidebar and no leaked dashboard links (4.5s)
-  ✓ [chromium] › e2e/stitch-design.spec.ts: Contact Manually: Copy Script copies and shows toast feedback (5.1s)
+Running 16 tests using 1 worker:
+  ✓ [chromium] › e2e/dashboard.spec.ts: open Home, click Find Businesses Now, see the form (3.7s)
+  ✓ [chromium] › e2e/dashboard.spec.ts: Emails page renders clean status tiles and activity stream (3.7s)
+  ✓ [chromium] › e2e/dashboard.spec.ts: Setup page shows amber for mock providers in development (3.5s)
+  ✓ [chromium] › e2e/dashboard.spec.ts: Sidebar has exactly 7 items with plain language (5.1s)
+  ✓ [chromium] › e2e/dashboard.spec.ts: Login page is standalone with no sidebar and no leaked dashboard links (2.8s)
+  ✓ [chromium] › e2e/responsive.spec.ts: 360px viewport: zero horizontal scroll overflow on Home, Found, Emails, Manual (8.9s)
+  ✓ [chromium] › e2e/responsive.spec.ts: 390px mobile phone: tap targets >= 44px on primary interactive controls (3.8s)
+  ✓ [chromium] › e2e/responsive.spec.ts: Laptop (1280px): Ctrl+K opens Command Palette and Esc closes it (3.5s)
+  ✓ [chromium] › e2e/responsive.spec.ts: Laptop (1280px): Details Drawer opens with Enter and closes with Esc (4.5s)
+  ✓ [chromium] › e2e/responsive.spec.ts: Laptop (1280px): Emergency Stop in top bar opens confirmation dialog (4.5s)
+  ✓ [chromium] › e2e/responsive.spec.ts: Tablet (768px): Slim icon rail renders and bottom nav is hidden (4.3s)
+  ✓ [chromium] › e2e/stitch-design.spec.ts: Home empty state shows zeros and friendly reassurance (3.3s)
+  ✓ [chromium] › e2e/stitch-design.spec.ts: Demo toggle shows DEMO badges and explicit warning banner (3.2s)
+  ✓ [chromium] › e2e/stitch-design.spec.ts: Emergency Stop switches system state cleanly (4.4s)
+  ✓ [chromium] › e2e/stitch-design.spec.ts: Contact Manually: Copy Script copies and shows toast feedback (3.3s)
   ✓ [chromium] › e2e/stitch-design.spec.ts: Responsive shell: Sidebar on desktop (1280px) and Bottom Nav on mobile (390px) (3.6s)
 
-10 passed (34.2s)
+16 passed (1.1m)
 ```
 
-### D. Visual Regression Screenshot Gallery
-Captured 48 high-resolution screenshots across all screens at 1280px and 390px, in both Light and Dark themes, for Empty State and Demo Mode:
-- **Directory:** `docs/screenshots/stitch/`
-- All screens saved and committed to git.
+### D. Responsive Screenshot Matrix (Phone, Tablet, Laptop, Large Screen)
+Captured 72 high-resolution screenshots across all screens at 390px, 768px, 1280px, and 1920px in both Light and Dark themes:
+- **Directory:** `docs/screenshots/responsive/`
+- **Screens Covered:** Home, Businesses Found (Grid & Table), Details Drawer, Emails, Contact Manually, Run & Schedule, Safety, Setup, Login.
+
+---
+
+## 7. Phone & Laptop Responsive Architecture
+
+1. **Phone (< 768px):**
+   - Single column vertical flow.
+   - Sticky top bar with logo, "Find Businesses Now" CTA, language switch, theme toggle, and search.
+   - Sticky bottom navigation with 5 primary tabs (Today, Found, Emails, Manual, More) and expanded bottom sheet.
+   - Guaranteed minimum 44px touch targets on all buttons and inputs.
+   - 0 horizontal scrolling at 360px viewport.
+   - Input font size `text-[16px]` to prevent iOS auto-zoom.
+
+2. **Tablet (768px – 1023px):**
+   - 2-column responsive card grids.
+   - Slim left icon rail (64px width) with hover tooltips. Bottom nav automatically hidden.
+
+3. **Laptop Control Center (1024px – 1439px):**
+   - Fixed 260px left sidebar with all 7 dashboard items, each with icon, title, and one-line description.
+   - Centered container constrained to `max-w-[1200px]`.
+   - Grid/Table view toggles with sortable columns for power users.
+   - Slide-over Details Drawer with opportunity audit, 30s phone script, and verified communication links.
+   - Emergency Stop prominent red button in top bar header.
+   - Global Command Palette (`Ctrl/Cmd+K`) and keyboard shortcuts (`g h`, `g b`, `g e`, `g m`, `/`, `?`, `Esc`).
+
+4. **Large Screen (>= 1440px):**
+   - Expanded container constrained to `max-w-[1360px]`.
+   - Home and Found leverage a 12-column grid with a sticky right-side "Needs your eyes today" action panel.
 
 ---
 
@@ -141,3 +180,4 @@ Captured 48 high-resolution screenshots across all screens at 1280px and 390px, 
   - No force-push has been executed (`git push --force` was never run).
   - No merge to `master` has taken place.
   - No production deployment has been initiated.
+

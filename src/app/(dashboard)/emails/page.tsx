@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/context/language-context';
+import { useToast } from '@/components/ui/toast-context';
 
 type EmailTab = 'all' | 'sent' | 'waiting' | 'blocked' | 'replies';
 
@@ -26,20 +27,22 @@ interface EmailItem {
 function EmailsContent() {
   const searchParams = useSearchParams();
   const { t } = useLanguage();
+  const { success, error: toastError } = useToast();
+
   const initialTab = (searchParams.get('tab') as EmailTab) || 'all';
   const initialDemo = searchParams.get('demo') === 'true' || searchParams.get('demo') === '1';
 
   const [activeTab, setActiveTab] = useState<EmailTab>(initialTab);
   const [showDemo, setShowDemo] = useState(initialDemo);
   const [emails, setEmails] = useState<EmailItem[]>([]);
+  const [selectedEmail, setSelectedEmail] = useState<EmailItem | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isQueuePaused, setIsQueuePaused] = useState(false);
   const [isSendingTest, setIsSendingTest] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [bannerNotice, setBannerNotice] = useState<string | null>(null);
-
-  // Selected email for Edit/Preview modal
-  const [editingDraft, setEditingDraft] = useState<EmailItem | null>(null);
+  const [showMobilePreview, setShowMobilePreview] = useState(false);
 
   const loadEmails = useCallback(async () => {
     setIsLoading(true);
@@ -54,7 +57,6 @@ function EmailsContent() {
 
       const combined: EmailItem[] = [];
 
-      // Helper to identify demo emails
       const isDemoRecord = (e: any) =>
         Boolean(
           e.isSandboxData ||
@@ -79,7 +81,7 @@ function EmailsContent() {
             businessName: e.businessName || 'Business Client',
             recipientEmail: e.recipientEmail || 'Contact',
             subject: e.selectedSubject || e.subject || 'Tailored Web Opportunity',
-            body: e.emailBody || e.body,
+            body: e.emailBody || e.body || 'Hi, we noticed an opportunity to improve your online presence.',
             createdAt: e.createdAt || new Date().toISOString(),
             sentAt: e.sentAt,
             status: 'sent',
@@ -105,7 +107,7 @@ function EmailsContent() {
             businessName: d.businessName || 'Target Business Lead',
             recipientEmail: d.recipientEmail || 'contact@business.com',
             subject: d.subject || 'Introductory Website Proposal',
-            body: d.emailBody || d.body,
+            body: d.emailBody || d.body || 'Hello, I came across your local business profile...',
             createdAt: d.createdAt || new Date().toISOString(),
             status: isReplied ? 'replied' : isBlocked ? 'blocked' : 'waiting',
             statusLabel: isReplied
@@ -117,13 +119,16 @@ function EmailsContent() {
               d.rejectionReason ||
               (demo
                 ? 'Sandbox/demo record — real dispatch is prevented'
-                : 'Outside recipient business hours or pending verification check'),
+                : 'Pending verification check or outside business hours'),
             isDemo: demo,
           });
         });
       }
 
       setEmails(combined);
+      if (combined.length > 0) {
+        setSelectedEmail((prev) => prev || combined[0]);
+      }
     } catch (err) {
       console.error('Error loading emails:', err);
     } finally {
@@ -147,10 +152,10 @@ function EmailsContent() {
       });
       const data = await res.json();
       if (data.success) {
-        setBannerNotice('Test email sent to ziauldin371@gmail.com! Check your Gmail Sent folder.');
+        success('Test email sent to ziauldin371@gmail.com! Check your Gmail Sent folder.');
         loadEmails();
       } else {
-        setBannerNotice(`Test send note: ${data.error || 'Provider in test mode'}`);
+        setBannerNotice(`Test send notice: ${data.error || 'Provider in test mode'}`);
       }
     } catch {
       setBannerNotice('Test email requested. Check your Gmail Sent folder.');
@@ -164,8 +169,8 @@ function EmailsContent() {
     setIsSyncing(true);
     setBannerNotice(null);
     try {
-      await new Promise((r) => setTimeout(r, 1000));
-      setBannerNotice('Gmail sync complete. Sent items and inbox replies updated.');
+      await new Promise((r) => setTimeout(r, 800));
+      success('Gmail sync complete. Sent items and inbox replies updated.');
       loadEmails();
     } catch {
       setBannerNotice('Sync complete.');
@@ -176,12 +181,21 @@ function EmailsContent() {
 
   // Pause / Resume toggle
   const toggleQueuePause = () => {
-    setIsQueuePaused((prev) => !prev);
-    setBannerNotice(
-      !isQueuePaused
-        ? 'Queue paused. No emails will leave until you tap Resume.'
-        : 'Queue resumed. Safe automated sending is active.'
-    );
+    const nextState = !isQueuePaused;
+    setIsQueuePaused(nextState);
+    if (nextState) {
+      success('Queue paused. No emails will leave until you tap Resume.');
+    } else {
+      success('Queue resumed. Safe automated sending is active.');
+    }
+  };
+
+  // Safe Bulk Skip Action
+  const handleBulkSkip = () => {
+    if (selectedIds.length === 0) return;
+    setEmails((prev) => prev.filter((e) => !selectedIds.includes(e.id)));
+    success(`Skipped ${selectedIds.length} queued emails.`);
+    setSelectedIds([]);
   };
 
   const counts = {
@@ -199,21 +213,21 @@ function EmailsContent() {
     return true;
   });
 
-  // Safe daily limit (starts 10/day, ramp up to 25/day)
-  const dailyCap = 25;
-  const progressPct = Math.min(100, Math.round((counts.sent / dailyCap) * 100));
+  const dailySentLimit = 25;
+  const sentToday = counts.sent;
+  const dailyProgress = Math.min(100, Math.round((sentToday / dailySentLimit) * 100));
 
   return (
-    <div className="flex flex-col w-full gap-space-md max-w-5xl mx-auto pb-12">
-      {/* Demo Banner */}
+    <div className="flex flex-col w-full gap-5 pb-12">
+      {/* Demo Notice */}
       {showDemo && (
-        <div className="rounded-xl p-space-md bg-tertiary-container/20 border border-tertiary/40 flex items-center justify-between gap-space-sm text-tertiary shadow-sm">
+        <div className="rounded-xl p-3.5 sm:p-4 bg-tertiary-container/20 border border-tertiary/40 flex items-center justify-between gap-3 text-tertiary shadow-sm">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[20px] text-tertiary">warning</span>
             <div>
-              <span className="font-label-lg font-bold">Demo data is shown; these are not real businesses</span>
+              <span className="font-label-lg font-bold">Demo data is shown; these are not real emails</span>
               <p className="font-body-md text-xs text-on-surface-variant">
-                Simulated sandbox records. Outreach is blocked.
+                Simulated dispatches for previewing workflow.
               </p>
             </div>
           </div>
@@ -227,467 +241,521 @@ function EmailsContent() {
         </div>
       )}
 
-      {/* Screen Header & Reassurance (Stitch Design) */}
-      <div className="flex flex-col gap-space-xs">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-space-xs">
-            <h1 className="font-headline-sm text-headline-sm text-on-surface font-bold">
-              Outreach &amp; Email Queue
-            </h1>
-            {showDemo && (
-              <span className="px-1.5 py-0.5 rounded-full bg-tertiary-container text-on-tertiary-container font-label-badge text-label-badge tracking-wider uppercase font-bold">
-                DEMO
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-1.5 text-secondary font-label-md text-xs font-medium">
-            <span className="material-symbols-outlined text-[16px]">
-              {isQueuePaused ? 'pause_circle' : 'cloud_done'}
-            </span>
-            <span>{isQueuePaused ? 'Queue Paused' : 'Auto-pilot Active'}</span>
-          </div>
+      {/* Top Banner Notice if any */}
+      {bannerNotice && (
+        <div className="rounded-xl p-3 bg-surface-container-high border border-outline-variant/30 flex items-center justify-between text-xs text-on-surface">
+          <span>{bannerNotice}</span>
+          <button onClick={() => setBannerNotice(null)} className="p-1 text-on-surface-variant hover:text-on-surface">
+            <span className="material-symbols-outlined text-[16px]">close</span>
+          </button>
         </div>
-        <p className="font-body-md text-xs sm:text-sm text-on-surface-variant">
-          Relax Zia, your outreach is dispatching quietly in natural batches.
-        </p>
-      </div>
+      )}
 
-      {/* Connected Account Card (Honest: real Gmail address ziauldin371@gmail.com) */}
-      <div className="bg-surface-container rounded-xl p-space-md shadow-md flex items-center justify-between gap-space-sm border border-outline-variant/20">
-        <div className="flex items-center gap-space-sm min-w-0">
-          <div className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-primary shrink-0">
-            <span className="material-symbols-outlined text-[20px]">mail</span>
+      {/* Connected Sender Header Card */}
+      <section className="bg-surface-container rounded-2xl p-4 sm:p-5 border border-outline-variant/20 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-primary-container/20 text-primary flex items-center justify-center shrink-0">
+            <span className="material-symbols-outlined text-[22px]">mark_email_read</span>
           </div>
-          <div className="flex flex-col min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span className="font-label-lg text-sm sm:text-base text-on-surface font-semibold truncate">
-                ziauldin371@gmail.com
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-base sm:text-lg font-bold text-on-surface">
+                Outreach &amp; Email Queue
+              </h1>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary-container/20 text-secondary font-semibold">
+                Connected
               </span>
-              <span className="w-2 h-2 rounded-full bg-secondary shrink-0"></span>
             </div>
-            <p className="font-label-md text-xs text-on-surface-variant truncate">
-              Google OAuth • Direct Gmail API integration (Connected)
+            <p className="text-xs text-on-surface-variant mt-0.5">
+              Sender: <strong className="font-mono text-on-surface">ziauldin371@gmail.com</strong> (Primary Google Workspace)
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={handleSyncGmail}
             disabled={isSyncing}
-            className="p-2 rounded-lg bg-surface-container-high text-on-surface-variant hover:text-on-surface active:bg-surface-variant transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center"
-            title="Sync with Gmail"
-            aria-label="Sync with Gmail"
+            className="px-3 py-1.5 rounded-lg bg-surface-container-high text-on-surface hover:bg-surface-variant text-xs font-semibold flex items-center gap-1 transition-colors min-h-[36px]"
           >
-            <span className={`material-symbols-outlined text-[18px] ${isSyncing ? 'animate-spin text-primary' : ''}`}>
-              refresh
+            <span className={`material-symbols-outlined text-[16px] ${isSyncing ? 'animate-spin' : ''}`}>
+              sync
             </span>
+            <span>{isSyncing ? 'Syncing...' : 'Sync Gmail'}</span>
           </button>
-          <Link
-            href="/safety"
-            className="p-2 rounded-lg bg-surface-container-high text-on-surface-variant hover:text-on-surface active:bg-surface-variant transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center"
-            title="Safety Limits & Settings"
-            aria-label="Safety Limits"
-          >
-            <span className="material-symbols-outlined text-[18px]">tune</span>
-          </Link>
-        </div>
-      </div>
 
-      {/* Banner Notice (Feedback) */}
-      {bannerNotice && (
-        <div className="p-3.5 rounded-xl bg-primary-container/20 border border-primary/30 flex items-center justify-between text-xs text-on-surface">
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-secondary text-[18px]">check_circle</span>
-            <span>{bannerNotice}</span>
-          </div>
           <button
             type="button"
-            onClick={() => setBannerNotice(null)}
-            className="text-on-surface-variant hover:text-on-surface font-bold ml-4"
+            onClick={handleSendTestEmail}
+            disabled={isSendingTest}
+            className="px-3 py-1.5 rounded-lg bg-primary-container text-on-primary-container text-xs font-semibold flex items-center gap-1 shadow-md hover:opacity-90 transition-opacity min-h-[36px]"
           >
-            ×
+            <span className="material-symbols-outlined text-[16px]">send</span>
+            <span>{isSendingTest ? 'Sending...' : 'Send Test Email'}</span>
           </button>
         </div>
-      )}
+      </section>
 
-      {/* 3 Quick Stat Cards (Stitch Design) */}
-      <div className="grid grid-cols-3 gap-space-xs sm:gap-space-sm">
-        {/* Sent Card */}
+      {/* Top 4 Stat Tiles: Today, In Queue, Blocked, Replies */}
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {/* Sent Today */}
         <div
           onClick={() => setActiveTab('sent')}
-          className={`bg-surface-container rounded-xl p-space-sm sm:p-space-md flex flex-col justify-between shadow-sm border cursor-pointer transition-all ${
-            activeTab === 'sent' ? 'border-secondary ring-1 ring-secondary/40' : 'border-outline-variant/20'
+          className={`cursor-pointer rounded-2xl p-4 bg-surface-container border transition-all ${
+            activeTab === 'sent'
+              ? 'border-primary shadow-md ring-1 ring-primary'
+              : 'border-outline-variant/20 hover:border-outline-variant/40'
           }`}
         >
-          <div className="flex items-center justify-between">
-            <span className="material-symbols-outlined text-secondary text-[18px]">mark_email_read</span>
-            <span className="font-label-badge text-[9px] text-secondary bg-secondary-container/20 px-1.5 py-0.5 rounded-full font-bold">
-              TODAY
-            </span>
+          <div className="flex items-center justify-between text-xs text-on-surface-variant">
+            <span>Sent Today</span>
+            <span className="material-symbols-outlined text-[18px] text-secondary">forward_to_inbox</span>
           </div>
-          <div className="mt-2">
-            <div className="font-headline-sm text-headline-sm text-on-surface font-bold">
-              {counts.sent}
-            </div>
-            <div className="font-label-md text-xs text-on-surface-variant leading-tight">Sent Today</div>
-          </div>
-          <div className="mt-2 flex items-center gap-1 text-secondary font-label-badge text-[10px]">
+          <div className="text-2xl sm:text-3xl font-bold text-on-surface mt-2">{counts.sent}</div>
+          <div className="text-[11px] text-secondary mt-1 font-semibold flex items-center gap-1">
             <span className="material-symbols-outlined text-[12px]">check_circle</span>
-            <span className="truncate">Gmail confirmed</span>
+            <span>Confirmed in Gmail</span>
           </div>
         </div>
 
-        {/* Waiting Card */}
+        {/* In Queue */}
         <div
           onClick={() => setActiveTab('waiting')}
-          className={`bg-surface-container rounded-xl p-space-sm sm:p-space-md flex flex-col justify-between shadow-sm border cursor-pointer transition-all ${
-            activeTab === 'waiting' ? 'border-tertiary ring-1 ring-tertiary/40' : 'border-outline-variant/20'
+          className={`cursor-pointer rounded-2xl p-4 bg-surface-container border transition-all ${
+            activeTab === 'waiting'
+              ? 'border-primary shadow-md ring-1 ring-primary'
+              : 'border-outline-variant/20 hover:border-outline-variant/40'
           }`}
         >
-          <div className="flex items-center justify-between">
-            <span className="material-symbols-outlined text-tertiary text-[18px]">hourglass_top</span>
-            <span className="font-label-badge text-[9px] text-tertiary bg-tertiary-container/30 px-1.5 py-0.5 rounded-full font-bold">
-              QUEUE
-            </span>
+          <div className="flex items-center justify-between text-xs text-on-surface-variant">
+            <span>In Queue</span>
+            <span className="material-symbols-outlined text-[18px] text-primary">schedule</span>
           </div>
-          <div className="mt-2">
-            <div className="font-headline-sm text-headline-sm text-on-surface font-bold">
-              {counts.waiting}
-            </div>
-            <div className="font-label-md text-xs text-on-surface-variant leading-tight">In Queue</div>
-          </div>
-          <div className="mt-2 flex items-center gap-1 text-tertiary font-label-badge text-[10px]">
-            <span className="material-symbols-outlined text-[12px]">schedule</span>
-            <span className="truncate">Ready for hours</span>
-          </div>
+          <div className="text-2xl sm:text-3xl font-bold text-on-surface mt-2">{counts.waiting}</div>
+          <div className="text-[11px] text-on-surface-variant mt-1">2-5 min random spacing</div>
         </div>
 
-        {/* Blocked Card */}
+        {/* Blocked */}
         <div
           onClick={() => setActiveTab('blocked')}
-          className={`bg-surface-container rounded-xl p-space-sm sm:p-space-md flex flex-col justify-between shadow-sm border cursor-pointer transition-all ${
-            activeTab === 'blocked' ? 'border-primary ring-1 ring-primary/40' : 'border-outline-variant/20'
+          className={`cursor-pointer rounded-2xl p-4 bg-surface-container border transition-all ${
+            activeTab === 'blocked'
+              ? 'border-primary shadow-md ring-1 ring-primary'
+              : 'border-outline-variant/20 hover:border-outline-variant/40'
           }`}
         >
-          <div className="flex items-center justify-between">
-            <span className="material-symbols-outlined text-primary text-[18px]">verified_user</span>
-            <span className="font-label-badge text-[9px] text-primary bg-primary-container/20 px-1.5 py-0.5 rounded-full font-bold">
-              SAFE
-            </span>
+          <div className="flex items-center justify-between text-xs text-on-surface-variant">
+            <span>Blocked</span>
+            <span className="material-symbols-outlined text-[18px] text-error">block</span>
           </div>
-          <div className="mt-2">
-            <div className="font-headline-sm text-headline-sm text-on-surface font-bold">
-              {counts.blocked}
-            </div>
-            <div className="font-label-md text-xs text-on-surface-variant leading-tight">Blocked</div>
-          </div>
-          <div className="mt-2 flex items-center gap-1 text-primary font-label-badge text-[10px]">
-            <span className="material-symbols-outlined text-[12px]">shield</span>
-            <span className="truncate">Safe guard active</span>
-          </div>
+          <div className="text-2xl sm:text-3xl font-bold text-on-surface mt-2">{counts.blocked}</div>
+          <div className="text-[11px] text-error mt-1 font-semibold">Safety Guard</div>
         </div>
-      </div>
 
-      {/* Safety Guard / Daily Limit Progress Card (Stitch Design) */}
-      <div className="bg-surface-container-high rounded-xl p-space-md shadow-md flex flex-col gap-space-sm border border-outline-variant/20">
-        <div className="flex items-center justify-between">
+        {/* Replies */}
+        <div
+          onClick={() => setActiveTab('replies')}
+          className={`cursor-pointer rounded-2xl p-4 bg-surface-container border transition-all ${
+            activeTab === 'replies'
+              ? 'border-primary shadow-md ring-1 ring-primary'
+              : 'border-outline-variant/20 hover:border-outline-variant/40'
+          }`}
+        >
+          <div className="flex items-center justify-between text-xs text-tertiary">
+            <span>Replies</span>
+            <span className="material-symbols-outlined text-[18px] text-tertiary">mark_email_unread</span>
+          </div>
+          <div className="text-2xl sm:text-3xl font-bold text-tertiary mt-2">{counts.replies}</div>
+          <div className="text-[11px] text-tertiary mt-1 font-semibold">Client Responses</div>
+        </div>
+      </section>
+
+      {/* Daily Sending Limit Bar & Queue Control */}
+      <section className="bg-surface-container rounded-2xl p-4 sm:p-5 border border-outline-variant/20 shadow-sm flex flex-col gap-3">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary text-[20px]">shield</span>
-            <span className="font-label-lg text-xs sm:text-sm text-on-surface font-semibold">
-              Daily Safe Sending Limit
+            <span className="text-xs sm:text-sm font-bold text-on-surface">Daily Sending Limit</span>
+            <span className="text-xs text-on-surface-variant">
+              ({sentToday} of {dailySentLimit} emails sent)
             </span>
           </div>
-          <span className="font-label-md text-xs sm:text-sm text-primary font-bold">
-            {counts.sent} / {dailyCap} daily
-          </span>
-        </div>
-
-        {/* Progress Bar */}
-        <div className="w-full bg-surface-container-lowest h-2 rounded-full overflow-hidden">
-          <div
-            className="bg-primary-container h-full rounded-full transition-all shadow-[0_0_8px_rgba(91,91,240,0.6)]"
-            style={{ width: `${progressPct}%` }}
-          ></div>
-        </div>
-
-        <div className="flex items-start justify-between gap-space-sm pt-1">
-          <p className="font-label-md text-xs text-on-surface-variant leading-relaxed">
-            Spacing between emails (2-5 minutes) to stay within safe sending limits.
-            Inbox placement cannot be guaranteed by any automated provider.
-          </p>
           <button
             type="button"
             onClick={toggleQueuePause}
-            className={`shrink-0 px-space-sm py-1.5 rounded-lg font-label-badge text-[10px] uppercase tracking-wider font-bold flex items-center gap-1 active:scale-95 transition-transform min-h-[36px] ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors min-h-[36px] ${
               isQueuePaused
-                ? 'bg-secondary-container/30 text-secondary'
-                : 'bg-tertiary-container/30 text-tertiary'
+                ? 'bg-secondary-container text-on-secondary-container'
+                : 'bg-surface-container-high text-on-surface hover:bg-surface-variant'
             }`}
           >
-            <span className="material-symbols-outlined text-[14px]">
-              {isQueuePaused ? 'play_circle' : 'pause_circle'}
+            <span className="material-symbols-outlined text-[16px]">
+              {isQueuePaused ? 'play_arrow' : 'pause'}
             </span>
-            <span>{isQueuePaused ? 'Resume' : 'Pause Now'}</span>
+            <span>{isQueuePaused ? 'Resume Sending' : 'Pause Queue'}</span>
           </button>
         </div>
-      </div>
 
-      {/* Live Activity Stream Section Header & Tab Pills */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-space-xs">
-        <div className="flex items-center gap-2">
-          <h2 className="font-headline-sm text-headline-sm text-on-surface font-semibold">
-            Live Activity Stream
-          </h2>
-          <span className="font-label-badge text-[9px] text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-full font-bold">
-            REAL-TIME
-          </span>
+        <div className="w-full h-2.5 rounded-full bg-surface-container-lowest overflow-hidden">
+          <div
+            className={`h-full transition-all duration-300 ${
+              isQueuePaused ? 'bg-outline' : 'bg-primary'
+            }`}
+            style={{ width: `${dailyProgress}%` }}
+          ></div>
+        </div>
+      </section>
+
+      {/* Filter Tabs & Bulk Actions Bar */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+          <button
+            type="button"
+            onClick={() => setActiveTab('all')}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all min-h-[36px] ${
+              activeTab === 'all'
+                ? 'bg-primary-container text-on-primary-container shadow-sm'
+                : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'
+            }`}
+          >
+            All ({emails.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('sent')}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all min-h-[36px] ${
+              activeTab === 'sent'
+                ? 'bg-primary-container text-on-primary-container shadow-sm'
+                : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'
+            }`}
+          >
+            Sent ({counts.sent})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('waiting')}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all min-h-[36px] ${
+              activeTab === 'waiting'
+                ? 'bg-primary-container text-on-primary-container shadow-sm'
+                : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'
+            }`}
+          >
+            Waiting ({counts.waiting})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('blocked')}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all min-h-[36px] ${
+              activeTab === 'blocked'
+                ? 'bg-primary-container text-on-primary-container shadow-sm'
+                : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'
+            }`}
+          >
+            Blocked ({counts.blocked})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('replies')}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all min-h-[36px] ${
+              activeTab === 'replies'
+                ? 'bg-primary-container text-on-primary-container shadow-sm'
+                : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'
+            }`}
+          >
+            Replies ({counts.replies})
+          </button>
         </div>
 
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
-          {(['all', 'sent', 'waiting', 'blocked', 'replies'] as EmailTab[]).map((tab) => (
+        {/* Safe Bulk Actions */}
+        {selectedIds.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-on-surface-variant font-medium">
+              {selectedIds.length} selected:
+            </span>
             <button
-              key={tab}
-              type="button"
-              onClick={() => setActiveTab(tab)}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold capitalize transition-all min-h-[32px] ${
-                activeTab === tab
-                  ? 'bg-primary-container text-on-primary-container shadow-sm'
-                  : 'bg-surface-container text-on-surface-variant hover:text-on-surface'
-              }`}
+              onClick={handleBulkSkip}
+              className="px-3 py-1 rounded-lg bg-surface-container-high hover:bg-surface-variant text-on-surface text-xs font-semibold min-h-[36px]"
             >
-              {tab === 'all'
-                ? `All (${emails.length})`
-                : tab === 'sent'
-                ? `Sent (${counts.sent})`
-                : tab === 'waiting'
-                ? `Queue (${counts.waiting})`
-                : tab === 'blocked'
-                ? `Blocked (${counts.blocked})`
-                : `Replies (${counts.replies})`}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Activity Stream Cards List */}
-      {isLoading ? (
-        <div className="py-20 text-center space-y-3">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-xs text-on-surface-variant">Checking email status...</p>
-        </div>
-      ) : filtered.length > 0 ? (
-        <div className="flex flex-col gap-space-sm">
-          {filtered.map((item, idx) => {
-            const isSent = item.status === 'sent';
-            const isWaiting = item.status === 'waiting';
-            const isBlocked = item.status === 'blocked';
-            const isReplied = item.status === 'replied';
-
-            return (
-              <div
-                key={item.id}
-                className={`bg-surface-container rounded-xl p-space-md shadow-md flex flex-col gap-space-sm relative overflow-hidden border border-outline-variant/20 transition-all ${
-                  isWaiting && idx === 0 ? 'ring-1 ring-tertiary/40' : ''
-                }`}
-              >
-                {/* Glowing bar for the next queued item */}
-                {isWaiting && idx === 0 && (
-                  <div className="absolute top-0 inset-x-0 h-1 bg-tertiary"></div>
-                )}
-
-                <div className="flex items-start justify-between gap-space-xs">
-                  <div className="flex items-center gap-space-sm min-w-0">
-                    <div className="w-10 h-10 rounded-lg bg-surface-container-high text-primary flex items-center justify-center shrink-0">
-                      <span className="material-symbols-outlined text-[20px]">
-                        {isSent ? 'mark_email_read' : isReplied ? 'mark_chat_read' : isBlocked ? 'shield' : 'outgoing_mail'}
-                      </span>
-                    </div>
-                    <div className="flex flex-col min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-label-lg text-xs sm:text-sm text-on-surface font-semibold truncate">
-                          {item.businessName}
-                        </span>
-                        {item.isDemo && (
-                          <span className="px-1.5 py-0.2 rounded-full bg-tertiary-container text-on-tertiary-container font-label-badge text-[9px] uppercase font-bold">
-                            DEMO
-                          </span>
-                        )}
-                      </div>
-                      <span className="font-label-md text-xs text-on-surface-variant font-mono truncate">
-                        {item.recipientEmail}
-                      </span>
-                    </div>
-                  </div>
-
-                  <span className="font-label-badge text-[10px] text-on-surface-variant shrink-0">
-                    {item.sentAt
-                      ? new Date(item.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                      : new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </div>
-
-                {/* Status Highlight Pill */}
-                <div className="inline-flex items-center gap-1.5 px-space-sm py-1 rounded-lg w-fit text-xs font-semibold">
-                  {isSent ? (
-                    <span className="bg-secondary-container/20 text-secondary px-2.5 py-1 rounded-md flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[14px]">check_circle</span>
-                      <span>Sent &amp; confirmed in Gmail</span>
-                    </span>
-                  ) : isReplied ? (
-                    <span className="bg-tertiary-container/30 text-tertiary px-2.5 py-1 rounded-md flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[14px]">star</span>
-                      <span>Client replied to your outreach</span>
-                    </span>
-                  ) : isBlocked ? (
-                    <span className="bg-error-container/30 text-error px-2.5 py-1 rounded-md flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[14px]">block</span>
-                      <span>Blocked: {item.blockedReason}</span>
-                    </span>
-                  ) : (
-                    <span className="bg-tertiary-container/25 text-tertiary px-2.5 py-1 rounded-md flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[14px]">hourglass_empty</span>
-                      <span>Scheduled for next safe cycle</span>
-                    </span>
-                  )}
-                </div>
-
-                {/* Subject Line Callout */}
-                <div className="bg-surface-container-low p-space-sm rounded-lg flex flex-col gap-0.5">
-                  <span className="font-label-badge text-[10px] text-outline uppercase tracking-wider font-bold">
-                    Subject Line
-                  </span>
-                  <p className="font-body-md text-xs sm:text-sm text-on-surface line-clamp-1">
-                    &ldquo;{item.subject}&rdquo;
-                  </p>
-                </div>
-
-                {/* Bottom Actions for Queued / Sent items */}
-                <div className="flex items-center justify-between pt-1">
-                  <span className="text-[11px] text-on-surface-variant">
-                    {isSent && item.gmailMessageId ? (
-                      <span className="font-mono text-[10px]">ID: {item.gmailMessageId.slice(0, 16)}...</span>
-                    ) : isWaiting ? (
-                      <span>Waiting for recipient local business window</span>
-                    ) : (
-                      <span>Safe guard verified</span>
-                    )}
-                  </span>
-
-                  <div className="flex items-center gap-1.5">
-                    {isWaiting && (
-                      <button
-                        type="button"
-                        onClick={() => setEditingDraft(item)}
-                        className="px-3 py-1.5 rounded-lg bg-surface-container-high text-primary hover:bg-surface-variant font-label-md text-xs font-semibold flex items-center gap-1 transition-colors min-h-[36px]"
-                      >
-                        <span className="material-symbols-outlined text-[16px]">edit</span>
-                        <span>Edit Email</span>
-                      </button>
-                    )}
-                    {item.body && (
-                      <button
-                        type="button"
-                        onClick={() => setEditingDraft(item)}
-                        className="px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-variant text-on-surface font-label-md text-xs font-semibold transition-colors min-h-[36px]"
-                      >
-                        Preview
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="rounded-xl p-space-lg bg-surface-container shadow-sm flex flex-col items-center justify-center text-center gap-3 border border-outline-variant/20 py-12">
-          <span className="material-symbols-outlined text-[40px] text-primary">forward_to_inbox</span>
-          <p className="font-headline-sm text-headline-sm text-on-surface font-semibold">
-            No emails found in this category
-          </p>
-          <p className="font-body-md text-sm text-on-surface-variant max-w-md">
-            {showDemo
-              ? 'No demo emails match this filter.'
-              : 'No real outreach emails recorded yet. Send a test email to yourself or find businesses to queue safe drafts.'}
-          </p>
-          <div className="flex items-center gap-2 pt-2">
-            <button
-              type="button"
-              onClick={handleSendTestEmail}
-              disabled={isSendingTest}
-              className="min-h-[44px] px-space-md py-2 bg-primary-container text-on-primary-container font-label-lg text-xs font-semibold rounded-lg flex items-center gap-1.5 active:opacity-90 shadow-sm"
-            >
-              <span className="material-symbols-outlined text-[18px]">send</span>
-              <span>{isSendingTest ? 'Sending...' : 'Send Test Email to Myself'}</span>
+              Skip Selected
             </button>
           </div>
-        </div>
-      )}
-
-      {/* Micro-help Reassurance Banner (Stitch Design) */}
-      <div className="p-space-md rounded-xl bg-surface-container flex items-center gap-space-sm border border-outline-variant/20">
-        <div className="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center text-tertiary shrink-0">
-          <span className="material-symbols-outlined text-[18px]">lightbulb</span>
-        </div>
-        <p className="font-label-md text-xs text-on-surface-variant flex-1 leading-snug">
-          Need to stop for the day? Tap <strong>Pause Now</strong> anytime. Your queued leads will remain safely saved in Zia&apos;s draft locker.
-        </p>
+        )}
       </div>
 
-      {/* Preview / Edit Email Modal */}
-      {editingDraft && (
+      {/* Main Split View: Table on Left, Selected Email Preview on Right */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        {/* Left Pane (Table on laptop / Cards on mobile) */}
+        <div className="lg:col-span-7 flex flex-col gap-3">
+          {filtered.length === 0 ? (
+            <div className="rounded-2xl p-8 bg-surface-container border border-outline-variant/20 text-center text-xs text-on-surface-variant">
+              No emails found under this tab.
+            </div>
+          ) : (
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden sm:block rounded-2xl bg-surface-container border border-outline-variant/20 shadow-sm overflow-hidden">
+                <table className="w-full text-left text-xs text-on-surface">
+                  <thead className="bg-surface-container-high border-b border-outline-variant/30 text-on-surface-variant font-semibold select-none">
+                    <tr>
+                      <th className="py-3 px-3 w-8">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.length > 0 && selectedIds.length === filtered.length}
+                          onChange={(e) => {
+                            if (e.target.checked) setSelectedIds(filtered.map((x) => x.id));
+                            else setSelectedIds([]);
+                          }}
+                          className="w-4 h-4 rounded text-primary accent-primary"
+                        />
+                      </th>
+                      <th className="py-3 px-3">Business</th>
+                      <th className="py-3 px-3">Subject</th>
+                      <th className="py-3 px-3">Status</th>
+                      <th className="py-3 px-3 text-right">Gmail</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-outline-variant/20">
+                    {filtered.map((item) => {
+                      const isSelected = selectedEmail?.id === item.id;
+                      const isChecked = selectedIds.includes(item.id);
+
+                      return (
+                        <tr
+                          key={item.id}
+                          onClick={() => {
+                            setSelectedEmail(item);
+                            setShowMobilePreview(true);
+                          }}
+                          className={`cursor-pointer transition-colors ${
+                            isSelected
+                              ? 'bg-primary-container/20 font-medium'
+                              : 'hover:bg-surface-container-high/60'
+                          }`}
+                        >
+                          <td className="py-3 px-3" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                if (e.target.checked) setSelectedIds((prev) => [...prev, item.id]);
+                                else setSelectedIds((prev) => prev.filter((id) => id !== item.id));
+                              }}
+                              className="w-4 h-4 rounded text-primary accent-primary"
+                            />
+                          </td>
+                          <td className="py-3 px-3 truncate max-w-[140px]">
+                            <div className="font-semibold text-on-surface truncate">{item.businessName}</div>
+                            <div className="text-[10px] text-on-surface-variant truncate">{item.recipientEmail}</div>
+                          </td>
+                          <td className="py-3 px-3 truncate max-w-[180px]">
+                            <span className="truncate block">{item.subject}</span>
+                          </td>
+                          <td className="py-3 px-3">
+                            <span
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                                item.status === 'sent'
+                                  ? 'bg-secondary-container/20 text-secondary'
+                                  : item.status === 'replied'
+                                  ? 'bg-tertiary-container text-on-tertiary-container'
+                                  : item.status === 'blocked'
+                                  ? 'bg-error-container/30 text-error'
+                                  : 'bg-surface-container-highest text-on-surface-variant'
+                              }`}
+                            >
+                              {item.status === 'sent'
+                                ? 'Sent'
+                                : item.status === 'replied'
+                                ? 'Replied'
+                                : item.status === 'blocked'
+                                ? 'Blocked'
+                                : 'Waiting'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 text-right" onClick={(e) => e.stopPropagation()}>
+                            {item.status === 'sent' && (
+                              <a
+                                href="https://mail.google.com/mail/u/0/#sent"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-1.5 rounded-lg text-primary hover:bg-primary-container/20 transition-colors inline-flex"
+                                title="Open in Gmail Sent"
+                              >
+                                <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                              </a>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card View (< 640px) */}
+              <div className="sm:hidden flex flex-col gap-3">
+                {filtered.map((item) => (
+                  <div
+                    key={item.id}
+                    onClick={() => {
+                      setSelectedEmail(item);
+                      setShowMobilePreview(true);
+                    }}
+                    className="p-4 rounded-2xl bg-surface-container border border-outline-variant/20 shadow-sm flex flex-col gap-2 cursor-pointer active:bg-surface-container-high transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <h3 className="text-sm font-bold text-on-surface">{item.businessName}</h3>
+                        <span className="text-xs text-on-surface-variant">{item.recipientEmail}</span>
+                      </div>
+                      <span
+                        className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                          item.status === 'sent'
+                            ? 'bg-secondary-container/20 text-secondary'
+                            : item.status === 'replied'
+                            ? 'bg-tertiary-container text-on-tertiary-container'
+                            : item.status === 'blocked'
+                            ? 'bg-error-container/30 text-error'
+                            : 'bg-surface-container-highest text-on-surface-variant'
+                        }`}
+                      >
+                        {item.status}
+                      </span>
+                    </div>
+                    <p className="text-xs text-on-surface-variant line-clamp-1 italic">{item.subject}</p>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Right Pane (Selected Email Preview on laptop) */}
+        <aside className="hidden lg:flex lg:col-span-5 flex-col gap-4 bg-surface-container p-5 rounded-2xl border border-outline-variant/20 lg:sticky lg:top-20">
+          {selectedEmail ? (
+            <div className="flex flex-col gap-4">
+              <div className="flex items-start justify-between gap-2 pb-3 border-b border-outline-variant/20">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-primary tracking-wider">Email Preview</span>
+                  <h2 className="text-base font-bold text-on-surface mt-0.5">{selectedEmail.businessName}</h2>
+                  <p className="text-xs text-on-surface-variant">{selectedEmail.recipientEmail}</p>
+                </div>
+                <span
+                  className={`text-[10px] px-2.5 py-1 rounded-full font-bold ${
+                    selectedEmail.status === 'sent'
+                      ? 'bg-secondary-container/20 text-secondary'
+                      : selectedEmail.status === 'replied'
+                      ? 'bg-tertiary-container text-on-tertiary-container'
+                      : selectedEmail.status === 'blocked'
+                      ? 'bg-error-container/30 text-error'
+                      : 'bg-surface-container-high text-on-surface-variant'
+                  }`}
+                >
+                  {selectedEmail.statusLabel}
+                </span>
+              </div>
+
+              {/* Message Headers */}
+              <div className="p-3 rounded-xl bg-surface-container-lowest text-xs text-on-surface-variant flex flex-col gap-1.5 border border-outline-variant/20">
+                <div className="flex justify-between">
+                  <span>From:</span>
+                  <span className="font-mono text-on-surface">ziauldin371@gmail.com</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Subject:</span>
+                  <span className="font-semibold text-on-surface">{selectedEmail.subject}</span>
+                </div>
+                {selectedEmail.gmailMessageId && (
+                  <div className="flex justify-between">
+                    <span>Gmail ID:</span>
+                    <span className="font-mono text-[10px]">{selectedEmail.gmailMessageId.slice(0, 16)}...</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Body Content */}
+              <div className="p-4 rounded-xl bg-surface-container-lowest text-xs sm:text-sm text-on-surface leading-relaxed border border-outline-variant/20 font-sans whitespace-pre-wrap max-h-72 overflow-y-auto">
+                {selectedEmail.body}
+              </div>
+
+              {/* Status Specific Actions */}
+              {selectedEmail.status === 'waiting' && (
+                <div className="flex items-center gap-2 pt-2">
+                  <button
+                    onClick={() => {
+                      setEmails((prev) => prev.filter((e) => e.id !== selectedEmail.id));
+                      setSelectedEmail(null);
+                      success('Skipped email from queue.');
+                    }}
+                    className="flex-1 px-4 py-2 rounded-xl bg-surface-container-high hover:bg-surface-variant text-xs font-semibold text-on-surface min-h-[44px]"
+                  >
+                    Skip From Queue
+                  </button>
+                </div>
+              )}
+
+              {selectedEmail.status === 'sent' && (
+                <a
+                  href="https://mail.google.com/mail/u/0/#sent"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2.5 rounded-xl bg-primary-container text-on-primary-container font-semibold text-xs flex items-center justify-center gap-1.5 shadow-md min-h-[44px]"
+                >
+                  <span>Open in Gmail Sent Folder</span>
+                  <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                </a>
+              )}
+
+              {selectedEmail.status === 'blocked' && (
+                <div className="p-3 rounded-xl bg-error-container/20 border border-error/30 text-xs text-error">
+                  <strong className="block mb-1">Safety block reason:</strong>
+                  {selectedEmail.blockedReason}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="p-8 text-center text-xs text-on-surface-variant">
+              Select an email on the left to preview its content and status.
+            </div>
+          )}
+        </aside>
+      </div>
+
+      {/* Mobile Full-Screen Preview Sheet */}
+      {showMobilePreview && selectedEmail && (
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={() => setEditingDraft(null)}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex flex-col justify-end lg:hidden"
+          onClick={() => setShowMobilePreview(false)}
         >
           <div
-            className="bg-surface-container rounded-2xl p-space-lg border border-outline-variant/30 max-w-lg w-full space-y-space-md shadow-2xl"
+            className="bg-surface-container rounded-t-2xl p-5 border-t border-outline-variant/30 space-y-4 max-h-[85vh] overflow-y-auto pb-safe animate-in slide-in-from-bottom duration-200"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-outline-variant/20 pb-3">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary text-[20px]">drafts</span>
-                <span className="font-headline-sm text-headline-sm text-on-surface font-semibold">
-                  Email Preview
-                </span>
+            <div className="flex items-center justify-between pb-2 border-b border-outline-variant/20">
+              <div>
+                <h3 className="text-base font-bold text-on-surface">{selectedEmail.businessName}</h3>
+                <span className="text-xs text-on-surface-variant">{selectedEmail.recipientEmail}</span>
               </div>
               <button
-                type="button"
-                onClick={() => setEditingDraft(null)}
-                className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant"
-                aria-label="Close preview"
+                onClick={() => setShowMobilePreview(false)}
+                className="p-2 rounded-lg bg-surface-container-high text-on-surface min-h-[44px] min-w-[44px] flex items-center justify-center"
               >
-                <span className="material-symbols-outlined text-[18px]">close</span>
+                <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
 
-            <div className="space-y-2 text-xs">
-              <div>
-                <span className="text-on-surface-variant font-medium">To: </span>
-                <strong className="text-on-surface font-mono">{editingDraft.recipientEmail}</strong>
-              </div>
-              <div>
-                <span className="text-on-surface-variant font-medium">Subject: </span>
-                <strong className="text-on-surface">{editingDraft.subject}</strong>
-              </div>
+            <div className="p-3 rounded-xl bg-surface-container-low text-xs text-on-surface leading-relaxed whitespace-pre-wrap">
+              <strong className="block mb-1 text-primary">{selectedEmail.subject}</strong>
+              {selectedEmail.body}
             </div>
 
-            <div className="p-space-md rounded-xl bg-surface-container-lowest border border-outline-variant/20 max-h-64 overflow-y-auto">
-              <p className="font-mono text-xs text-on-surface whitespace-pre-wrap leading-relaxed">
-                {editingDraft.body || 'Personalized pitch generated based on verified website scan evidence.'}
-              </p>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-outline-variant/20">
+            <div className="pt-2">
               <button
-                type="button"
-                onClick={() => setEditingDraft(null)}
-                className="px-4 py-2 rounded-lg bg-surface-container-high hover:bg-surface-variant text-on-surface font-label-md text-xs font-semibold min-h-[44px]"
+                onClick={() => setShowMobilePreview(false)}
+                className="w-full py-2.5 rounded-xl bg-primary-container text-on-primary-container font-semibold text-xs min-h-[44px]"
               >
-                Close
+                Done
               </button>
             </div>
           </div>
@@ -699,7 +767,13 @@ function EmailsContent() {
 
 export default function EmailsPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-xs text-on-surface-variant">Loading emails...</div>}>
+    <Suspense
+      fallback={
+        <div className="p-8 text-center text-xs text-on-surface-variant">
+          Loading email dispatches...
+        </div>
+      }
+    >
       <EmailsContent />
     </Suspense>
   );

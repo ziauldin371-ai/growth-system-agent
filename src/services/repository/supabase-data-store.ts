@@ -44,6 +44,7 @@ export class SupabaseDataStore implements IDataStore {
   }): Promise<{ businesses: BusinessEntity[]; total: number }> {
     const supabase = this.getClient(false);
     if (!supabase) {
+      if (filter?.includeDemo) return this.fallback.getBusinesses(filter);
       if (process.env.NODE_ENV === 'production') return { businesses: [], total: 0 };
       return this.fallback.getBusinesses(filter);
     }
@@ -671,31 +672,37 @@ export class SupabaseDataStore implements IDataStore {
 
   // --- Dashboard Queries ---
   public async getWorldwideLeads(filters?: any): Promise<BusinessEntity[]> {
+    if (filters?.includeDemo) return this.fallback.getWorldwideLeads(filters);
     if (process.env.NODE_ENV === 'production' && !this.getClient(false)) return [];
     return this.fallback.getWorldwideLeads(filters);
   }
 
   public async getReadyForEmailLeads(options?: any): Promise<Array<any>> {
+    if (options?.includeDemo) return this.fallback.getReadyForEmailLeads(options);
     if (process.env.NODE_ENV === 'production' && !this.getClient(false)) return [];
     return this.fallback.getReadyForEmailLeads(options);
   }
 
   public async getSentEmails(options?: any): Promise<Array<any>> {
+    if (options?.includeDemo) return this.fallback.getSentEmails(options);
     if (process.env.NODE_ENV === 'production' && !this.getClient(false)) return [];
     return this.fallback.getSentEmails(options);
   }
 
   public async getOtherOutreachOpportunities(options?: any): Promise<Array<any>> {
+    if (options?.includeDemo) return this.fallback.getOtherOutreachOpportunities(options);
     if (process.env.NODE_ENV === 'production' && !this.getClient(false)) return [];
     return this.fallback.getOtherOutreachOpportunities(options);
   }
 
   public async getEmailSentPlusOtherChannels(options?: any): Promise<Array<any>> {
+    if (options?.includeDemo) return this.fallback.getEmailSentPlusOtherChannels(options);
     if (process.env.NODE_ENV === 'production' && !this.getClient(false)) return [];
     return this.fallback.getEmailSentPlusOtherChannels(options);
   }
 
   public async getNoEmailBusinesses(options?: any): Promise<Array<any>> {
+    if (options?.includeDemo) return this.fallback.getNoEmailBusinesses(options);
     if (process.env.NODE_ENV === 'production' && !this.getClient(false)) return [];
     return this.fallback.getNoEmailBusinesses(options);
   }
@@ -913,6 +920,9 @@ export class SupabaseDataStore implements IDataStore {
   public async getPlatformStats(options?: any): Promise<any> {
     const supabase = this.getClient(false);
     if (!supabase && process.env.NODE_ENV === 'production') {
+      if (options?.includeDemo) {
+        return this.fallback.getPlatformStats(options);
+      }
       return {
         totalBusinesses: 0,
         pipelineAOpportunities: 0,
@@ -940,9 +950,9 @@ export class SupabaseDataStore implements IDataStore {
     return this.fallback.getPlatformStats(options);
   }
 
-  public seedDemoData(): void {
-    if (process.env.NODE_ENV === 'production') return;
-    this.fallback.seedDemoData?.();
+  public seedDemoData(force = false): void {
+    if (process.env.NODE_ENV === 'production' && !force) return;
+    this.fallback.seedDemoData?.(force);
   }
 
   public clearDemoData(): void {

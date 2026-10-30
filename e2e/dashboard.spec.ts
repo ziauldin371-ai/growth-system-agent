@@ -38,8 +38,8 @@ test.describe('Growth System Agent — Stitch UI Redesign E2E', () => {
     await openModalBtn.click();
 
     // Verify modal / form is rendered with Country and Start Search button
-    await expect(page.locator('label', { hasText: 'Country' })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Start Search Now/i })).toBeVisible();
+    await expect(page.locator('label', { hasText: 'Country' }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: /Start Search Now/i }).first()).toBeVisible();
   });
 
   test('Emails page renders clean status tiles and activity stream', async ({ page }) => {
@@ -62,13 +62,13 @@ test.describe('Growth System Agent — Stitch UI Redesign E2E', () => {
     await page.goto('/');
     const navLinks = page.locator('aside nav a');
     await expect(navLinks).toHaveCount(7);
-    await expect(page.locator('aside').getByText('Home')).toBeVisible();
-    await expect(page.locator('aside').getByText('Businesses Found')).toBeVisible();
-    await expect(page.locator('aside').getByText('Emails')).toBeVisible();
-    await expect(page.locator('aside').getByText('Contact Manually')).toBeVisible();
-    await expect(page.locator('aside').getByText('Run & Schedule')).toBeVisible();
-    await expect(page.locator('aside').getByText('Safety')).toBeVisible();
-    await expect(page.locator('aside').getByText('Setup')).toBeVisible();
+    await expect(page.locator('aside').getByText('Home').first()).toBeVisible();
+    await expect(page.locator('aside').getByText('Businesses Found').first()).toBeVisible();
+    await expect(page.locator('aside').getByText('Emails').first()).toBeVisible();
+    await expect(page.locator('aside').getByText('Contact Manually').first()).toBeVisible();
+    await expect(page.locator('aside').getByText('Run & Schedule').first()).toBeVisible();
+    await expect(page.locator('aside').getByText('Safety').first()).toBeVisible();
+    await expect(page.locator('aside').getByText('Setup').first()).toBeVisible();
   });
 
   test('Login page is standalone with no sidebar and no leaked dashboard links', async ({ page, context }) => {
