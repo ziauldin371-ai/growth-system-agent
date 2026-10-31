@@ -149,7 +149,7 @@ export default async function HomePage(props: PageProps) {
                 Last run: skipped, reason: {lastRun.reason || 'Google Places key is missing'}
               </span>
               <p className="font-body-md text-xs text-on-surface-variant mt-0.5">
-                The scheduled discovery cycle was safely bypassed. No mock data was generated or counted.
+                The scheduled discovery cycle was safely skipped. No mock data was generated or counted.
               </p>
             </div>
           </div>
