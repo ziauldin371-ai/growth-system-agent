@@ -183,20 +183,35 @@ async function runRolesIntegrationTest() {
   console.log(`  PASSED: Server read back suppression: [${sRead.value} | reason: ${sRead.reason}].\n`);
 
   // C. Send Record (email_drafts / send_events)
-  const draftId = `draft_${uniqueId}`;
+  const draftId = crypto.randomUUID();
   console.log(`3. Server inserting verified send record [${draftId}]...`);
   const { error: dInsertErr } = await serverClient.from('email_drafts').insert({
     id: draftId,
     business_id: businessId,
+    strategy: 'operational_efficiency',
+    subject_lines: JSON.stringify(['Test dispatch 1', 'Test dispatch 2', 'Test dispatch 3']),
     selected_subject: `Integration test dispatch ${uniqueId}`,
     email_body: `Content for server send record verification`,
+    call_to_action: 'Can I send over a 2-min breakdown?',
+    service_offer: 'AI Automation & Scheduling',
+    research_summary: 'Verified commercial enterprise with active operations',
+    rationale: 'Evidence demonstrates operational fit',
+    observations: JSON.stringify([]),
+    warnings: JSON.stringify([]),
     status: 'sent',
-    delivery_status: 'delivered',
-    recipient_email: `contact@testbiz-${uniqueId}.co.uk`,
-    gmail_message_id: `msg_gmail_${uniqueId}`,
-    sent_at: new Date().toISOString(),
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
+  });
+
+  // Also record in send_events
+  await serverClient.from('send_events').insert({
+    id: crypto.randomUUID(),
+    draft_id: draftId,
+    recipient_email: `contact@testbiz-${uniqueId}.co.uk`,
+    provider: 'gmail',
+    provider_message_id: `msg_gmail_${uniqueId}`,
+    event_type: 'delivered',
+    created_at: new Date().toISOString()
   });
 
   if (dInsertErr) {
@@ -207,7 +222,7 @@ async function runRolesIntegrationTest() {
 
   const { data: dRead, error: dReadErr } = await serverClient
     .from('email_drafts')
-    .select('id, recipient_email, status, gmail_message_id')
+    .select('id, selected_subject, status')
     .eq('id', draftId)
     .single();
 
@@ -215,7 +230,7 @@ async function runRolesIntegrationTest() {
     console.error(`  FAILED: Server could not read back send record:`, dReadErr?.message);
     process.exit(1);
   }
-  console.log(`  PASSED: Server read back send record: [${dRead.recipient_email} | status: ${dRead.status}].\n`);
+  console.log(`  PASSED: Server read back send record: [${dRead.selected_subject} | status: ${dRead.status}].\n`);
 
   // -------------------------------------------------------------------------
   // TEST 2: ANON KEY CANNOT READ ANY TABLE
