@@ -74,3 +74,4 @@ describe('/api/readiness endpoint (private & authenticated)', () => {
     expect(body.services.gmail).toBe('configured');
   });
 });
+

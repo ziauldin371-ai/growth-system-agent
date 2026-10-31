@@ -336,6 +336,32 @@ ALTER TABLE suppression_list ENABLE ROW LEVEL SECURITY;
 ALTER TABLE automation_jobs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
+-- Explicit Role Grants (Data API Exposure when "Automatically expose new tables" is OFF)
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role;
+GRANT ALL ON ALL ROUTINES IN SCHEMA public TO service_role;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon;
+
+-- Explicit Unconditional Access Policy for Server (service_role)
+DO $$
+DECLARE
+    tbl text;
+    tables text[] := ARRAY[
+        'organizations', 'profiles', 'memberships', 'discovery_runs',
+        'businesses', 'growth_evidence', 'website_checks', 'contacts',
+        'icp_profiles', 'lead_scores', 'campaigns', 'campaign_leads',
+        'email_drafts', 'send_events', 'suppression_list', 'automation_jobs', 'audit_logs'
+    ];
+BEGIN
+    FOREACH tbl IN ARRAY tables LOOP
+        EXECUTE format('DROP POLICY IF EXISTS "service_role_all" ON public.%I;', tbl);
+        EXECUTE format('CREATE POLICY "service_role_all" ON public.%I FOR ALL TO service_role USING (true) WITH CHECK (true);', tbl);
+    END LOOP;
+END $$;
+
 -- Helper function to get current user organizations
 CREATE OR REPLACE FUNCTION get_user_org_ids()
 RETURNS TABLE (organization_id UUID) AS $$
