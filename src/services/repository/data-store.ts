@@ -15,7 +15,13 @@ import {
   OperatingMode,
   AlternativeChannelEntity,
   AlternativeChannelStatus,
-  SchedulerRunHistoryEntity
+  SchedulerRunHistoryEntity,
+  PlatformEntity,
+  VettedApplicationEntity,
+  LeadSourceConfigEntity,
+  PlatformFootprintCandidate,
+  MarketplaceHotRequestEntity,
+  PlatformSpendLogEntity
 } from '@/types';
 import { IDataStore } from './interface';
 import { normalizeBusinessName, normalizeEmail } from '../crm/normalization';
@@ -41,6 +47,12 @@ export class DataStore implements IDataStore {
   private distributedLocks: Map<string, number> = new Map(); // lockName -> expiresAt
   private schedulerRuns: Array<SchedulerRunHistoryEntity> = [];
   private checkpoints: Map<string, any> = new Map(); // taskName -> checkpoint
+  private platforms: Map<string, PlatformEntity> = new Map(); // platformId -> platform
+  private vettedApplications: Map<string, VettedApplicationEntity> = new Map(); // platformId -> application
+  private leadSourceConfigs: Map<string, LeadSourceConfigEntity> = new Map(); // sourceName -> config
+  private platformFootprints: Map<string, PlatformFootprintCandidate[]> = new Map(); // businessId -> footprints[]
+  private hotRequests: Map<string, MarketplaceHotRequestEntity> = new Map(); // requestId -> request
+  private platformSpendLogs: Array<PlatformSpendLogEntity> = [];
 
   constructor(customPersistencePath?: string) {
     const dataDir = path.join(process.cwd(), '.data');
@@ -52,6 +64,7 @@ export class DataStore implements IDataStore {
       }
     }
     this.persistenceFilePath = customPersistencePath || path.join(dataDir, 'data_store_persistence.json');
+    this.seedPlatforms();
     this.seedInitialData();
     this.loadPersistedState();
   }
@@ -1633,6 +1646,270 @@ ziauldin371@gmail.com`,
       lastSchedulerRun: this.getLastSchedulerRun(),
       timelineSentences: homeStats.timelineSentences,
     };
+  }
+
+  // ==============================================================================
+  // Platform Registry & Acquisition Engine Implementations
+  // ==============================================================================
+
+  private seedPlatforms(): void {
+    if (this.platforms.size > 0) return;
+    try {
+      const seedPath = path.join(process.cwd(), 'src', 'data', 'seed-platforms.json');
+      if (fs.existsSync(seedPath)) {
+        const raw = fs.readFileSync(seedPath, 'utf8');
+        const list: PlatformEntity[] = JSON.parse(raw);
+        for (const p of list) {
+          this.platforms.set(p.id, p);
+          if (p.category === 'vetted_network' || p.category === 'expert_network') {
+            if (!this.vettedApplications.has(p.id)) {
+              this.vettedApplications.set(p.id, {
+                id: `app_${p.id}`,
+                platformId: p.id,
+                platformName: p.name,
+                status: 'not_started',
+                readinessScore: 65,
+                checklist: [
+                  { id: 'cv', label: 'Updated AI/ML Specialist Resume/CV', completed: true },
+                  { id: 'github', label: 'Polished GitHub with 2+ AI repositories', completed: true },
+                  { id: 'case_studies', label: '2-3 Production Case Studies with metrics', completed: false },
+                  { id: 'demo_video', label: '3-minute Loom demo of working RAG/ML prototype', completed: false },
+                  { id: 'screening_test', label: 'Technical screening / code assessment preparation', completed: false },
+                ],
+                hasCv: true,
+                hasGithub: true,
+                caseStudiesCount: 2,
+                hasDemoVideo: false,
+                appliedDate: null,
+                nextActionDate: null,
+                interviewNotes: null,
+                pakistanCheck: {
+                  onboardingChecked: false,
+                  payoutMethod: 'Payoneer / Wise / Wire',
+                  withdrawalFeePercent: 2.0,
+                  taxObligationsNoted: false,
+                  contractorEligibility: 'needs_check',
+                  notes: 'Verify current Pakistani bank wire & foreign remittance tax rules before applying',
+                },
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              });
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load seed-platforms.json:', e);
+    }
+
+    if (this.leadSourceConfigs.size === 0) {
+      const defaultSources: Array<{ name: string; budget: number }> = [
+        { name: 'hunter', budget: 100 },
+        { name: 'apollo', budget: 250 },
+        { name: 'snov', budget: 150 },
+        { name: 'crunchbase', budget: 50 },
+      ];
+      for (const ds of defaultSources) {
+        this.leadSourceConfigs.set(ds.name, {
+          id: `cfg_${ds.name}`,
+          sourceName: ds.name,
+          monthlyCreditBudget: ds.budget,
+          creditsUsedThisMonth: 0,
+          status: 'not_configured',
+          lastTestedAt: null,
+          apiKeyConfigured: false,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    }
+  }
+
+  public getPlatforms(filters?: { 
+    category?: string; 
+    priority?: string; 
+    pitchMode?: string; 
+    countryEligibility?: string; 
+    myAccountStatus?: string; 
+    search?: string 
+  }): PlatformEntity[] {
+    let list = Array.from(this.platforms.values());
+    if (filters?.category && filters.category !== 'all') {
+      list = list.filter(p => p.category === filters.category);
+    }
+    if (filters?.priority && filters.priority !== 'all') {
+      list = list.filter(p => p.priority === filters.priority);
+    }
+    if (filters?.pitchMode && filters.pitchMode !== 'all') {
+      list = list.filter(p => p.pitchMode === filters.pitchMode);
+    }
+    if (filters?.countryEligibility && filters.countryEligibility !== 'all') {
+      list = list.filter(p => p.countryEligibilityStatus === filters.countryEligibility);
+    }
+    if (filters?.myAccountStatus && filters.myAccountStatus !== 'all') {
+      list = list.filter(p => p.myAccountStatus === filters.myAccountStatus);
+    }
+    if (filters?.search) {
+      const q = filters.search.toLowerCase();
+      list = list.filter(p => 
+        p.name.toLowerCase().includes(q) || 
+        p.howToGetClients.toLowerCase().includes(q) || 
+        p.aiMlRelevance.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }
+
+  public getPlatformById(id: string): PlatformEntity | null {
+    return this.platforms.get(id) || null;
+  }
+
+  public savePlatform(platform: PlatformEntity): void {
+    this.platforms.set(platform.id, platform);
+    this.persistState();
+  }
+
+  public updatePlatform(id: string, updates: Partial<PlatformEntity>): PlatformEntity | null {
+    const existing = this.platforms.get(id);
+    if (!existing) return null;
+    const updated: PlatformEntity = {
+      ...existing,
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+    this.platforms.set(id, updated);
+    this.persistState();
+    return updated;
+  }
+
+  public verifyPlatformTerms(id: string, verifiedAt?: string): PlatformEntity | null {
+    return this.updatePlatform(id, {
+      lastVerified: verifiedAt || new Date().toISOString(),
+      notes: 'Terms verified by operator',
+    });
+  }
+
+  // Vetted Applications Tracker (Group B)
+  public getVettedApplications(): VettedApplicationEntity[] {
+    return Array.from(this.vettedApplications.values());
+  }
+
+  public getVettedApplicationById(id: string): VettedApplicationEntity | null {
+    return this.vettedApplications.get(id) || null;
+  }
+
+  public saveVettedApplication(app: VettedApplicationEntity): void {
+    this.vettedApplications.set(app.platformId, app);
+    this.persistState();
+  }
+
+  public updateVettedApplication(id: string, updates: Partial<VettedApplicationEntity>): VettedApplicationEntity | null {
+    let existing = this.vettedApplications.get(id);
+    if (!existing) {
+      for (const a of Array.from(this.vettedApplications.values())) {
+        if (a.id === id) {
+          existing = a;
+          break;
+        }
+      }
+    }
+    if (!existing) return null;
+    const updated: VettedApplicationEntity = {
+      ...existing,
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+    this.vettedApplications.set(existing.platformId, updated);
+    this.persistState();
+    return updated;
+  }
+
+  // Lead Source Configs (Group C)
+  public getLeadSourceConfigs(): LeadSourceConfigEntity[] {
+    return Array.from(this.leadSourceConfigs.values());
+  }
+
+  public saveLeadSourceConfig(config: LeadSourceConfigEntity): void {
+    this.leadSourceConfigs.set(config.sourceName, config);
+    this.persistState();
+  }
+
+  public recordLeadSourceUsage(sourceName: string, creditsUsed: number = 1): void {
+    const existing = this.leadSourceConfigs.get(sourceName);
+    if (existing) {
+      existing.creditsUsedThisMonth += creditsUsed;
+      existing.updatedAt = new Date().toISOString();
+      this.persistState();
+    }
+  }
+
+  // Platform Footprints ("Where else can I reach them?")
+  public getFootprintsForBusiness(businessId: string): PlatformFootprintCandidate[] {
+    return this.platformFootprints.get(businessId) || [];
+  }
+
+  public saveFootprint(footprint: PlatformFootprintCandidate): void {
+    const list = this.platformFootprints.get(footprint.businessId) || [];
+    const idx = list.findIndex(f => f.platform === footprint.platform && f.profileUrl === footprint.profileUrl);
+    if (idx >= 0) {
+      list[idx] = footprint;
+    } else {
+      list.push(footprint);
+    }
+    this.platformFootprints.set(footprint.businessId, list);
+    this.persistState();
+  }
+
+  public deleteFootprint(id: string): void {
+    for (const [bizId, list] of Array.from(this.platformFootprints.entries())) {
+      const filtered = list.filter((f: PlatformFootprintCandidate) => f.id !== id);
+      if (filtered.length !== list.length) {
+        this.platformFootprints.set(bizId, filtered);
+        this.persistState();
+        break;
+      }
+    }
+  }
+
+  // Marketplace Hot Requests (Group A)
+  public getHotRequests(filters?: { platform?: string; minFit?: number; status?: string }): MarketplaceHotRequestEntity[] {
+    let list = Array.from(this.hotRequests.values());
+    if (filters?.platform && filters.platform !== 'all') {
+      list = list.filter(r => r.platform.toLowerCase() === filters.platform!.toLowerCase());
+    }
+    if (typeof filters?.minFit === 'number') {
+      list = list.filter(r => r.fitScore >= filters.minFit!);
+    }
+    if (filters?.status && filters.status !== 'all') {
+      list = list.filter(r => r.status === filters.status);
+    }
+    return list.sort((a, b) => b.fitScore - a.fitScore);
+  }
+
+  public saveHotRequest(request: MarketplaceHotRequestEntity): void {
+    this.hotRequests.set(request.id, request);
+    this.persistState();
+  }
+
+  public updateHotRequestStatus(id: string, status: 'new' | 'proposal_copied' | 'submitted' | 'declined'): boolean {
+    const req = this.hotRequests.get(id);
+    if (!req) return false;
+    req.status = status;
+    this.persistState();
+    return true;
+  }
+
+  // Platform Spend Logs
+  public getPlatformSpendLogs(platformId?: string): PlatformSpendLogEntity[] {
+    if (platformId) {
+      return this.platformSpendLogs.filter(s => s.platformId === platformId);
+    }
+    return [...this.platformSpendLogs];
+  }
+
+  public recordPlatformSpend(spend: PlatformSpendLogEntity): void {
+    this.platformSpendLogs.push(spend);
+    this.persistState();
   }
 }
 

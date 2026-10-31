@@ -11,7 +11,13 @@ import {
   PipelineType, 
   OperatingMode, 
   AlternativeChannelEntity, 
-  AlternativeChannelStatus 
+  AlternativeChannelStatus,
+  PlatformEntity,
+  VettedApplicationEntity,
+  LeadSourceConfigEntity,
+  PlatformFootprintCandidate,
+  MarketplaceHotRequestEntity,
+  PlatformSpendLogEntity
 } from '@/types';
 import { IDataStore } from './interface';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
@@ -969,6 +975,401 @@ export class SupabaseDataStore implements IDataStore {
 
   public persistState(): void {
     this.fallback.persistState();
+  }
+  // --- Platform Registry & Acquisition Engine ---
+  public async getPlatforms(filters?: any): Promise<PlatformEntity[]> {
+    const supabase = this.getClient(false);
+    if (!supabase) return this.fallback.getPlatforms(filters);
+    try {
+      let q = supabase.from('platforms').select('*').order('priority', { ascending: true });
+      if (filters?.category && filters.category !== 'all') q = q.eq('category', filters.category);
+      if (filters?.priority && filters.priority !== 'all') q = q.eq('priority', filters.priority);
+      if (filters?.pitchMode && filters.pitchMode !== 'all') q = q.eq('pitch_mode', filters.pitchMode);
+      if (filters?.countryEligibility && filters.countryEligibility !== 'all') q = q.eq('country_eligibility_status', filters.countryEligibility);
+      if (filters?.myAccountStatus && filters.myAccountStatus !== 'all') q = q.eq('my_account_status', filters.myAccountStatus);
+      const { data, error } = await q;
+      if (error || !data || data.length === 0) return this.fallback.getPlatforms(filters);
+      return data.map((d: any) => ({
+        id: d.id,
+        name: d.name,
+        category: d.category,
+        url: d.url,
+        officialTermsUrl: d.official_terms_url,
+        howToGetClients: d.how_to_get_clients,
+        aiMlRelevance: d.ai_ml_relevance,
+        pitchMode: d.pitch_mode,
+        integrationMode: d.integration_mode,
+        priority: d.priority,
+        costAccessNotes: d.cost_access_notes,
+        practicalNote: d.practical_note,
+        countryEligibilityStatus: d.country_eligibility_status,
+        myAccountStatus: d.my_account_status,
+        lastVerified: d.last_verified,
+        isActive: d.is_active,
+        notes: d.notes,
+        createdAt: d.created_at,
+        updatedAt: d.updated_at,
+      }));
+    } catch {
+      return this.fallback.getPlatforms(filters);
+    }
+  }
+
+  public async getPlatformById(id: string): Promise<PlatformEntity | null> {
+    const supabase = this.getClient(false);
+    if (!supabase) return this.fallback.getPlatformById(id);
+    try {
+      const { data, error } = await supabase.from('platforms').select('*').eq('id', id).maybeSingle();
+      if (error || !data) return this.fallback.getPlatformById(id);
+      return {
+        id: data.id,
+        name: data.name,
+        category: data.category,
+        url: data.url,
+        officialTermsUrl: data.official_terms_url,
+        howToGetClients: data.how_to_get_clients,
+        aiMlRelevance: data.ai_ml_relevance,
+        pitchMode: data.pitch_mode,
+        integrationMode: data.integration_mode,
+        priority: data.priority,
+        costAccessNotes: data.cost_access_notes,
+        practicalNote: data.practical_note,
+        countryEligibilityStatus: data.country_eligibility_status,
+        myAccountStatus: data.my_account_status,
+        lastVerified: data.last_verified,
+        isActive: data.is_active,
+        notes: data.notes,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+      };
+    } catch {
+      return this.fallback.getPlatformById(id);
+    }
+  }
+
+  public async savePlatform(platform: PlatformEntity): Promise<void> {
+    this.fallback.savePlatform(platform);
+    const supabase = this.getClient(true);
+    if (!supabase) return;
+    try {
+      await supabase.from('platforms').upsert({
+        id: platform.id,
+        name: platform.name,
+        category: platform.category,
+        url: platform.url,
+        official_terms_url: platform.officialTermsUrl,
+        how_to_get_clients: platform.howToGetClients,
+        ai_ml_relevance: platform.aiMlRelevance,
+        pitch_mode: platform.pitchMode,
+        integration_mode: platform.integrationMode,
+        priority: platform.priority,
+        cost_access_notes: platform.costAccessNotes,
+        practical_note: platform.practicalNote,
+        country_eligibility_status: platform.countryEligibilityStatus,
+        my_account_status: platform.myAccountStatus,
+        last_verified: platform.lastVerified,
+        is_active: platform.isActive,
+        notes: platform.notes,
+      });
+    } catch {}
+  }
+
+  public async updatePlatform(id: string, updates: Partial<PlatformEntity>): Promise<PlatformEntity | null> {
+    const res = this.fallback.updatePlatform(id, updates);
+    const supabase = this.getClient(true);
+    if (!supabase) return res;
+    try {
+      const payload: any = {};
+      if (updates.name !== undefined) payload.name = updates.name;
+      if (updates.category !== undefined) payload.category = updates.category;
+      if (updates.url !== undefined) payload.url = updates.url;
+      if (updates.officialTermsUrl !== undefined) payload.official_terms_url = updates.officialTermsUrl;
+      if (updates.priority !== undefined) payload.priority = updates.priority;
+      if (updates.pitchMode !== undefined) payload.pitch_mode = updates.pitchMode;
+      if (updates.integrationMode !== undefined) payload.integration_mode = updates.integrationMode;
+      if (updates.countryEligibilityStatus !== undefined) payload.country_eligibility_status = updates.countryEligibilityStatus;
+      if (updates.myAccountStatus !== undefined) payload.my_account_status = updates.myAccountStatus;
+      if (updates.lastVerified !== undefined) payload.last_verified = updates.lastVerified;
+      if (updates.isActive !== undefined) payload.is_active = updates.isActive;
+      if (updates.notes !== undefined) payload.notes = updates.notes;
+      payload.updated_at = new Date().toISOString();
+      await supabase.from('platforms').update(payload).eq('id', id);
+    } catch {}
+    return res;
+  }
+
+  public async verifyPlatformTerms(id: string, verifiedAt?: string): Promise<PlatformEntity | null> {
+    return this.updatePlatform(id, {
+      lastVerified: verifiedAt || new Date().toISOString(),
+      notes: 'Terms verified by operator',
+    });
+  }
+
+  // --- Vetted Applications Tracker (Group B) ---
+  public async getVettedApplications(): Promise<VettedApplicationEntity[]> {
+    const supabase = this.getClient(false);
+    if (!supabase) return this.fallback.getVettedApplications();
+    try {
+      const { data, error } = await supabase.from('vetted_applications').select('*');
+      if (error || !data || data.length === 0) return this.fallback.getVettedApplications();
+      return data.map((d: any) => ({
+        id: d.id,
+        platformId: d.platform_id,
+        platformName: d.platform_name,
+        status: d.status,
+        readinessScore: d.readiness_score,
+        checklist: d.checklist || [],
+        hasCv: d.has_cv,
+        hasGithub: d.has_github,
+        caseStudiesCount: d.case_studies_count,
+        hasDemoVideo: d.has_demo_video,
+        appliedDate: d.applied_date,
+        nextActionDate: d.next_action_date,
+        interviewNotes: d.interview_notes,
+        pakistanCheck: d.pakistan_check || {},
+        createdAt: d.created_at,
+        updatedAt: d.updated_at,
+      }));
+    } catch {
+      return this.fallback.getVettedApplications();
+    }
+  }
+
+  public async getVettedApplicationById(id: string): Promise<VettedApplicationEntity | null> {
+    return this.fallback.getVettedApplicationById(id);
+  }
+
+  public async saveVettedApplication(app: VettedApplicationEntity): Promise<void> {
+    this.fallback.saveVettedApplication(app);
+    const supabase = this.getClient(true);
+    if (!supabase) return;
+    try {
+      await supabase.from('vetted_applications').upsert({
+        id: app.id,
+        platform_id: app.platformId,
+        platform_name: app.platformName,
+        status: app.status,
+        readiness_score: app.readinessScore,
+        checklist: app.checklist,
+        has_cv: app.hasCv,
+        has_github: app.hasGithub,
+        case_studies_count: app.caseStudiesCount,
+        has_demo_video: app.hasDemoVideo,
+        applied_date: app.appliedDate,
+        next_action_date: app.nextActionDate,
+        interview_notes: app.interviewNotes,
+        pakistan_check: app.pakistanCheck,
+      });
+    } catch {}
+  }
+
+  public async updateVettedApplication(id: string, updates: Partial<VettedApplicationEntity>): Promise<VettedApplicationEntity | null> {
+    const res = this.fallback.updateVettedApplication(id, updates);
+    const supabase = this.getClient(true);
+    if (!supabase) return res;
+    try {
+      const payload: any = {};
+      if (updates.status !== undefined) payload.status = updates.status;
+      if (updates.readinessScore !== undefined) payload.readiness_score = updates.readinessScore;
+      if (updates.checklist !== undefined) payload.checklist = updates.checklist;
+      if (updates.hasCv !== undefined) payload.has_cv = updates.hasCv;
+      if (updates.hasGithub !== undefined) payload.has_github = updates.hasGithub;
+      if (updates.caseStudiesCount !== undefined) payload.case_studies_count = updates.caseStudiesCount;
+      if (updates.hasDemoVideo !== undefined) payload.has_demo_video = updates.hasDemoVideo;
+      if (updates.appliedDate !== undefined) payload.applied_date = updates.appliedDate;
+      if (updates.nextActionDate !== undefined) payload.next_action_date = updates.nextActionDate;
+      if (updates.interviewNotes !== undefined) payload.interview_notes = updates.interviewNotes;
+      if (updates.pakistanCheck !== undefined) payload.pakistan_check = updates.pakistanCheck;
+      payload.updated_at = new Date().toISOString();
+      await supabase.from('vetted_applications').update(payload).eq('platform_id', id);
+    } catch {}
+    return res;
+  }
+
+  // --- Lead Source Configs (Group C) ---
+  public async getLeadSourceConfigs(): Promise<LeadSourceConfigEntity[]> {
+    const supabase = this.getClient(false);
+    if (!supabase) return this.fallback.getLeadSourceConfigs();
+    try {
+      const { data, error } = await supabase.from('lead_source_configs').select('*');
+      if (error || !data || data.length === 0) return this.fallback.getLeadSourceConfigs();
+      return data.map((d: any) => ({
+        id: d.id,
+        sourceName: d.source_name,
+        monthlyCreditBudget: d.monthly_credit_budget,
+        creditsUsedThisMonth: d.credits_used_this_month,
+        status: d.status,
+        lastTestedAt: d.last_tested_at,
+        apiKeyConfigured: d.api_key_configured,
+        createdAt: d.created_at,
+        updatedAt: d.updated_at,
+      }));
+    } catch {
+      return this.fallback.getLeadSourceConfigs();
+    }
+  }
+
+  public async saveLeadSourceConfig(config: LeadSourceConfigEntity): Promise<void> {
+    this.fallback.saveLeadSourceConfig(config);
+    const supabase = this.getClient(true);
+    if (!supabase) return;
+    try {
+      await supabase.from('lead_source_configs').upsert({
+        id: config.id,
+        source_name: config.sourceName,
+        monthly_credit_budget: config.monthlyCreditBudget,
+        credits_used_this_month: config.creditsUsedThisMonth,
+        status: config.status,
+        last_tested_at: config.lastTestedAt,
+        api_key_configured: config.apiKeyConfigured,
+      });
+    } catch {}
+  }
+
+  public async recordLeadSourceUsage(sourceName: string, creditsUsed: number = 1): Promise<void> {
+    this.fallback.recordLeadSourceUsage(sourceName, creditsUsed);
+  }
+
+  // --- Platform Footprints ("Where else can I reach them?") ---
+  public async getFootprintsForBusiness(businessId: string): Promise<PlatformFootprintCandidate[]> {
+    const supabase = this.getClient(false);
+    if (!supabase) return this.fallback.getFootprintsForBusiness(businessId);
+    try {
+      const { data, error } = await supabase.from('platform_footprints').select('*').eq('business_id', businessId);
+      if (error || !data || data.length === 0) return this.fallback.getFootprintsForBusiness(businessId);
+      return data.map((d: any) => ({
+        id: d.id,
+        businessId: d.business_id,
+        platform: d.platform,
+        profileUrl: d.profile_url,
+        source: d.source,
+        verificationStatus: d.verification_status,
+        confidence: Number(d.confidence),
+        lastChecked: d.last_checked,
+        notes: d.notes,
+      }));
+    } catch {
+      return this.fallback.getFootprintsForBusiness(businessId);
+    }
+  }
+
+  public async saveFootprint(footprint: PlatformFootprintCandidate): Promise<void> {
+    this.fallback.saveFootprint(footprint);
+    const supabase = this.getClient(true);
+    if (!supabase) return;
+    try {
+      await supabase.from('platform_footprints').upsert({
+        id: footprint.id,
+        business_id: footprint.businessId,
+        platform: footprint.platform,
+        profile_url: footprint.profileUrl,
+        source: footprint.source,
+        verification_status: footprint.verificationStatus,
+        confidence: footprint.confidence,
+        last_checked: footprint.lastChecked,
+        notes: footprint.notes,
+      });
+    } catch {}
+  }
+
+  public async deleteFootprint(id: string): Promise<void> {
+    this.fallback.deleteFootprint(id);
+    const supabase = this.getClient(true);
+    if (!supabase) return;
+    try {
+      await supabase.from('platform_footprints').delete().eq('id', id);
+    } catch {}
+  }
+
+  // --- Marketplace Hot Requests (Group A) ---
+  public async getHotRequests(filters?: any): Promise<MarketplaceHotRequestEntity[]> {
+    const supabase = this.getClient(false);
+    if (!supabase) return this.fallback.getHotRequests(filters);
+    try {
+      let q = supabase.from('marketplace_hot_requests').select('*').order('fit_score', { ascending: false });
+      if (filters?.platform && filters.platform !== 'all') q = q.eq('platform', filters.platform);
+      if (filters?.status && filters.status !== 'all') q = q.eq('status', filters.status);
+      const { data, error } = await q;
+      if (error || !data || data.length === 0) return this.fallback.getHotRequests(filters);
+      return data.map((d: any) => ({
+        id: d.id,
+        platform: d.platform,
+        title: d.title,
+        description: d.description,
+        postUrl: d.post_url,
+        postType: d.post_type,
+        fitScore: d.fit_score,
+        freshnessHours: Number(d.freshness_hours),
+        isScam: d.is_scam,
+        budgetRange: d.budget_range,
+        proposalDraft: d.proposal_draft,
+        screeningAnswers: d.screening_answers || {},
+        postedAt: d.posted_at,
+        respondBefore: d.respond_before,
+        status: d.status,
+        createdAt: d.created_at,
+      }));
+    } catch {
+      return this.fallback.getHotRequests(filters);
+    }
+  }
+
+  public async saveHotRequest(request: MarketplaceHotRequestEntity): Promise<void> {
+    this.fallback.saveHotRequest(request);
+    const supabase = this.getClient(true);
+    if (!supabase) return;
+    try {
+      await supabase.from('marketplace_hot_requests').upsert({
+        id: request.id,
+        platform: request.platform,
+        title: request.title,
+        description: request.description,
+        post_url: request.postUrl,
+        post_type: request.postType,
+        fit_score: request.fitScore,
+        freshness_hours: request.freshnessHours,
+        is_scam: request.isScam,
+        budget_range: request.budgetRange,
+        proposal_draft: request.proposalDraft,
+        screening_answers: request.screeningAnswers,
+        posted_at: request.postedAt,
+        respond_before: request.respondBefore,
+        status: request.status,
+      });
+    } catch {}
+  }
+
+  public async updateHotRequestStatus(id: string, status: 'new' | 'proposal_copied' | 'submitted' | 'declined'): Promise<boolean> {
+    const res = this.fallback.updateHotRequestStatus(id, status);
+    const supabase = this.getClient(true);
+    if (!supabase) return res;
+    try {
+      await supabase.from('marketplace_hot_requests').update({ status }).eq('id', id);
+    } catch {}
+    return res;
+  }
+
+  // --- Platform Spend Logs ---
+  public async getPlatformSpendLogs(platformId?: string): Promise<PlatformSpendLogEntity[]> {
+    return this.fallback.getPlatformSpendLogs(platformId);
+  }
+
+  public async recordPlatformSpend(spend: PlatformSpendLogEntity): Promise<void> {
+    this.fallback.recordPlatformSpend(spend);
+    const supabase = this.getClient(true);
+    if (!supabase) return;
+    try {
+      await supabase.from('platform_spend_logs').insert({
+        id: spend.id,
+        platform_id: spend.platformId,
+        platform_name: spend.platformName,
+        cost_type: spend.costType,
+        amount_spent: spend.amountSpent,
+        currency: spend.currency,
+        notes: spend.notes,
+        logged_at: spend.loggedAt,
+      });
+    } catch {}
   }
 }
 

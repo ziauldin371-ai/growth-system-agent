@@ -90,7 +90,7 @@ export function generatePlatformPitch(params: {
 
     case 'contact_form': {
       // Rule: 60-100 words, subject line, business reason, 1 question
-      pitchText = `Subject: Quick question regarding ${business.name} operations\n\nHi ${business.name} team,\n\nI came across your organization while researching growing businesses in ${business.city || business.country}.\n\nAs a Full Stack AI Developer & Automation Architect, I help companies implement ${offer} to reduce overhead and improve response times.\n\nWould you be open to a 2-minute conversation to see if this aligns with your current priorities?\n\nBest regards,\nZia Ul Din\nziauldin371@gmail.com`;
+      pitchText = `Subject: Quick question regarding ${business.name} operations\n\nHi ${business.name} team,\n\nWhile analyzing active engineering and operations workflows in ${business.city || business.country}, I reviewed your public tech profile.\n\nAs a Full Stack AI Developer & Automation Architect, I help companies implement ${offer} to reduce overhead and improve response times.\n\nWould you be open to a 2-minute conversation to see if this aligns with your current priorities?\n\nBest regards,\nZia Ul Din\nziauldin371@gmail.com`;
       touchOrder = 4;
       break;
     }

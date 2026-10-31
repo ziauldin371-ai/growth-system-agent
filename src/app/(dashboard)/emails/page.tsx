@@ -107,7 +107,7 @@ function EmailsContent() {
             businessName: d.businessName || 'Target Business Lead',
             recipientEmail: d.recipientEmail || 'contact@business.com',
             subject: d.subject || 'Introductory Website Proposal',
-            body: d.emailBody || d.body || 'Hello, I came across your local business profile...',
+            body: d.emailBody || d.body || 'Hello, while analyzing local commercial profiles...',
             createdAt: d.createdAt || new Date().toISOString(),
             status: isReplied ? 'replied' : isBlocked ? 'blocked' : 'waiting',
             statusLabel: isReplied

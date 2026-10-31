@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { BusinessEntity } from '@/types';
 import { BusinessCard } from '@/components/dashboard/business-card';
 import { BusinessDetailsDrawer } from '@/components/dashboard/business-details-drawer';
+import { ClientRequestsView } from '@/components/marketplace/client-requests-view';
 import { useLanguage } from '@/context/language-context';
 import { useToast } from '@/components/ui/toast-context';
 
@@ -446,7 +447,10 @@ function BusinessesContent() {
       </section>
 
       {/* Main Two-Column Structure on Laptop (Left Filter Panel + Results Canvas) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+      {activeTab === 'hot_requests' ? (
+        <ClientRequestsView />
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         {/* Left Filter Panel (Desktop Sticky Sidebar) */}
         <aside
           className={`lg:col-span-3 flex-col gap-4 bg-surface-container p-4 rounded-2xl border border-outline-variant/20 lg:sticky lg:top-20 ${
@@ -717,6 +721,7 @@ function BusinessesContent() {
           )}
         </main>
       </div>
+      )}
 
       {/* Right-Side Details Drawer (Slide-over on laptop, full-screen sheet on mobile) */}
       <BusinessDetailsDrawer

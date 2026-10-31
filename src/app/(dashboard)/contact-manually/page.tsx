@@ -586,7 +586,7 @@ function ContactManuallyContent() {
                             const p = getChannelPitch(
                               selectedLead,
                               'whatsapp',
-                              `Hi ${selectedLead.name} team, Zia here. I came across your business in ${selectedLead.city || 'your area'}. As an AI & Web Developer, I build automated intake systems and modern web solutions. Would love to share a quick 2-minute diagnostic if helpful!`
+                              `Hi ${selectedLead.name} team, Zia here. While analyzing commercial listings in ${selectedLead.city || 'your area'}, I noted your operations profile. As an AI & Web Developer, I build automated intake systems and modern web solutions. Would love to share a quick 2-minute diagnostic if helpful!`
                             );
                             copyToClipboard(p, `wa_${selectedLead.id}`, 'WhatsApp message');
                           }}
@@ -618,7 +618,7 @@ function ContactManuallyContent() {
                       {getChannelPitch(
                         selectedLead,
                         'whatsapp',
-                        `Hi ${selectedLead.name} team, Zia here. I came across your business in ${selectedLead.city || 'your area'}. As an AI & Web Developer, I build automated intake systems and modern web solutions. Would love to share a quick 2-minute diagnostic if helpful!`
+                        `Hi ${selectedLead.name} team, Zia here. While analyzing commercial listings in ${selectedLead.city || 'your area'}, I noted your operations profile. As an AI & Web Developer, I build automated intake systems and modern web solutions. Would love to share a quick 2-minute diagnostic if helpful!`
                       )}
                     </div>
                   </div>

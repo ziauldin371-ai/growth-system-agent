@@ -67,11 +67,11 @@ export function BusinessDetailsDrawer({
 
 Hi ${business.name} Team,
 
-I came across your business in ${business.city || 'your area'} and noticed you don't currently have a dedicated website for customer quotes.
+While researching active commercial operations in ${business.city || 'your area'}, I noted ${business.name} does not list an active web booking portal.
 
-We help local businesses set up fast, mobile-friendly landing pages and automated quote responders.
+We build lightweight, mobile-responsive intake pages and automated quote responders for local teams.
 
-Would you be open to a quick 5-minute chat this week?
+Would you be open to reviewing a brief 2-minute diagnostic this week?
 
 Best regards,
 Zia Ul Din

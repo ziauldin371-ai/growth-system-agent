@@ -1,0 +1,57 @@
+[
+  [
+    "Step",
+    "Action",
+    "Example / guidance"
+  ],
+  [
+    "1. Pick one buyer niche",
+    "Do not pitch every business. Start with one vertical where ML can solve a measurable problem.",
+    "Examples: SaaS companies needing LLM/RAG features; e-commerce firms needing demand forecasting; fintech needing fraud/risk models; manufacturers needing computer vision; healthcare software firms needing document extraction (subject to compliance)."
+  ],
+  [
+    "2. Define a concrete offer",
+    "Sell an outcome, not the vague label 'AI/ML engineer'.",
+    "Examples: 'Build a support knowledge-base chatbot with RAG'; 'Create a demand forecasting proof of concept'; 'Automate document extraction and validation'; 'Deploy a computer-vision quality inspection prototype'. Only offer capabilities he can genuinely deliver."
+  ],
+  [
+    "3. Build proof",
+    "Prepare 2\u20133 polished case studies, GitHub repositories, architecture diagrams and a short demo video.",
+    "Each case study: business problem, data used (non-confidential), approach, metrics, deployment, limitations and screenshots/demo."
+  ],
+  [
+    "4. Marketplace pitching",
+    "Search recent, well-scoped projects; read requirements; apply early with a short, tailored plan.",
+    "Proposal structure: specific problem understood \u2192 relevant proof \u2192 2\u20133 implementation steps \u2192 one smart question \u2192 clear next step. Never send generic copy-paste proposals."
+  ],
+  [
+    "5. Direct prospecting",
+    "Use Crunchbase/Clutch/G2 to identify accounts; Apollo/Clay/Hunter to identify and verify relevant business contacts.",
+    "Target founder/CTO/VP Engineering/Head of Data/AI. Look for evidence: AI product launch, data-heavy product, relevant hiring, funding, manual workflow or public technical challenge."
+  ],
+  [
+    "6. Personalized message",
+    "Mention one real company-specific signal and one relevant solution.",
+    "Subject: Idea for [specific workflow] at [Company]. Message: I noticed [specific public signal]. We help [type of company] solve [specific problem] using [specific ML/LLM approach]. I can share a short, relevant demo or outline. Would this be useful to explore?"
+  ],
+  [
+    "7. Follow up respectfully",
+    "Use a small number of useful follow-ups and stop if they decline or opt out.",
+    "Example cadence: initial note; follow-up after 4\u20135 business days with a useful idea; final short follow-up after another week. Follow applicable laws and platform terms."
+  ],
+  [
+    "8. Track results",
+    "Use a simple CRM sheet; measure qualified replies and calls, not just emails sent.",
+    "Track: company, contact, role, source URL, evidence/trigger, offer, first contact date, follow-up date, response, meeting, outcome, opt-out."
+  ],
+  [
+    "9. Protect reputation",
+    "Do not scrape against terms, automate LinkedIn messages, invent case studies, or send bulk irrelevant emails.",
+    "Use accurate identity, relevant business contact data, clear opt-out, applicable privacy/anti-spam rules and platform terms. Verify data and respect suppression lists."
+  ],
+  [
+    "10. Pakistan practical check",
+    "Before investing time or money, confirm onboarding, payout and contractor eligibility for Pakistan.",
+    "Check the platform's current country eligibility, identity verification, payment methods, withdrawal fees and tax obligations."
+  ]
+]
