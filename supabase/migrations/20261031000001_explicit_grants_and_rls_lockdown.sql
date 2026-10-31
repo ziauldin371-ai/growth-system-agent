@@ -108,3 +108,4 @@ BEGIN
         CREATE POLICY "authenticated_read_rules" ON public.community_pitch_rules FOR SELECT TO authenticated USING (true);
     END IF;
 END $$;
+

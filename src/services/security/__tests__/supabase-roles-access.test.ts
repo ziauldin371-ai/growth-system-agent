@@ -152,3 +152,4 @@ describe('Supabase Explicit Role Grants, Automatic RLS & Anon Access Lockdown Te
     }
   });
 });
+
