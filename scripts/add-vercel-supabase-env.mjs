@@ -2,13 +2,13 @@ import fs from 'fs';
 import { spawnSync } from 'child_process';
 
 /**
- * Script to securely read Supabase credentials from .env.local
+ * Script to securely read credentials from .env.local
  * and add them to Vercel for both Production and Preview environments
  * using stdin piping (never printing or echoing secret values).
  */
 
 function main() {
-  console.log('=== VERCEL SUPABASE CREDENTIALS SYNC ===\n');
+  console.log('=== VERCEL CREDENTIALS SYNC ===\n');
 
   if (!fs.existsSync('.env.local')) {
     console.error('Error: .env.local file not found.');
@@ -20,7 +20,10 @@ function main() {
   const targets = [
     'NEXT_PUBLIC_SUPABASE_URL',
     'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-    'SUPABASE_SERVICE_ROLE_KEY'
+    'SUPABASE_SERVICE_ROLE_KEY',
+    'CRON_SECRET',
+    'ENCRYPTION_SECRET',
+    'UNSUBSCRIBE_SECRET'
   ];
 
   const extracted = {};
@@ -33,29 +36,26 @@ function main() {
     }
   }
 
-  const missing = targets.filter(t => !extracted[t]);
-
-  if (missing.length > 0) {
-    console.warn('Notice: The following Supabase variables are not yet present in .env.local:');
-    missing.forEach(m => console.warn(`  - ${m}`));
-    console.warn('\nPlease ensure you have saved (Ctrl+S) your .env.local file with these variables.\n');
-    return;
+  // Also check ADMIN_PASSWORD for production
+  const adminPassMatch = envContent.match(/^ADMIN_PASSWORD=(.*)$/m);
+  if (adminPassMatch && adminPassMatch[1].trim().length > 0) {
+    extracted['ADMIN_PASSWORD'] = adminPassMatch[1].trim();
   }
 
-  console.log('Found all required variables in .env.local:');
-  targets.forEach(t => console.log(`  ✓ ${t}`));
+  console.log('Variables extracted from .env.local (names only):');
+  Object.keys(extracted).forEach(k => console.log(`  ✓ ${k}`));
 
   const environments = ['production', 'preview'];
 
   for (const env of environments) {
-    console.log(`\nAdding variables to Vercel environment: [${env}]...`);
+    console.log(`\n--- Syncing variables to Vercel [${env}] ---`);
     for (const name of targets) {
       const val = extracted[name];
-      console.log(`  Piping ${name} to Vercel (${env})...`);
+      if (!val) continue;
+      console.log(`Piping ${name} to Vercel (${env})...`);
 
-      // Execute vercel env add piping value via stdin
-      const res = spawnSync('npx', ['vercel', 'env', 'add', name, env, '--force'], {
-        input: val,
+      const res = spawnSync('vercel.cmd', ['env', 'add', name, env, '--force'], {
+        input: val + '\n',
         encoding: 'utf8',
         shell: true
       });
@@ -63,8 +63,23 @@ function main() {
       if (res.status === 0) {
         console.log(`  ✓ Successfully added ${name} to ${env}`);
       } else {
-        console.warn(`  Notice on ${name} (${env}): ${res.stderr ? res.stderr.split('\n')[0] : 'requires interactive login'}`);
+        console.warn(`  Notice on ${name} (${env}): ${res.stderr ? res.stderr.split('\n')[0] : 'non-zero exit'}`);
       }
+    }
+  }
+
+  // Ensure ADMIN_PASSWORD is in production as well
+  if (extracted['ADMIN_PASSWORD']) {
+    console.log(`\nPiping ADMIN_PASSWORD to Vercel (production)...`);
+    const res = spawnSync('vercel.cmd', ['env', 'add', 'ADMIN_PASSWORD', 'production', '--force'], {
+      input: extracted['ADMIN_PASSWORD'] + '\n',
+      encoding: 'utf8',
+      shell: true
+    });
+    if (res.status === 0) {
+      console.log(`  ✓ Successfully added ADMIN_PASSWORD to production`);
+    } else {
+      console.warn(`  Notice on ADMIN_PASSWORD (production): ${res.stderr ? res.stderr.split('\n')[0] : 'non-zero exit'}`);
     }
   }
 
@@ -72,4 +87,3 @@ function main() {
 }
 
 main();
-
