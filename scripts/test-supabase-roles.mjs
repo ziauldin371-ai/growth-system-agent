@@ -114,7 +114,7 @@ async function runRolesIntegrationTest() {
   console.log('--- TEST 1: SERVER (service_role) WRITE & READ CAPABILITIES ---');
 
   // A. Business Record
-  const businessId = `biz_srv_${uniqueId}`;
+  const businessId = crypto.randomUUID();
   console.log(`1. Server inserting business [${businessId}]...`);
   const { data: bInsert, error: bInsertErr } = await serverClient.from('businesses').insert({
     id: businessId,
@@ -155,7 +155,7 @@ async function runRolesIntegrationTest() {
   const suppEmail = `optout-${uniqueId}@testdomain.com`;
   console.log(`2. Server inserting suppression [${suppEmail}]...`);
   const { error: sInsertErr } = await serverClient.from('suppression_list').insert({
-    id: `supp_${uniqueId}`,
+    id: crypto.randomUUID(),
     organization_id: orgId,
     type: 'email',
     value: suppEmail,

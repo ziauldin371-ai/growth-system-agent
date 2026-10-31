@@ -14,6 +14,16 @@ CREATE TABLE IF NOT EXISTS organizations (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Default organization seed so foreign keys on icp_profiles, businesses, campaigns resolve cleanly
+INSERT INTO organizations (id, name, slug)
+VALUES (
+    '00000000-0000-0000-0000-000000000001',
+    'Growth System Organization',
+    'growth-system-org'
+)
+ON CONFLICT (id) DO NOTHING;
+
+
 -- 2. Profiles (Extended auth users)
 CREATE TABLE IF NOT EXISTS profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,

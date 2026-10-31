@@ -1,5 +1,12 @@
-﻿-- =============================================================================
--- GrowthSignal AI â€” Initial Schema Migration
+-- =============================================================================
+-- Growth System Agent — Master Database Schema & Security Grants
+-- Consolidated Migration Bundle (Executed in Chronological Order)
+-- Generated: 2026-10-31T17:04:51.275Z
+-- =============================================================================
+
+-- >>> BEGIN MIGRATION: 20261030000000_init_schema.sql <<<
+-- =============================================================================
+-- GrowthSignal AI — Initial Schema Migration
 -- =============================================================================
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -13,6 +20,16 @@ CREATE TABLE IF NOT EXISTS organizations (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Default organization seed so foreign keys on icp_profiles, businesses, campaigns resolve cleanly
+INSERT INTO organizations (id, name, slug)
+VALUES (
+    '00000000-0000-0000-0000-000000000001',
+    'Growth System Organization',
+    'growth-system-org'
+)
+ON CONFLICT (id) DO NOTHING;
+
 
 -- 2. Profiles (Extended auth users)
 CREATE TABLE IF NOT EXISTS profiles (
@@ -391,8 +408,10 @@ CREATE POLICY "Users can manage suppression" ON suppression_list
     FOR ALL USING (organization_id IN (SELECT get_user_org_ids()));
 
 -- Service role bypasses RLS for background workers automatically in Supabase
+
+-- >>> BEGIN MIGRATION: 20261030000001_seed_icp_profiles.sql <<<
 -- =============================================================================
--- GrowthSignal AI â€” Seed 7 Default Ideal Customer Profiles (ICPs)
+-- GrowthSignal AI — Seed 7 Default Ideal Customer Profiles (ICPs)
 -- =============================================================================
 
 INSERT INTO icp_profiles (
@@ -484,7 +503,7 @@ INSERT INTO icp_profiles (
     'public-hiring-signals',
     'Companies with Active Software/AI Job Openings',
     'ai_software_opportunities',
-    'Businesses actively advertising for Python engineers, full-stack developers, AI architects, or data engineersâ€”where an external contractor/consultant provides immediate velocity.',
+    'Businesses actively advertising for Python engineers, full-stack developers, AI architects, or data engineers—where an external contractor/consultant provides immediate velocity.',
     0.75,
     '{"job_posting_freshness_weight": 0.40, "role_alignment_weight": 0.35, "company_size_weight": 0.15, "speed_to_hire_friction_weight": 0.10}'::jsonb,
     '{"target_roles": ["Full Stack Engineer", "Python Developer", "AI Engineer", "Data Scientist", "DevOps Engineer"]}'::jsonb,
@@ -496,8 +515,10 @@ ON CONFLICT (organization_id, slug) DO UPDATE SET
     scoring_weights = EXCLUDED.scoring_weights,
     qualification_criteria = EXCLUDED.qualification_criteria,
     confidence_threshold = EXCLUDED.confidence_threshold;
+
+-- >>> BEGIN MIGRATION: 20261030000002_alternative_channels_and_runs.sql <<<
 -- =============================================================================
--- Growth System Agent â€” Migration: Alternative Channels & Scheduler Runs
+-- Growth System Agent — Migration: Alternative Channels & Scheduler Runs
 -- =============================================================================
 
 -- 1. Alternative Outreach Channels Table
@@ -598,8 +619,9 @@ CREATE POLICY "Org members can modify run history"
         SELECT organization_id FROM memberships WHERE profile_id = auth.uid()
     ));
 
+-- >>> BEGIN MIGRATION: 20261030000003_realtime_discovery_and_platforms.sql <<<
 -- =============================================================================
--- Growth System Agent â€” Migration 03: Real-Time Discovery, Deliverability & Multi-Platform Outreach
+-- Growth System Agent — Migration 03: Real-Time Discovery, Deliverability & Multi-Platform Outreach
 -- =============================================================================
 
 -- 1. Enhance Businesses table for real-time freshness, closed detection, and heat score
@@ -740,8 +762,10 @@ CREATE POLICY "Allow authenticated manage on domain health" ON domain_health_che
 
 CREATE POLICY "Allow authenticated read on placement tests" ON inbox_placement_tests FOR SELECT USING (true);
 CREATE POLICY "Allow authenticated manage on placement tests" ON inbox_placement_tests FOR ALL USING (true);
+
+-- >>> BEGIN MIGRATION: 20261030000004_intent_radar_and_hot_leads.sql <<<
 -- =============================================================================
--- Growth System Agent â€” Migration 04: Intent-Based Lead Radar ("Hot Opportunities")
+-- Growth System Agent — Migration 04: Intent-Based Lead Radar ("Hot Opportunities")
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS intent_opportunities (
@@ -828,6 +852,7 @@ CREATE POLICY "Allow read on intent opportunities" ON intent_opportunities FOR S
 CREATE POLICY "Allow modify on intent opportunities" ON intent_opportunities FOR ALL USING (true);
 CREATE POLICY "Allow read on community rules" ON community_pitch_rules FOR SELECT USING (true);
 
+-- >>> BEGIN MIGRATION: 20261030000005_rls_multi_tenant_complete_and_oauth.sql <<<
 -- ============================================================================
 -- GROWTH SYSTEM AGENT: Migration 05
 -- Complete Multi-Tenant RLS Policies across all tables + OAuth Token Storage
@@ -965,6 +990,7 @@ CREATE POLICY "Users can read org campaign leads" ON campaign_leads
 CREATE POLICY "Users can insert org campaign leads" ON campaign_leads
     FOR INSERT WITH CHECK (campaign_id IN (SELECT id FROM campaigns WHERE organization_id IN (SELECT get_user_org_ids())));
 
+-- >>> BEGIN MIGRATION: 20261030000006_distributed_locks_and_checkpoints.sql <<<
 -- ============================================================================
 -- GROWTH SYSTEM AGENT: Migration 06
 -- Distributed Locks & Checkpoints for Serverless Cloud Resumption & Autonomy
@@ -1009,8 +1035,10 @@ CREATE POLICY "Allow authenticated read checkpoints" ON scheduler_checkpoints
 
 CREATE POLICY "Allow authenticated manage checkpoints" ON scheduler_checkpoints
     FOR ALL USING (auth.role() = 'authenticated' OR auth.role() = 'service_role');
+
+-- >>> BEGIN MIGRATION: 20261031000000_platforms_engine_and_applications.sql <<<
 -- ==============================================================================
--- Growth System Agent â€” Platforms Engine, Applications Tracker & Lead Adapters
+-- Growth System Agent — Platforms Engine, Applications Tracker & Lead Adapters
 -- Migration: 20261031000000_platforms_engine_and_applications.sql
 -- ==============================================================================
 
@@ -1091,7 +1119,7 @@ ON public.lead_source_configs FOR ALL TO authenticated USING (true) WITH CHECK (
 -- 4. Platform Footprint Table
 CREATE TABLE IF NOT EXISTS public.platform_footprints (
     id TEXT PRIMARY KEY,
-    business_id TEXT NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
+    business_id UUID NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
     platform TEXT NOT NULL,
     profile_url TEXT NOT NULL,
     source TEXT NOT NULL DEFAULT 'website',
@@ -3196,6 +3224,8 @@ INSERT INTO public.platforms (
     priority = EXCLUDED.priority,
     cost_access_notes = EXCLUDED.cost_access_notes,
     practical_note = EXCLUDED.practical_note;
+
+-- >>> BEGIN MIGRATION: 20261031000001_explicit_grants_and_rls_lockdown.sql <<<
 -- ==============================================================================
 -- GROWTH SYSTEM AGENT: Migration 08
 -- Explicit Role Grants, Automatic RLS Enforcement, and Anonymous Access Lockdown

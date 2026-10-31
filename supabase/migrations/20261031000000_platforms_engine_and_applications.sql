@@ -80,7 +80,7 @@ ON public.lead_source_configs FOR ALL TO authenticated USING (true) WITH CHECK (
 -- 4. Platform Footprint Table
 CREATE TABLE IF NOT EXISTS public.platform_footprints (
     id TEXT PRIMARY KEY,
-    business_id TEXT NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
+    business_id UUID NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
     platform TEXT NOT NULL,
     profile_url TEXT NOT NULL,
     source TEXT NOT NULL DEFAULT 'website',
