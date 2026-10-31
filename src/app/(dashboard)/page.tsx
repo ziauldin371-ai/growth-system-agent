@@ -30,6 +30,7 @@ export default async function HomePage(props: PageProps) {
   // Fetch real data
   const { businesses: rawBusinesses } = await dataStore.getBusinesses({ limit: 100, includeDemo: showDemo });
   const rawDrafts = await dataStore.getDrafts({ limit: 100, includeDemo: showDemo });
+  const lastRun = await dataStore.getLastSchedulerRun();
 
   // Compute strictly consistent stats
   const stats = computeHomeStats({
@@ -134,6 +135,29 @@ export default async function HomePage(props: PageProps) {
             className="px-3.5 py-1.5 rounded-lg bg-error text-on-error font-label-md text-xs font-semibold shrink-0"
           >
             Connect Database
+          </Link>
+        </div>
+      )}
+
+      {/* Skipped Run Banner */}
+      {lastRun?.status === 'skipped' && (
+        <div className="rounded-xl p-3.5 sm:p-4 bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-3 text-on-surface shadow-sm">
+          <div className="flex items-center gap-2.5">
+            <span className="material-symbols-outlined text-[20px] text-amber-400">info</span>
+            <div>
+              <span className="font-label-lg font-bold text-amber-300">
+                Last run: skipped, reason: {lastRun.reason || 'Google Places key is missing'}
+              </span>
+              <p className="font-body-md text-xs text-on-surface-variant mt-0.5">
+                The scheduled discovery cycle was safely bypassed. No mock data was generated or counted.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/run-and-schedule"
+            className="px-3.5 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-variant text-on-surface font-label-md text-xs font-semibold shrink-0 transition-colors"
+          >
+            View Scheduler
           </Link>
         </div>
       )}

@@ -80,8 +80,11 @@ export class AutomationRunner {
         }
       }
 
-      // 3. Check Global Pause Switch
-      if (dataStore.isAutomationPaused()) {
+      // 3. Pre-flight Check: Emergency Stop / Automation Paused
+      if (dataStore.isAutomationPaused() || process.env.EMERGENCY_STOP === 'true') {
+        const reason = process.env.EMERGENCY_STOP === 'true'
+          ? 'Emergency stop is active across all campaign dispatchers.'
+          : 'Automation is globally paused by operator.';
         const result: ScheduledRunResult = {
           runId,
           status: 'skipped',
@@ -90,11 +93,66 @@ export class AutomationRunner {
           draftsGenerated: 0,
           emailsSent: 0,
           operatingMode: dataStore.getOperatingMode(),
-          reason: 'Automation is globally paused by operator.',
+          reason,
           durationMs: Date.now() - startTime,
         };
         await dataStore.recordSchedulerRun(result);
         return result;
+      }
+
+      // 4. Pre-flight Check: Database in Production
+      if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_SUPABASE_URL) {
+        const result: ScheduledRunResult = {
+          runId,
+          status: 'skipped',
+          leadsDiscovered: 0,
+          leadsQualified: 0,
+          draftsGenerated: 0,
+          emailsSent: 0,
+          operatingMode: dataStore.getOperatingMode(),
+          reason: 'Supabase database is not connected in production mode.',
+          durationMs: Date.now() - startTime,
+        };
+        await dataStore.recordSchedulerRun(result);
+        return result;
+      }
+
+      // 5. Pre-flight Check: Google Places API Key (in production or when explicitly configured)
+      if ((process.env.NODE_ENV === 'production' || process.env.REQUIRE_LIVE_DISCOVERY === 'true') && (!process.env.GOOGLE_PLACES_API_KEY || !process.env.GOOGLE_PLACES_API_KEY.trim())) {
+        const result: ScheduledRunResult = {
+          runId,
+          status: 'skipped',
+          leadsDiscovered: 0,
+          leadsQualified: 0,
+          draftsGenerated: 0,
+          emailsSent: 0,
+          operatingMode: dataStore.getOperatingMode(),
+          reason: 'Google Places key is missing',
+          durationMs: Date.now() - startTime,
+        };
+        await dataStore.recordSchedulerRun(result);
+        return result;
+      }
+
+      // 6. Pre-flight Check: Places Monthly Budget Cap
+      const placesProvider = discoveryService.getProvider('google_places') as any;
+      if (placesProvider && typeof placesProvider.getCostMetrics === 'function') {
+        const metrics = placesProvider.getCostMetrics();
+        if (metrics.monthlyEstimatedCostUsd >= metrics.budgetUsd) {
+          const result: ScheduledRunResult = {
+            runId,
+            status: 'skipped',
+            leadsDiscovered: 0,
+            leadsQualified: 0,
+            draftsGenerated: 0,
+            emailsSent: 0,
+            operatingMode: dataStore.getOperatingMode(),
+            reason: `Google Places monthly budget ($${metrics.budgetUsd} USD) reached.`,
+            durationMs: Date.now() - startTime,
+          };
+          await dataStore.recordSchedulerRun(result);
+          return result;
+        }
       }
 
       // Pre-run Inbox Sync: detect client replies, bounces, and opt-outs before dispatching
@@ -604,6 +662,40 @@ export class AutomationRunner {
         durationMs: Date.now() - startTime,
         checkpoint: nextCheckpoint,
       };
+    } catch (err: any) {
+      console.warn('[SCHEDULER RUN CAUGHT ERROR]:', err?.message);
+      const msg = err?.message || '';
+      let status: 'skipped' | 'failed' = 'failed';
+      let reason = msg;
+
+      if (msg.includes('Google Places key is missing') || msg.includes('Live discovery credentials missing')) {
+        status = 'skipped';
+        reason = 'Google Places key is missing';
+      } else if (msg.toLowerCase().includes('budget') && msg.toLowerCase().includes('reached')) {
+        status = 'skipped';
+        reason = msg;
+      } else if (msg.includes('Emergency stop') || msg.includes('paused')) {
+        status = 'skipped';
+        reason = 'Emergency stop is active across all campaign dispatchers.';
+      } else if (msg.includes('database') || msg.includes('Supabase')) {
+        status = 'skipped';
+        reason = 'Supabase database is not connected in production mode.';
+      }
+
+      const blockedResult: ScheduledRunResult = {
+        runId,
+        status,
+        leadsDiscovered: 0,
+        leadsQualified: 0,
+        draftsGenerated: 0,
+        emailsSent: 0,
+        operatingMode: dataStore.getOperatingMode(),
+        reason,
+        durationMs: Date.now() - startTime,
+      };
+
+      await dataStore.recordSchedulerRun(blockedResult);
+      return blockedResult;
     } finally {
       // 12. Release Postgres Distributed Lock
       await dataStore.releaseLock(this.LOCK_NAME);

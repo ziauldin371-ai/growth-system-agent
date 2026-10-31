@@ -50,7 +50,14 @@ export async function GET() {
 
   const responseBody = {
     status: overallStatus,
+    readiness: overallStatus === 'healthy' && isDbConnected ? 'ok' : 'not ready',
     timestampUtc: now.toISOString(),
+    database: isDbConnected ? 'connected' : dbStatus,
+    databaseDetails: {
+      mode: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'supabase_postgresql' : 'local_file',
+      status: dbStatus,
+      connected: isDbConnected,
+    },
     scheduler: {
       status: schedulerStatus,
       lastSuccessfulRunAt: lastRun?.finishTimeUtc || lastRun?.startTimeUtc || null,
@@ -61,11 +68,6 @@ export async function GET() {
         cron: '0 4,12 * * *',
         description: '09:00 and 17:00 Asia/Karachi (04:00 and 12:00 UTC)',
       },
-    },
-    database: {
-      mode: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'supabase_postgresql' : 'local_file',
-      status: dbStatus,
-      connected: isDbConnected,
     },
     system: {
       environment: process.env.NODE_ENV || 'development',

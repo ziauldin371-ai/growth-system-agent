@@ -13,6 +13,7 @@ export default function RunAndSchedulePage() {
   const [operatingMode, setOperatingMode] = useState<'approval' | 'auto_send' | 'research'>('approval');
   const [isUpdatingMode, setIsUpdatingMode] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
+  const [lastRun, setLastRun] = useState<any>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
 
   // Form State (Default: Worldwide / Global Discovery)
@@ -45,8 +46,12 @@ export default function RunAndSchedulePage() {
 
       if (historyRes?.success && Array.isArray(historyRes.runs)) {
         setHistory(historyRes.runs);
+        if (historyRes.runs.length > 0) {
+          setLastRun(historyRes.runs[0]);
+        }
       }
       if (controlsRes?.success) {
+        if (controlsRes.lastSchedulerRun) setLastRun(controlsRes.lastSchedulerRun);
         if (controlsRes.operatingMode) setOperatingMode(controlsRes.operatingMode);
         if (typeof controlsRes.automationPaused === 'boolean') setIsPaused(controlsRes.automationPaused);
       }
@@ -207,6 +212,29 @@ export default function RunAndSchedulePage() {
           </button>
         </div>
       </div>
+
+      {/* Skipped Run Banner */}
+      {lastRun?.status === 'skipped' && (
+        <div className="rounded-xl p-4 bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-3 text-on-surface shadow-sm">
+          <div className="flex items-center gap-2.5">
+            <span className="material-symbols-outlined text-[20px] text-amber-400">warning</span>
+            <div>
+              <p className="text-sm font-bold text-amber-300">
+                Last run: skipped, reason: {lastRun.reason || 'Google Places key is missing'}
+              </p>
+              <p className="text-xs text-on-surface-variant mt-0.5">
+                The autonomous hunter safely bypassed this cycle. No mock data was generated or counted.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/setup"
+            className="px-3.5 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-variant text-on-surface text-xs font-semibold shrink-0 transition-colors"
+          >
+            Configure Keys
+          </Link>
+        </div>
+      )}
 
       {/* Autonomous System Operating Mode Banner */}
       <section className="bg-surface-container rounded-2xl p-4 sm:p-6 shadow-sm border border-outline-variant/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -505,9 +533,22 @@ export default function RunAndSchedulePage() {
                         {run.leadsQualified || 0}
                       </td>
                       <td className="py-3 px-4">
-                        <span className="px-2 py-0.5 rounded-full bg-secondary-container/20 text-secondary font-semibold text-[10px]">
-                          {run.status || 'completed'}
-                        </span>
+                        <div className="flex flex-col gap-0.5">
+                          <span className={`px-2 py-0.5 rounded-full font-semibold text-[10px] w-fit ${
+                            run.status === 'skipped'
+                              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                              : run.status === 'failed'
+                              ? 'bg-error-container/20 text-error'
+                              : 'bg-secondary-container/20 text-secondary'
+                          }`}>
+                            {run.status || 'completed'}
+                          </span>
+                          {run.reason && (
+                            <span className="text-[11px] text-on-surface-variant max-w-xs truncate" title={run.reason}>
+                              {run.reason}
+                            </span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}

@@ -17,6 +17,10 @@ export class DiscoveryService {
     this.providers.set(provider.id, provider);
   }
 
+  public getProvider(id: string): IDiscoveryProvider | undefined {
+    return this.providers.get(id);
+  }
+
   public getProviders(): Array<{ id: string; name: string; isConfigured: boolean }> {
     return Array.from(this.providers.values()).map(p => ({
       id: p.id,

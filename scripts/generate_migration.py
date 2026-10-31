@@ -193,3 +193,4 @@ with open('supabase/migrations/20261031000000_platforms_engine_and_applications.
     f.write('\n'.join(sql_lines))
 
 print('Generated migration: supabase/migrations/20261031000000_platforms_engine_and_applications.sql')
+

@@ -68,9 +68,11 @@ export async function GET(req: NextRequest) {
     const result = await automationRunner.executeScheduledRun('vercel_cron');
     return NextResponse.json({
       success: true,
-      message: 'Scheduled automation run completed successfully',
+      status: result.status,
+      reason: result.reason || null,
+      message: result.status === 'skipped' ? `Run skipped: ${result.reason}` : 'Scheduled automation run completed successfully',
       result,
-    });
+    }, { status: 200 });
   } catch (err: any) {
     return NextResponse.json(
       {

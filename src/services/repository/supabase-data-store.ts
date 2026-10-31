@@ -21,11 +21,16 @@ import {
 } from '@/types';
 import { IDataStore } from './interface';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
-import { inMemoryDataStore as fallbackStore } from './data-store';
 
 export class SupabaseDataStore implements IDataStore {
+  private fallbackStore?: any;
+
+  constructor(fallbackStore?: any) {
+    this.fallbackStore = fallbackStore;
+  }
+
   private get fallback(): any {
-    return fallbackStore;
+    return this.fallbackStore;
   }
 
   private getClient(writeRequired = false) {
@@ -690,9 +695,40 @@ export class SupabaseDataStore implements IDataStore {
   }
 
   public async getSentEmails(options?: any): Promise<Array<any>> {
-    if (options?.includeDemo) return this.fallback.getSentEmails(options);
-    if (process.env.NODE_ENV === 'production' && !this.getClient(false)) return [];
-    return this.fallback.getSentEmails(options);
+    const supabase = this.getClient(false);
+    if (!supabase) {
+      if (options?.includeDemo) return this.fallback.getSentEmails(options);
+      if (process.env.NODE_ENV === 'production') return [];
+      return this.fallback.getSentEmails(options);
+    }
+
+    try {
+      let query = supabase
+        .from('email_drafts')
+        .select('*, businesses(*)')
+        .or('delivery_status.eq.delivered,status.eq.sent');
+
+      const { data, error } = await query;
+      if (error || !data) return this.fallback.getSentEmails(options);
+
+      return data.map((d: any) => ({
+        id: d.id,
+        businessId: d.business_id,
+        businessName: d.businesses?.name || 'Unknown Business',
+        recipientEmail: d.recipient_email,
+        selectedSubject: d.selected_subject,
+        emailBody: d.email_body,
+        status: d.status,
+        deliveryStatus: d.delivery_status,
+        gmailMessageId: d.gmail_message_id,
+        gmailThreadId: d.gmail_thread_id,
+        gmailUrl: d.gmail_url,
+        sentAt: d.sent_at,
+        isDemo: d.is_demo || false,
+      }));
+    } catch {
+      return this.fallback.getSentEmails(options);
+    }
   }
 
   public async getOtherOutreachOpportunities(options?: any): Promise<Array<any>> {
@@ -877,6 +913,7 @@ export class SupabaseDataStore implements IDataStore {
         draftsGenerated: r.drafts_generated,
         emailsSent: r.emails_sent,
         operatingMode: r.operating_mode,
+        reason: r.reason,
         durationMs: r.duration_ms,
         createdAt: r.created_at,
       }));
@@ -906,6 +943,7 @@ export class SupabaseDataStore implements IDataStore {
         id: data.id,
         runId: data.run_id,
         status: data.status,
+        reason: data.reason,
         startTimePkt: data.start_time_pkt,
         finishTimePkt: data.finish_time_pkt,
         startTimeUtc: data.start_time_utc,

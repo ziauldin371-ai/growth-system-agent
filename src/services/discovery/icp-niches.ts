@@ -131,3 +131,4 @@ export class ICPNicheManager {
 }
 
 export const icpNicheManager = new ICPNicheManager();
+

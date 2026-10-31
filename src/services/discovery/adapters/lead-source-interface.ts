@@ -45,3 +45,4 @@ export interface ILeadSource {
   }>;
   verifyEmail(email: string): Promise<EmailVerificationResult>;
 }
+

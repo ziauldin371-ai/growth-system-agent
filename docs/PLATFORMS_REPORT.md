@@ -151,3 +151,4 @@ For every business identified:
 8. **Copy Tailored Pitches:** Use the 1-click **Copy Pitch** button for LinkedIn (under 300 chars) or Cold Email (under 125 words).
 9. **Dispatch via Gmail or Export for External Senders:** Approve validated emails for safe dispatch via your authorized Gmail, or click **Export Sending CSV** for Instantly/Smartlead.
 10. **Track Platform Spend & Terms:** Log platform subscription costs under Platform Spend and click **Verify Terms** every 90 days.
+

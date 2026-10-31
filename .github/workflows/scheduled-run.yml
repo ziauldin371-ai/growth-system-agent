@@ -1,0 +1,44 @@
+name: Scheduled Discovery & Safe Outreach Run
+
+on:
+  schedule:
+    # 04:00 and 12:00 UTC = 09:00 and 17:00 Asia/Karachi (PKT)
+    - cron: '0 4,12 * * *'
+  workflow_dispatch:
+
+jobs:
+  run-scheduler:
+    name: Cloud Scheduled Run
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Automated Discovery & Queue
+        run: |
+          set -e
+          echo "Triggering cloud automated discovery run at: ${{ secrets.APP_BASE_URL }}/api/cron/scheduled-run"
+          
+          # Execute POST request with CRON_SECRET Bearer token
+          # Using curl with write-out to capture HTTP code and response body
+          HTTP_RESPONSE=$(curl -s -S -w "\n%{http_code}" -X POST "${{ secrets.APP_BASE_URL }}/api/cron/scheduled-run" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -H "User-Agent: GitHub-Actions-Scheduler/1.0")
+          
+          # Extract body and status code
+          HTTP_BODY=$(echo "$HTTP_RESPONSE" | sed '$d')
+          HTTP_STATUS=$(echo "$HTTP_RESPONSE" | tail -n1)
+          
+          echo "=================================================="
+          echo "HTTP STATUS: $HTTP_STATUS"
+          echo "=================================================="
+          echo "RESPONSE BODY:"
+          echo "$HTTP_BODY"
+          echo "=================================================="
+          
+          # Fail loudly on any non-200 HTTP status code
+          if [ "$HTTP_STATUS" -ne 200 ]; then
+            echo "::error::Scheduled run failed with HTTP status code $HTTP_STATUS"
+            echo "::error::Response: $HTTP_BODY"
+            exit 1
+          fi
+          
+          echo "Automated scheduled run completed successfully with HTTP 200."
