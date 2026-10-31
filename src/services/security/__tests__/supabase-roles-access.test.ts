@@ -114,7 +114,7 @@ describe('Supabase Explicit Role Grants, Automatic RLS & Anon Access Lockdown Te
     expect(isSuppressed).toBe(true);
 
     // Send record
-    const draft = {
+    const draft: any = {
       id: 'draft_role_test',
       businessId: 'biz_role_test',
       strategy: 'operational_efficiency',
