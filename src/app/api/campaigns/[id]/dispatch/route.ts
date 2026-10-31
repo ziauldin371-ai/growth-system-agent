@@ -6,13 +6,23 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const campaign = dataStore.getCampaignById(params.id);
+  if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Database not connected: Supabase PostgreSQL is required in production before dispatching emails.',
+      },
+      { status: 503 }
+    );
+  }
+
+  const campaign = await dataStore.getCampaignById(params.id);
   if (!campaign) {
     return NextResponse.json({ success: false, error: 'Campaign not found' }, { status: 404 });
   }
 
   // Find approved drafts associated with this campaign
-  const approvedDrafts = dataStore
+  const approvedDrafts = await dataStore
     .getDrafts({ status: 'approved', campaignId: campaign.id });
 
   if (approvedDrafts.length === 0) {
@@ -37,7 +47,7 @@ export async function POST(
   }
 
   campaign.status = 'running';
-  dataStore.saveCampaign(campaign);
+  await dataStore.saveCampaign(campaign);
 
   return NextResponse.json({
     success: true,

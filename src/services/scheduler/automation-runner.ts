@@ -6,7 +6,10 @@ import { outreachService } from '../ai/outreach-service';
 import { emailService } from '../email/email-service';
 import { runNotifierService } from '../notifications/run-notifier';
 import { normalizeBusinessName, isDuplicateBusiness } from '../crm/normalization';
-import { AlternativeChannelEntity, SchedulerRunHistoryEntity, GrowthEvidenceEntity } from '@/types';
+import { autoSendGuard } from '../email/auto-send-guard';
+import { gmailInboxSyncService } from '../email/gmail-inbox-sync';
+import { generatePlatformPitch } from '../ai/platform-pitch-generator';
+import { AlternativeChannelEntity, AlternativeChannelPlatform, SchedulerRunHistoryEntity, GrowthEvidenceEntity } from '@/types';
 import crypto from 'crypto';
 
 export interface ScheduledRunResult {
@@ -22,7 +25,7 @@ export interface ScheduledRunResult {
   checkpoint?: any;
 }
 
-const TARGET_MARKETS = ['US', 'UK', 'CA', 'AU'];
+const TARGET_MARKETS = ['GLOBAL', 'US', 'UK', 'CA', 'AU', 'EU', 'AE', 'PK'];
 const TARGET_INDUSTRIES = [
   'Software & Technology Services',
   'Dental & Healthcare Clinics',
@@ -77,8 +80,11 @@ export class AutomationRunner {
         }
       }
 
-      // 3. Check Global Pause Switch
-      if (dataStore.isAutomationPaused()) {
+      // 3. Pre-flight Check: Emergency Stop / Automation Paused
+      if (dataStore.isAutomationPaused() || process.env.EMERGENCY_STOP === 'true') {
+        const reason = process.env.EMERGENCY_STOP === 'true'
+          ? 'Emergency stop is active across all campaign dispatchers.'
+          : 'Automation is globally paused by operator.';
         const result: ScheduledRunResult = {
           runId,
           status: 'skipped',
@@ -87,11 +93,73 @@ export class AutomationRunner {
           draftsGenerated: 0,
           emailsSent: 0,
           operatingMode: dataStore.getOperatingMode(),
-          reason: 'Automation is globally paused by operator.',
+          reason,
           durationMs: Date.now() - startTime,
         };
         await dataStore.recordSchedulerRun(result);
         return result;
+      }
+
+      // 4. Pre-flight Check: Database in Production
+      if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_SUPABASE_URL) {
+        const result: ScheduledRunResult = {
+          runId,
+          status: 'skipped',
+          leadsDiscovered: 0,
+          leadsQualified: 0,
+          draftsGenerated: 0,
+          emailsSent: 0,
+          operatingMode: dataStore.getOperatingMode(),
+          reason: 'Supabase database is not connected in production mode.',
+          durationMs: Date.now() - startTime,
+        };
+        await dataStore.recordSchedulerRun(result);
+        return result;
+      }
+
+      // 5. Pre-flight Check: Google Places API Key (in production or when explicitly configured)
+      if ((process.env.NODE_ENV === 'production' || process.env.REQUIRE_LIVE_DISCOVERY === 'true') && (!process.env.GOOGLE_PLACES_API_KEY || !process.env.GOOGLE_PLACES_API_KEY.trim())) {
+        const result: ScheduledRunResult = {
+          runId,
+          status: 'skipped',
+          leadsDiscovered: 0,
+          leadsQualified: 0,
+          draftsGenerated: 0,
+          emailsSent: 0,
+          operatingMode: dataStore.getOperatingMode(),
+          reason: 'Google Places key is missing',
+          durationMs: Date.now() - startTime,
+        };
+        await dataStore.recordSchedulerRun(result);
+        return result;
+      }
+
+      // 6. Pre-flight Check: Places Monthly Budget Cap
+      const placesProvider = discoveryService.getProvider('google_places') as any;
+      if (placesProvider && typeof placesProvider.getCostMetrics === 'function') {
+        const metrics = placesProvider.getCostMetrics();
+        if (metrics.monthlyEstimatedCostUsd >= metrics.budgetUsd) {
+          const result: ScheduledRunResult = {
+            runId,
+            status: 'skipped',
+            leadsDiscovered: 0,
+            leadsQualified: 0,
+            draftsGenerated: 0,
+            emailsSent: 0,
+            operatingMode: dataStore.getOperatingMode(),
+            reason: `Google Places monthly budget ($${metrics.budgetUsd} USD) reached.`,
+            durationMs: Date.now() - startTime,
+          };
+          await dataStore.recordSchedulerRun(result);
+          return result;
+        }
+      }
+
+      // Pre-run Inbox Sync: detect client replies, bounces, and opt-outs before dispatching
+      try {
+        await gmailInboxSyncService.syncInbox();
+      } catch (inboxErr) {
+        console.warn('[SCHEDULER] Inbox sync notice (non-fatal):', inboxErr);
       }
 
       const operatingMode = (modeOverride as any) || dataStore.getOperatingMode();
@@ -107,6 +175,18 @@ export class AutomationRunner {
         email: string;
         channels: string[];
         businessId: string;
+      }> = [];
+      const blockedAutoSends: Array<{
+        businessName: string;
+        email: string;
+        reason: string;
+      }> = [];
+      const manualOutreachOpportunities: Array<{
+        businessName: string;
+        channels: string[];
+        score: number;
+        businessId: string;
+        pitches?: Record<string, string>;
       }> = [];
 
       // 4. Load Postgres Checkpoint for Bounded Batching & Resumption
@@ -281,40 +361,122 @@ export class AutomationRunner {
           }
         }
 
-        // 6. Extract & Save Alternative Channels
+        // 6. Extract & Save All Outreach Channels (LinkedIn, WhatsApp, Instagram, Facebook, X, etc.)
         const channelsForBiz: string[] = [];
-        if (raw.socialUrls && raw.socialUrls.length > 0) {
-          for (const sUrl of raw.socialUrls) {
-            let platform: any = 'other';
-            if (sUrl.includes('linkedin.com')) platform = 'linkedin';
-            else if (sUrl.includes('instagram.com')) platform = 'instagram';
-            else if (sUrl.includes('facebook.com')) platform = 'facebook';
-            else if (sUrl.includes('twitter.com') || sUrl.includes('x.com')) platform = 'twitter';
-            else if (sUrl.includes('youtube.com')) platform = 'youtube';
+        const channelPitches: Record<string, string> = {};
+
+        // Merge raw.socialUrls + webCheckResult.socialUrls + primaryContact.linkedinUrl
+        const allSocialUrls = new Set<string>(raw.socialUrls || []);
+        if (webCheckResult?.socialUrls && Array.isArray(webCheckResult.socialUrls)) {
+          webCheckResult.socialUrls.forEach((u: string) => allSocialUrls.add(u));
+        }
+        if (primaryContact?.linkedinUrl) {
+          allSocialUrls.add(primaryContact.linkedinUrl);
+        }
+
+        for (const sUrl of Array.from(allSocialUrls)) {
+          let platform: AlternativeChannelPlatform = 'other';
+          if (sUrl.includes('linkedin.com')) platform = 'linkedin';
+          else if (sUrl.includes('wa.me') || sUrl.includes('whatsapp.com')) platform = 'whatsapp';
+          else if (sUrl.includes('instagram.com')) platform = 'instagram';
+          else if (sUrl.includes('facebook.com')) platform = 'facebook';
+          else if (sUrl.includes('twitter.com') || sUrl.includes('x.com')) platform = 'twitter';
+          else if (sUrl.includes('youtube.com')) platform = 'youtube';
+
+          const chId = crypto.randomUUID();
+          const pitchGen = generatePlatformPitch({
+            business: newBiz,
+            platform,
+            profileUrl: sUrl,
+            sourceType: 'website_link',
+            verifiedObservation: evList[0]?.summary,
+            serviceOffer: scored.targetPipeline === 'website_opportunities'
+              ? 'custom modern web application development with automated client intake'
+              : 'custom Python AI automation and LLM workflow pipelines',
+          });
+
+          await dataStore.saveAlternativeChannel({
+            id: chId,
+            businessId: bizId,
+            businessName: raw.name,
+            country: raw.country || currentMarket,
+            platform,
+            profileUrl: sUrl,
+            sourceName: 'Discovery & Verification Engine',
+            isUsable: true,
+            customPitch: pitchGen.pitch,
+            status: 'not_contacted',
+            lastCheckedAt: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          });
+          channelsForBiz.push(platform);
+          channelPitches[platform] = pitchGen.pitch;
+          totalChannelsFound++;
+        }
+
+        // Auto-generate WhatsApp direct channel if business has a phone and WhatsApp not yet attached
+        if (raw.phone && !channelsForBiz.includes('whatsapp')) {
+          const cleanPhone = raw.phone.replace(/[^0-9]/g, '');
+          if (cleanPhone.length >= 7) {
+            const waUrl = `https://wa.me/${cleanPhone}`;
+            const pitchGen = generatePlatformPitch({
+              business: newBiz,
+              platform: 'whatsapp',
+              profileUrl: waUrl,
+              sourceType: 'google_places',
+              verifiedObservation: evList[0]?.summary,
+            });
 
             const chId = crypto.randomUUID();
-            const pitch =
-              platform === 'linkedin'
-                ? `Hi ${raw.name} team — noticed your commercial expansion in ${raw.city || currentMarket}. As a Full Stack AI Developer & Automation Architect, I build custom RAG pipelines and conversion web platforms. Open to a 2-minute exchange?`
-                : `Hello ${raw.name} — impressed by your work. Reaching out from Zia Ul Din (AI Developer & Automation Architect) to share how automated workflow integrations can accelerate your operations.`;
-
             await dataStore.saveAlternativeChannel({
               id: chId,
               businessId: bizId,
               businessName: raw.name,
               country: raw.country || currentMarket,
-              platform,
-              profileUrl: sUrl,
-              sourceName: 'Discovery Engine',
+              platform: 'whatsapp',
+              profileUrl: waUrl,
+              handleOrIdentifier: raw.phone,
+              sourceName: 'Direct Phone & WhatsApp',
               isUsable: true,
-              customPitch: pitch,
+              customPitch: pitchGen.pitch,
               status: 'not_contacted',
               lastCheckedAt: new Date().toISOString(),
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             });
-            channelsForBiz.push(platform);
+            channelsForBiz.push('whatsapp');
+            channelPitches['whatsapp'] = pitchGen.pitch;
             totalChannelsFound++;
+          }
+        }
+
+        // Leads without email but with alternative channels: register as Outreach needed (manual)
+        if (!primaryContact?.email && channelsForBiz.length > 0) {
+          manualOutreachOpportunities.push({
+            businessName: newBiz.name,
+            channels: channelsForBiz,
+            score: scored.overallScore,
+            businessId: bizId,
+            pitches: channelPitches,
+          });
+
+          // Trigger instant alert for high-intent leads (score >= 80)
+          if (scored.overallScore >= 80) {
+            const highPriChannels = Object.entries(channelPitches).map(([p, pitch]) => ({
+              platform: p,
+              profileUrl: raw.socialUrls?.find(u => u.includes(p)) || '',
+              pitch,
+            }));
+            runNotifierService
+              .sendHighPriorityLeadAlert({
+                businessName: newBiz.name,
+                score: scored.overallScore,
+                pipeline: scored.targetPipeline,
+                channels: highPriChannels,
+                businessId: bizId,
+              })
+              .catch((err) => console.warn('[ALERT] Failed to dispatch high-priority lead alert:', err));
           }
         }
 
@@ -336,11 +498,12 @@ export class AutomationRunner {
           const draftId = crypto.randomUUID();
           const isAutoSend = operatingMode === 'auto_send';
 
+          const campaignId = `camp_${scored.targetPipeline}_${new Date().toISOString().slice(0, 10)}`;
           const draftEntity: any = {
             id: draftId,
             businessId: bizId,
             contactId: primaryContact?.id || null,
-            campaignId: 'camp-001-rag-expansion',
+            campaignId,
             strategy: scored.targetPipeline === 'website_opportunities' ? 'web_development' : 'rag_systems',
             ...draftRes.draft,
             version: 1,
@@ -354,33 +517,65 @@ export class AutomationRunner {
           await dataStore.saveDraft(draftEntity);
           totalDrafts++;
 
-          // 8. Controlled Auto-Send (Only if explicitly enabled and approved)
+          // 8. Controlled Auto-Send with 8-Point Automated Safeguard Engine
           if (isAutoSend && primaryContact?.email) {
-            const sendResult = await emailService.dispatchOutreachEmail({
-              payload: {
-                to: primaryContact.email,
-                subject: draftEntity.selectedSubject,
-                body: draftEntity.emailBody,
-                draftId: draftEntity.id,
-                idempotencyKey: `auto_${draftEntity.id}`,
-                metadata: { htmlBody: draftEntity.htmlBody },
-              },
-              isExplicitlyApproved: true,
-              currentHour: currentHourOverride !== undefined ? currentHourOverride : 10,
+            let dateOverride: Date | undefined;
+            if (currentHourOverride !== undefined) {
+              // Normalize to a weekday Tuesday at currentHourOverride UTC
+              dateOverride = new Date('2026-10-27T12:00:00Z');
+              dateOverride.setUTCHours(currentHourOverride, 0, 0, 0);
+            }
+
+            const guardResult = await autoSendGuard.evaluateAutoSendEligibility({
+              business: newBiz,
+              contact: primaryContact,
+              draft: draftEntity,
+              evidence: evList,
+              websiteCheckedAt: (webCheckResult as any)?.checkedAt,
+              currentDateOverride: dateOverride,
             });
 
-            if (sendResult.success) {
-              await dataStore.updateDraftStatus(draftId, 'sent');
-              totalSent++;
+            if (guardResult.eligibleForAutoSend) {
+              const sendResult = await emailService.dispatchOutreachEmail({
+                payload: {
+                  to: primaryContact.email,
+                  subject: draftEntity.selectedSubject,
+                  body: draftEntity.emailBody,
+                  draftId: draftEntity.id,
+                  idempotencyKey: `auto_${draftEntity.id}`,
+                  metadata: { htmlBody: draftEntity.htmlBody },
+                },
+                isExplicitlyApproved: true,
+                currentHour: currentHourOverride !== undefined ? currentHourOverride : 10,
+              });
 
-              if (channelsForBiz.length > 0) {
-                businessesEmailedWithOtherChannels.push({
-                  businessName: newBiz.name,
-                  email: primaryContact.email,
-                  channels: channelsForBiz,
-                  businessId: bizId,
-                });
+              if (sendResult.success) {
+                await dataStore.updateDraftStatus(draftId, 'sent');
+                totalSent++;
+
+                if (channelsForBiz.length > 0) {
+                  businessesEmailedWithOtherChannels.push({
+                    businessName: newBiz.name,
+                    email: primaryContact.email,
+                    channels: channelsForBiz,
+                    businessId: bizId,
+                  });
+                }
               }
+            } else {
+              // Blocked: save draft as 'blocked' with the exact primary block reason
+              draftEntity.status = 'draft';
+              draftEntity.deliveryStatus = 'blocked';
+              draftEntity.rejectionReason = guardResult.primaryBlockReason;
+              await dataStore.saveDraft(draftEntity);
+
+              const reasonKey = guardResult.primaryBlockReason || 'Failed automated safety gates';
+              skippedReasons[reasonKey] = (skippedReasons[reasonKey] || 0) + 1;
+              blockedAutoSends.push({
+                businessName: newBiz.name,
+                email: primaryContact.email,
+                reason: reasonKey,
+              });
             }
           }
         }
@@ -451,6 +646,8 @@ export class AutomationRunner {
         skippedRecordsCount,
         skippedReasons,
         businessesEmailedWithOtherChannels,
+        blockedAutoSends,
+        manualOutreachOpportunities,
         operatingMode,
       });
 
@@ -465,6 +662,40 @@ export class AutomationRunner {
         durationMs: Date.now() - startTime,
         checkpoint: nextCheckpoint,
       };
+    } catch (err: any) {
+      console.warn('[SCHEDULER RUN CAUGHT ERROR]:', err?.message);
+      const msg = err?.message || '';
+      let status: 'skipped' | 'failed' = 'failed';
+      let reason = msg;
+
+      if (msg.includes('Google Places key is missing') || msg.includes('Live discovery credentials missing')) {
+        status = 'skipped';
+        reason = 'Google Places key is missing';
+      } else if (msg.toLowerCase().includes('budget') && msg.toLowerCase().includes('reached')) {
+        status = 'skipped';
+        reason = msg;
+      } else if (msg.includes('Emergency stop') || msg.includes('paused')) {
+        status = 'skipped';
+        reason = 'Emergency stop is active across all campaign dispatchers.';
+      } else if (msg.includes('database') || msg.includes('Supabase')) {
+        status = 'skipped';
+        reason = 'Supabase database is not connected in production mode.';
+      }
+
+      const blockedResult: ScheduledRunResult = {
+        runId,
+        status,
+        leadsDiscovered: 0,
+        leadsQualified: 0,
+        draftsGenerated: 0,
+        emailsSent: 0,
+        operatingMode: dataStore.getOperatingMode(),
+        reason,
+        durationMs: Date.now() - startTime,
+      };
+
+      await dataStore.recordSchedulerRun(blockedResult);
+      return blockedResult;
     } finally {
       // 12. Release Postgres Distributed Lock
       await dataStore.releaseLock(this.LOCK_NAME);

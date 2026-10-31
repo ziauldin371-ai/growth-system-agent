@@ -20,8 +20,9 @@ export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
   const status = searchParams.get('status') || undefined;
   const campaignId = searchParams.get('campaignId') || undefined;
+  const includeDemo = searchParams.get('demo') === 'true' || searchParams.get('demo') === '1';
 
-  const drafts = dataStore.getDrafts({ status, campaignId });
+  const drafts = await dataStore.getDrafts({ status, campaignId, includeDemo });
   return NextResponse.json({
     success: true,
     total: drafts.length,
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const validated = GenerateDraftSchema.parse(body);
 
-    const biz = dataStore.getBusinessById(validated.businessId);
+    const biz = await dataStore.getBusinessById(validated.businessId);
     if (!biz) {
       return NextResponse.json({ success: false, error: 'Business not found' }, { status: 404 });
     }

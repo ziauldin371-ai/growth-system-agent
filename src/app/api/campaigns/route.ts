@@ -4,7 +4,7 @@ import { CreateCampaignSchema } from '@/lib/validation/schemas';
 import crypto from 'crypto';
 
 export async function GET() {
-  const campaigns = dataStore.getCampaigns();
+  const campaigns = await dataStore.getCampaigns();
   return NextResponse.json({
     success: true,
     campaigns,
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
 
     const newCampaign = {
       id: `camp_${crypto.randomBytes(6).toString('hex')}`,
-      organizationId: 'org-demo-001',
+      organizationId: 'org_growth_system_main',
       ...validated,
       status: 'draft' as const,
       createdAt: new Date().toISOString(),
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       },
     };
 
-    dataStore.saveCampaign(newCampaign);
+    await dataStore.saveCampaign(newCampaign);
 
     return NextResponse.json({
       success: true,

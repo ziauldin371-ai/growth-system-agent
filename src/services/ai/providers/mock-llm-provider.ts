@@ -72,19 +72,18 @@ export class MockLLMProvider implements ILLMProvider {
 
       emailBody = `Hi ${contactName},
 
-I noticed ${companyName} has been consistently active across ${business.city || 'your area'}, yet your business appears to be ${webStatusDesc}.
+I noticed ${companyName} is active in ${business.city || 'your area'}, yet appears to be ${webStatusDesc}.
 
-When prospective clients look up ${business.industry || 'your services'} directly, having a verified, mobile-first website with instant online scheduling typically increases direct commercial inquiries by 25–40%.
+When prospective clients search for your services, a mobile-first website with direct online booking captures commercial inquiries that would otherwise be lost.
 
-As a Full-Stack AI & Web Engineer, I engineer tailored, fast-loading digital web platforms equipped with direct booking and automated customer intake—without bloated agency retainers.
+As a Full-Stack AI & Web Engineer, I build fast-loading custom web platforms with direct booking and automated client intake.
 
 ${callToAction}
 
-Best regards,
+If you would prefer not to hear from me, just reply unsubscribe.
 
-${senderProfile.name}
-${senderProfile.title}
-${senderProfile.specialization}`;
+Best regards,
+${senderProfile.name}`;
 
     } else if (strategy === 'rag_systems' || strategy === 'ai_automation') {
       subjectLines = [
@@ -106,17 +105,16 @@ ${senderProfile.specialization}`;
 
       emailBody = `Hi ${contactName},
 
-I noted ${companyName}'s work in ${business.industry || 'the tech sector'} and your recent technical expansion around automated processing.
+I noted ${companyName}'s work in ${business.industry || 'the tech sector'} and your focus on automated data workflows.
 
-Deploying production LLM and RAG pipelines often introduces hurdles around retrieval latency, chunking accuracy, and strict output validation. As an AI Automation Architect and Python Developer, I build secure, high-throughput RAG systems and LLM integrations that plug cleanly into your existing architecture.
+Deploying production LLM pipelines often introduces hurdles around latency and output validation. As an AI Automation Architect and Python Developer, I build secure, high-throughput RAG systems that plug cleanly into your existing stack.
 
 ${callToAction}
 
-Best regards,
+If you would prefer not to hear from me, just reply unsubscribe.
 
-${senderProfile.name}
-${senderProfile.title}
-${senderProfile.specialization}`;
+Best regards,
+${senderProfile.name}`;
 
     } else if (strategy === 'agency_partner') {
       subjectLines = [
@@ -138,19 +136,18 @@ ${senderProfile.specialization}`;
 
       emailBody = `Hi ${contactName},
 
-I came across ${companyName}'s client work in ${business.industry || 'digital marketing and strategy'}.
+I came across ${companyName}'s work in ${business.industry || 'digital strategy'}.
 
-As clients increasingly request bespoke AI features, workflow automation, and custom full-stack web applications, scoping and staffing these projects in-house can strain core delivery teams.
+As client requests for custom AI agents and full-stack software increase, scoping and staffing in-house can strain delivery teams.
 
-I partner with select agencies as a white-label Full-Stack AI Developer & Automation Architect, building production-ready LLM agents, Next.js web applications, and Python data workflows behind your agency brand.
+I partner with agencies as a white-label AI Developer & Automation Architect, delivering production Next.js apps and Python workflows under your brand.
 
 ${callToAction}
 
-Best regards,
+If you would prefer not to hear from me, just reply unsubscribe.
 
-${senderProfile.name}
-${senderProfile.title}
-${senderProfile.specialization}`;
+Best regards,
+${senderProfile.name}`;
 
     } else {
       // Default: Python Engineering / Full-Stack SaaS
@@ -173,17 +170,16 @@ ${senderProfile.specialization}`;
 
       emailBody = `Hi ${contactName},
 
-I have been following ${companyName}'s trajectory in ${business.industry || 'software'} and noted your team's current development focus.
+I have been following ${companyName}'s work in ${business.industry || 'software'} and your team's development focus.
 
-When scaling technical features, having access to an experienced full-stack engineer who works across TypeScript, Python, and data systems allows you to ship critical milestones without protracted hiring cycles.
+When scaling technical features, having an experienced engineer across TypeScript and Python allows you to ship critical milestones without protracted hiring cycles.
 
 ${callToAction}
 
-Best regards,
+If you would prefer not to hear from me, just reply unsubscribe.
 
-${senderProfile.name}
-${senderProfile.title}
-${senderProfile.specialization}`;
+Best regards,
+${senderProfile.name}`;
     }
 
     const htmlBody = `

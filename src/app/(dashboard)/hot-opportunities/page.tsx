@@ -145,7 +145,7 @@ export default function HotOpportunitiesPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
             <Flame className="w-6 h-6 text-amber-500 animate-pulse" />
-            <span>Hot Intent Radar: People Looking for My Skills Right Now</span>
+            <span>People asking for developers: People Looking for My Skills Right Now</span>
           </h1>
           <p className="text-sm text-slate-400 mt-1">
             Real-time hiring requests, freelance queries, and technical contract posts across Hacker News, Reddit, and remote boards. Ranked by skill fit and freshness.

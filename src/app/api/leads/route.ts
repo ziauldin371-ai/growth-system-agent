@@ -12,8 +12,9 @@ export async function GET(req: NextRequest) {
     const minScore = searchParams.get('minScore') ? parseInt(searchParams.get('minScore')!, 10) : undefined;
     const hasEmailParam = searchParams.get('hasEmail');
     const hasEmail = hasEmailParam !== null ? hasEmailParam === 'true' : undefined;
+    const includeDemo = searchParams.get('demo') === 'true' || searchParams.get('demo') === '1';
 
-    const leads = dataStore.getWorldwideLeads({
+    const leads = await dataStore.getWorldwideLeads({
       country,
       pipeline,
       status,
@@ -21,6 +22,7 @@ export async function GET(req: NextRequest) {
       search,
       minScore,
       hasEmail,
+      includeDemo,
     });
 
     return NextResponse.json({
@@ -35,4 +37,3 @@ export async function GET(req: NextRequest) {
     );
   }
 }
-

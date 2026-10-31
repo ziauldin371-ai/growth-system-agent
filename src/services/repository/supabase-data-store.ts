@@ -11,18 +11,31 @@ import {
   PipelineType, 
   OperatingMode, 
   AlternativeChannelEntity, 
-  AlternativeChannelStatus 
+  AlternativeChannelStatus,
+  PlatformEntity,
+  VettedApplicationEntity,
+  LeadSourceConfigEntity,
+  PlatformFootprintCandidate,
+  MarketplaceHotRequestEntity,
+  PlatformSpendLogEntity
 } from '@/types';
 import { IDataStore } from './interface';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
-import { dataStore as fallbackStore } from './data-store';
 
 export class SupabaseDataStore implements IDataStore {
-  private fallback = fallbackStore;
+  private fallbackStore?: any;
 
-  private getClient() {
+  constructor(fallbackStore?: any) {
+    this.fallbackStore = fallbackStore;
+  }
+
+  private get fallback(): any {
+    return this.fallbackStore;
+  }
+
+  private getClient(writeRequired = false) {
     const supabase = getSupabaseAdmin();
-    if (!supabase && process.env.NODE_ENV === 'production') {
+    if (!supabase && writeRequired && process.env.NODE_ENV === 'production') {
       throw new Error(
         'CRITICAL PERSISTENCE VIOLATION: Supabase PostgreSQL is required in production mode. Ephemeral local-file or in-memory state is strictly prohibited.'
       );
@@ -38,9 +51,14 @@ export class SupabaseDataStore implements IDataStore {
     country?: string;
     limit?: number;
     offset?: number;
+    includeDemo?: boolean;
   }): Promise<{ businesses: BusinessEntity[]; total: number }> {
-    const supabase = this.getClient();
-    if (!supabase) return this.fallback.getBusinesses(filter);
+    const supabase = this.getClient(false);
+    if (!supabase) {
+      if (filter?.includeDemo) return this.fallback.getBusinesses(filter);
+      if (process.env.NODE_ENV === 'production') return { businesses: [], total: 0 };
+      return this.fallback.getBusinesses(filter);
+    }
 
     try {
       let query = supabase.from('businesses').select('*', { count: 'exact' });
@@ -98,12 +116,12 @@ export class SupabaseDataStore implements IDataStore {
   }
 
   public async getBusinessById(id: string): Promise<BusinessEntity | null> {
-    const supabase = this.getClient();
-    if (!supabase) return this.fallback.getBusinessById(id);
+    const supabase = this.getClient(false);
+    if (!supabase) return process.env.NODE_ENV === 'production' ? null : this.fallback.getBusinessById(id);
 
     try {
       const { data, error } = await supabase.from('businesses').select('*').eq('id', id).single();
-      if (error || !data) return this.fallback.getBusinessById(id);
+      if (error || !data) return process.env.NODE_ENV === 'production' ? null : this.fallback.getBusinessById(id);
 
       return {
         id: data.id,
@@ -275,9 +293,9 @@ export class SupabaseDataStore implements IDataStore {
   }
 
   // --- Drafts ---
-  public async getDrafts(filter?: { status?: string; campaignId?: string }): Promise<EmailDraftEntity[]> {
-    const supabase = this.getClient();
-    if (!supabase) return this.fallback.getDrafts(filter);
+  public async getDrafts(filter?: { status?: string; campaignId?: string; limit?: number; offset?: number; includeDemo?: boolean }): Promise<EmailDraftEntity[]> {
+    const supabase = this.getClient(false);
+    if (!supabase) return process.env.NODE_ENV === 'production' ? [] : this.fallback.getDrafts(filter);
 
     try {
       let query = supabase.from('email_drafts').select('*').order('created_at', { ascending: false });
@@ -289,7 +307,7 @@ export class SupabaseDataStore implements IDataStore {
       }
 
       const { data, error } = await query;
-      if (error || !data) return this.fallback.getDrafts(filter);
+      if (error || !data) return process.env.NODE_ENV === 'production' ? [] : this.fallback.getDrafts(filter);
 
       return data.map((d: any) => ({
         id: d.id,
@@ -324,12 +342,12 @@ export class SupabaseDataStore implements IDataStore {
   }
 
   public async getDraftById(id: string): Promise<EmailDraftEntity | null> {
-    const supabase = this.getClient();
-    if (!supabase) return this.fallback.getDraftById(id);
+    const supabase = this.getClient(false);
+    if (!supabase) return process.env.NODE_ENV === 'production' ? null : this.fallback.getDraftById(id);
 
     try {
       const { data, error } = await supabase.from('email_drafts').select('*').eq('id', id).single();
-      if (error || !data) return this.fallback.getDraftById(id);
+      if (error || !data) return process.env.NODE_ENV === 'production' ? null : this.fallback.getDraftById(id);
 
       return {
         id: data.id,
@@ -373,7 +391,7 @@ export class SupabaseDataStore implements IDataStore {
         id: draft.id,
         business_id: draft.businessId,
         contact_id: draft.contactId || null,
-        campaign_id: draft.campaignId || 'camp-001-rag-expansion',
+        campaign_id: draft.campaignId || `camp_outreach_${new Date().toISOString().slice(0, 10)}`,
         strategy: draft.strategy,
         subject_lines: draft.subjectLines || [draft.selectedSubject],
         selected_subject: draft.selectedSubject,
@@ -425,12 +443,12 @@ export class SupabaseDataStore implements IDataStore {
 
   // --- Campaigns ---
   public async getCampaigns(): Promise<CampaignEntity[]> {
-    const supabase = this.getClient();
-    if (!supabase) return this.fallback.getCampaigns();
+    const supabase = this.getClient(false);
+    if (!supabase) return process.env.NODE_ENV === 'production' ? [] : this.fallback.getCampaigns();
 
     try {
       const { data, error } = await supabase.from('campaigns').select('*');
-      if (error || !data) return this.fallback.getCampaigns();
+      if (error || !data) return process.env.NODE_ENV === 'production' ? [] : this.fallback.getCampaigns();
 
       return data.map((c: any) => ({
         id: c.id,
@@ -481,12 +499,12 @@ export class SupabaseDataStore implements IDataStore {
 
   // --- Suppression List ---
   public async getSuppressionList(): Promise<SuppressionEntry[]> {
-    const supabase = this.getClient();
-    if (!supabase) return this.fallback.getSuppressionList();
+    const supabase = this.getClient(false);
+    if (!supabase) return process.env.NODE_ENV === 'production' ? [] : this.fallback.getSuppressionList();
 
     try {
       const { data, error } = await supabase.from('suppression_list').select('*');
-      if (error || !data) return this.fallback.getSuppressionList();
+      if (error || !data) return process.env.NODE_ENV === 'production' ? [] : this.fallback.getSuppressionList();
 
       return data.map((s: any) => ({
         id: s.id,
@@ -520,8 +538,8 @@ export class SupabaseDataStore implements IDataStore {
   }
 
   public async isSuppressed(emailOrDomain: string): Promise<boolean> {
-    const supabase = this.getClient();
-    if (!supabase) return this.fallback.isSuppressed(emailOrDomain);
+    const supabase = this.getClient(false);
+    if (!supabase) return process.env.NODE_ENV === 'production' ? false : this.fallback.isSuppressed(emailOrDomain);
 
     try {
       const val = emailOrDomain.toLowerCase().trim();
@@ -599,15 +617,15 @@ export class SupabaseDataStore implements IDataStore {
   }
 
   public async getAlternativeChannels(businessId?: string): Promise<AlternativeChannelEntity[]> {
-    const supabase = this.getClient();
-    if (!supabase) return this.fallback.getAlternativeChannels(businessId);
+    const supabase = this.getClient(false);
+    if (!supabase) return process.env.NODE_ENV === 'production' ? [] : this.fallback.getAlternativeChannels(businessId);
 
     try {
       let query = supabase.from('alternative_channels').select('*');
       if (businessId) query = query.eq('business_id', businessId);
 
       const { data, error } = await query;
-      if (error || !data) return this.fallback.getAlternativeChannels(businessId);
+      if (error || !data) return process.env.NODE_ENV === 'production' ? [] : this.fallback.getAlternativeChannels(businessId);
 
       return data.map((c: any) => ({
         id: c.id,
@@ -665,27 +683,70 @@ export class SupabaseDataStore implements IDataStore {
 
   // --- Dashboard Queries ---
   public async getWorldwideLeads(filters?: any): Promise<BusinessEntity[]> {
+    if (filters?.includeDemo) return this.fallback.getWorldwideLeads(filters);
+    if (process.env.NODE_ENV === 'production' && !this.getClient(false)) return [];
     return this.fallback.getWorldwideLeads(filters);
   }
 
-  public async getReadyForEmailLeads(): Promise<Array<any>> {
-    return this.fallback.getReadyForEmailLeads();
+  public async getReadyForEmailLeads(options?: any): Promise<Array<any>> {
+    if (options?.includeDemo) return this.fallback.getReadyForEmailLeads(options);
+    if (process.env.NODE_ENV === 'production' && !this.getClient(false)) return [];
+    return this.fallback.getReadyForEmailLeads(options);
   }
 
-  public async getSentEmails(): Promise<Array<any>> {
-    return this.fallback.getSentEmails();
+  public async getSentEmails(options?: any): Promise<Array<any>> {
+    const supabase = this.getClient(false);
+    if (!supabase) {
+      if (options?.includeDemo) return this.fallback.getSentEmails(options);
+      if (process.env.NODE_ENV === 'production') return [];
+      return this.fallback.getSentEmails(options);
+    }
+
+    try {
+      let query = supabase
+        .from('email_drafts')
+        .select('*, businesses(*)')
+        .or('delivery_status.eq.delivered,status.eq.sent');
+
+      const { data, error } = await query;
+      if (error || !data) return this.fallback.getSentEmails(options);
+
+      return data.map((d: any) => ({
+        id: d.id,
+        businessId: d.business_id,
+        businessName: d.businesses?.name || 'Unknown Business',
+        recipientEmail: d.recipient_email,
+        selectedSubject: d.selected_subject,
+        emailBody: d.email_body,
+        status: d.status,
+        deliveryStatus: d.delivery_status,
+        gmailMessageId: d.gmail_message_id,
+        gmailThreadId: d.gmail_thread_id,
+        gmailUrl: d.gmail_url,
+        sentAt: d.sent_at,
+        isDemo: d.is_demo || false,
+      }));
+    } catch {
+      return this.fallback.getSentEmails(options);
+    }
   }
 
-  public async getOtherOutreachOpportunities(): Promise<Array<any>> {
-    return this.fallback.getOtherOutreachOpportunities();
+  public async getOtherOutreachOpportunities(options?: any): Promise<Array<any>> {
+    if (options?.includeDemo) return this.fallback.getOtherOutreachOpportunities(options);
+    if (process.env.NODE_ENV === 'production' && !this.getClient(false)) return [];
+    return this.fallback.getOtherOutreachOpportunities(options);
   }
 
-  public async getEmailSentPlusOtherChannels(): Promise<Array<any>> {
-    return this.fallback.getEmailSentPlusOtherChannels();
+  public async getEmailSentPlusOtherChannels(options?: any): Promise<Array<any>> {
+    if (options?.includeDemo) return this.fallback.getEmailSentPlusOtherChannels(options);
+    if (process.env.NODE_ENV === 'production' && !this.getClient(false)) return [];
+    return this.fallback.getEmailSentPlusOtherChannels(options);
   }
 
-  public async getNoEmailBusinesses(): Promise<Array<any>> {
-    return this.fallback.getNoEmailBusinesses();
+  public async getNoEmailBusinesses(options?: any): Promise<Array<any>> {
+    if (options?.includeDemo) return this.fallback.getNoEmailBusinesses(options);
+    if (process.env.NODE_ENV === 'production' && !this.getClient(false)) return [];
+    return this.fallback.getNoEmailBusinesses(options);
   }
 
   public async lockAllChannelsForBusiness(businessId: string, reason: string): Promise<void> {
@@ -827,8 +888,8 @@ export class SupabaseDataStore implements IDataStore {
   }
 
   public async getSchedulerRuns(): Promise<any[]> {
-    const supabase = this.getClient();
-    if (!supabase) return this.fallback.getSchedulerRuns();
+    const supabase = this.getClient(false);
+    if (!supabase) return process.env.NODE_ENV === 'production' ? [] : this.fallback.getSchedulerRuns();
 
     try {
       const { data, error } = await supabase
@@ -837,7 +898,7 @@ export class SupabaseDataStore implements IDataStore {
         .order('created_at', { ascending: false })
         .limit(50);
 
-      if (error || !data) return this.fallback.getSchedulerRuns();
+      if (error || !data) return process.env.NODE_ENV === 'production' ? [] : this.fallback.getSchedulerRuns();
 
       return data.map((r: any) => ({
         id: r.id,
@@ -852,6 +913,7 @@ export class SupabaseDataStore implements IDataStore {
         draftsGenerated: r.drafts_generated,
         emailsSent: r.emails_sent,
         operatingMode: r.operating_mode,
+        reason: r.reason,
         durationMs: r.duration_ms,
         createdAt: r.created_at,
       }));
@@ -861,8 +923,11 @@ export class SupabaseDataStore implements IDataStore {
   }
 
   public async getLastSchedulerRun(): Promise<any | null> {
-    const supabase = this.getClient();
-    if (!supabase) return this.fallback.getLastSchedulerRun();
+    const supabase = this.getClient(false);
+    if (!supabase) {
+      if (process.env.NODE_ENV === 'production') return null;
+      return this.fallback.getLastSchedulerRun();
+    }
 
     try {
       const { data, error } = await supabase
@@ -872,12 +937,13 @@ export class SupabaseDataStore implements IDataStore {
         .limit(1)
         .single();
 
-      if (error || !data) return this.fallback.getLastSchedulerRun();
+      if (error || !data) return process.env.NODE_ENV === 'production' ? null : this.fallback.getLastSchedulerRun();
 
       return {
         id: data.id,
         runId: data.run_id,
         status: data.status,
+        reason: data.reason,
         startTimePkt: data.start_time_pkt,
         finishTimePkt: data.finish_time_pkt,
         startTimeUtc: data.start_time_utc,
@@ -891,12 +957,457 @@ export class SupabaseDataStore implements IDataStore {
         createdAt: data.created_at,
       };
     } catch {
-      return this.fallback.getLastSchedulerRun();
+      return process.env.NODE_ENV === 'production' ? null : this.fallback.getLastSchedulerRun();
     }
   }
 
-  public async getPlatformStats(): Promise<any> {
-    return this.fallback.getPlatformStats();
+  public async getPlatformStats(options?: any): Promise<any> {
+    const supabase = this.getClient(false);
+    if (!supabase && process.env.NODE_ENV === 'production') {
+      if (options?.includeDemo) {
+        return this.fallback.getPlatformStats(options);
+      }
+      return {
+        totalBusinesses: 0,
+        pipelineAOpportunities: 0,
+        pipelineBOpportunities: 0,
+        qualifiedTotal: 0,
+        totalDrafts: 0,
+        approvedDrafts: 0,
+        sentCount: 0,
+        confirmedDeliveries: 0,
+        failuresCount: 0,
+        repliesCount: 0,
+        suppressionCount: 0,
+        eligibleEmailContacts: 0,
+        alternativeChannelsCount: 0,
+        otherOutreachCount: 0,
+        emailSentPlusChannelsCount: 0,
+        noEmailCount: 0,
+        activeCampaigns: 0,
+        operatingMode: 'approval',
+        automationPaused: false,
+        lastSchedulerRun: null,
+        timelineSentences: ['Nothing yet. Start by connecting your services.'],
+      };
+    }
+    return this.fallback.getPlatformStats(options);
+  }
+
+  public seedDemoData(force = false): void {
+    if (process.env.NODE_ENV === 'production' && !force) return;
+    this.fallback.seedDemoData?.(force);
+  }
+
+  public clearDemoData(): void {
+    this.fallback.clearDemoData?.();
+  }
+
+  public hasDemoData(): boolean {
+    return this.fallback.hasDemoData?.() ?? false;
+  }
+
+  public resetToSeedData(): void {
+    this.fallback.resetToSeedData();
+  }
+
+  public persistState(): void {
+    this.fallback.persistState();
+  }
+  // --- Platform Registry & Acquisition Engine ---
+  public async getPlatforms(filters?: any): Promise<PlatformEntity[]> {
+    const supabase = this.getClient(false);
+    if (!supabase) return this.fallback.getPlatforms(filters);
+    try {
+      let q = supabase.from('platforms').select('*').order('priority', { ascending: true });
+      if (filters?.category && filters.category !== 'all') q = q.eq('category', filters.category);
+      if (filters?.priority && filters.priority !== 'all') q = q.eq('priority', filters.priority);
+      if (filters?.pitchMode && filters.pitchMode !== 'all') q = q.eq('pitch_mode', filters.pitchMode);
+      if (filters?.countryEligibility && filters.countryEligibility !== 'all') q = q.eq('country_eligibility_status', filters.countryEligibility);
+      if (filters?.myAccountStatus && filters.myAccountStatus !== 'all') q = q.eq('my_account_status', filters.myAccountStatus);
+      const { data, error } = await q;
+      if (error || !data || data.length === 0) return this.fallback.getPlatforms(filters);
+      return data.map((d: any) => ({
+        id: d.id,
+        name: d.name,
+        category: d.category,
+        url: d.url,
+        officialTermsUrl: d.official_terms_url,
+        howToGetClients: d.how_to_get_clients,
+        aiMlRelevance: d.ai_ml_relevance,
+        pitchMode: d.pitch_mode,
+        integrationMode: d.integration_mode,
+        priority: d.priority,
+        costAccessNotes: d.cost_access_notes,
+        practicalNote: d.practical_note,
+        countryEligibilityStatus: d.country_eligibility_status,
+        myAccountStatus: d.my_account_status,
+        lastVerified: d.last_verified,
+        isActive: d.is_active,
+        notes: d.notes,
+        createdAt: d.created_at,
+        updatedAt: d.updated_at,
+      }));
+    } catch {
+      return this.fallback.getPlatforms(filters);
+    }
+  }
+
+  public async getPlatformById(id: string): Promise<PlatformEntity | null> {
+    const supabase = this.getClient(false);
+    if (!supabase) return this.fallback.getPlatformById(id);
+    try {
+      const { data, error } = await supabase.from('platforms').select('*').eq('id', id).maybeSingle();
+      if (error || !data) return this.fallback.getPlatformById(id);
+      return {
+        id: data.id,
+        name: data.name,
+        category: data.category,
+        url: data.url,
+        officialTermsUrl: data.official_terms_url,
+        howToGetClients: data.how_to_get_clients,
+        aiMlRelevance: data.ai_ml_relevance,
+        pitchMode: data.pitch_mode,
+        integrationMode: data.integration_mode,
+        priority: data.priority,
+        costAccessNotes: data.cost_access_notes,
+        practicalNote: data.practical_note,
+        countryEligibilityStatus: data.country_eligibility_status,
+        myAccountStatus: data.my_account_status,
+        lastVerified: data.last_verified,
+        isActive: data.is_active,
+        notes: data.notes,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+      };
+    } catch {
+      return this.fallback.getPlatformById(id);
+    }
+  }
+
+  public async savePlatform(platform: PlatformEntity): Promise<void> {
+    this.fallback.savePlatform(platform);
+    const supabase = this.getClient(true);
+    if (!supabase) return;
+    try {
+      await supabase.from('platforms').upsert({
+        id: platform.id,
+        name: platform.name,
+        category: platform.category,
+        url: platform.url,
+        official_terms_url: platform.officialTermsUrl,
+        how_to_get_clients: platform.howToGetClients,
+        ai_ml_relevance: platform.aiMlRelevance,
+        pitch_mode: platform.pitchMode,
+        integration_mode: platform.integrationMode,
+        priority: platform.priority,
+        cost_access_notes: platform.costAccessNotes,
+        practical_note: platform.practicalNote,
+        country_eligibility_status: platform.countryEligibilityStatus,
+        my_account_status: platform.myAccountStatus,
+        last_verified: platform.lastVerified,
+        is_active: platform.isActive,
+        notes: platform.notes,
+      });
+    } catch {}
+  }
+
+  public async updatePlatform(id: string, updates: Partial<PlatformEntity>): Promise<PlatformEntity | null> {
+    const res = this.fallback.updatePlatform(id, updates);
+    const supabase = this.getClient(true);
+    if (!supabase) return res;
+    try {
+      const payload: any = {};
+      if (updates.name !== undefined) payload.name = updates.name;
+      if (updates.category !== undefined) payload.category = updates.category;
+      if (updates.url !== undefined) payload.url = updates.url;
+      if (updates.officialTermsUrl !== undefined) payload.official_terms_url = updates.officialTermsUrl;
+      if (updates.priority !== undefined) payload.priority = updates.priority;
+      if (updates.pitchMode !== undefined) payload.pitch_mode = updates.pitchMode;
+      if (updates.integrationMode !== undefined) payload.integration_mode = updates.integrationMode;
+      if (updates.countryEligibilityStatus !== undefined) payload.country_eligibility_status = updates.countryEligibilityStatus;
+      if (updates.myAccountStatus !== undefined) payload.my_account_status = updates.myAccountStatus;
+      if (updates.lastVerified !== undefined) payload.last_verified = updates.lastVerified;
+      if (updates.isActive !== undefined) payload.is_active = updates.isActive;
+      if (updates.notes !== undefined) payload.notes = updates.notes;
+      payload.updated_at = new Date().toISOString();
+      await supabase.from('platforms').update(payload).eq('id', id);
+    } catch {}
+    return res;
+  }
+
+  public async verifyPlatformTerms(id: string, verifiedAt?: string): Promise<PlatformEntity | null> {
+    return this.updatePlatform(id, {
+      lastVerified: verifiedAt || new Date().toISOString(),
+      notes: 'Terms verified by operator',
+    });
+  }
+
+  // --- Vetted Applications Tracker (Group B) ---
+  public async getVettedApplications(): Promise<VettedApplicationEntity[]> {
+    const supabase = this.getClient(false);
+    if (!supabase) return this.fallback.getVettedApplications();
+    try {
+      const { data, error } = await supabase.from('vetted_applications').select('*');
+      if (error || !data || data.length === 0) return this.fallback.getVettedApplications();
+      return data.map((d: any) => ({
+        id: d.id,
+        platformId: d.platform_id,
+        platformName: d.platform_name,
+        status: d.status,
+        readinessScore: d.readiness_score,
+        checklist: d.checklist || [],
+        hasCv: d.has_cv,
+        hasGithub: d.has_github,
+        caseStudiesCount: d.case_studies_count,
+        hasDemoVideo: d.has_demo_video,
+        appliedDate: d.applied_date,
+        nextActionDate: d.next_action_date,
+        interviewNotes: d.interview_notes,
+        pakistanCheck: d.pakistan_check || {},
+        createdAt: d.created_at,
+        updatedAt: d.updated_at,
+      }));
+    } catch {
+      return this.fallback.getVettedApplications();
+    }
+  }
+
+  public async getVettedApplicationById(id: string): Promise<VettedApplicationEntity | null> {
+    return this.fallback.getVettedApplicationById(id);
+  }
+
+  public async saveVettedApplication(app: VettedApplicationEntity): Promise<void> {
+    this.fallback.saveVettedApplication(app);
+    const supabase = this.getClient(true);
+    if (!supabase) return;
+    try {
+      await supabase.from('vetted_applications').upsert({
+        id: app.id,
+        platform_id: app.platformId,
+        platform_name: app.platformName,
+        status: app.status,
+        readiness_score: app.readinessScore,
+        checklist: app.checklist,
+        has_cv: app.hasCv,
+        has_github: app.hasGithub,
+        case_studies_count: app.caseStudiesCount,
+        has_demo_video: app.hasDemoVideo,
+        applied_date: app.appliedDate,
+        next_action_date: app.nextActionDate,
+        interview_notes: app.interviewNotes,
+        pakistan_check: app.pakistanCheck,
+      });
+    } catch {}
+  }
+
+  public async updateVettedApplication(id: string, updates: Partial<VettedApplicationEntity>): Promise<VettedApplicationEntity | null> {
+    const res = this.fallback.updateVettedApplication(id, updates);
+    const supabase = this.getClient(true);
+    if (!supabase) return res;
+    try {
+      const payload: any = {};
+      if (updates.status !== undefined) payload.status = updates.status;
+      if (updates.readinessScore !== undefined) payload.readiness_score = updates.readinessScore;
+      if (updates.checklist !== undefined) payload.checklist = updates.checklist;
+      if (updates.hasCv !== undefined) payload.has_cv = updates.hasCv;
+      if (updates.hasGithub !== undefined) payload.has_github = updates.hasGithub;
+      if (updates.caseStudiesCount !== undefined) payload.case_studies_count = updates.caseStudiesCount;
+      if (updates.hasDemoVideo !== undefined) payload.has_demo_video = updates.hasDemoVideo;
+      if (updates.appliedDate !== undefined) payload.applied_date = updates.appliedDate;
+      if (updates.nextActionDate !== undefined) payload.next_action_date = updates.nextActionDate;
+      if (updates.interviewNotes !== undefined) payload.interview_notes = updates.interviewNotes;
+      if (updates.pakistanCheck !== undefined) payload.pakistan_check = updates.pakistanCheck;
+      payload.updated_at = new Date().toISOString();
+      await supabase.from('vetted_applications').update(payload).eq('platform_id', id);
+    } catch {}
+    return res;
+  }
+
+  // --- Lead Source Configs (Group C) ---
+  public async getLeadSourceConfigs(): Promise<LeadSourceConfigEntity[]> {
+    const supabase = this.getClient(false);
+    if (!supabase) return this.fallback.getLeadSourceConfigs();
+    try {
+      const { data, error } = await supabase.from('lead_source_configs').select('*');
+      if (error || !data || data.length === 0) return this.fallback.getLeadSourceConfigs();
+      return data.map((d: any) => ({
+        id: d.id,
+        sourceName: d.source_name,
+        monthlyCreditBudget: d.monthly_credit_budget,
+        creditsUsedThisMonth: d.credits_used_this_month,
+        status: d.status,
+        lastTestedAt: d.last_tested_at,
+        apiKeyConfigured: d.api_key_configured,
+        createdAt: d.created_at,
+        updatedAt: d.updated_at,
+      }));
+    } catch {
+      return this.fallback.getLeadSourceConfigs();
+    }
+  }
+
+  public async saveLeadSourceConfig(config: LeadSourceConfigEntity): Promise<void> {
+    this.fallback.saveLeadSourceConfig(config);
+    const supabase = this.getClient(true);
+    if (!supabase) return;
+    try {
+      await supabase.from('lead_source_configs').upsert({
+        id: config.id,
+        source_name: config.sourceName,
+        monthly_credit_budget: config.monthlyCreditBudget,
+        credits_used_this_month: config.creditsUsedThisMonth,
+        status: config.status,
+        last_tested_at: config.lastTestedAt,
+        api_key_configured: config.apiKeyConfigured,
+      });
+    } catch {}
+  }
+
+  public async recordLeadSourceUsage(sourceName: string, creditsUsed: number = 1): Promise<void> {
+    this.fallback.recordLeadSourceUsage(sourceName, creditsUsed);
+  }
+
+  // --- Platform Footprints ("Where else can I reach them?") ---
+  public async getFootprintsForBusiness(businessId: string): Promise<PlatformFootprintCandidate[]> {
+    const supabase = this.getClient(false);
+    if (!supabase) return this.fallback.getFootprintsForBusiness(businessId);
+    try {
+      const { data, error } = await supabase.from('platform_footprints').select('*').eq('business_id', businessId);
+      if (error || !data || data.length === 0) return this.fallback.getFootprintsForBusiness(businessId);
+      return data.map((d: any) => ({
+        id: d.id,
+        businessId: d.business_id,
+        platform: d.platform,
+        profileUrl: d.profile_url,
+        source: d.source,
+        verificationStatus: d.verification_status,
+        confidence: Number(d.confidence),
+        lastChecked: d.last_checked,
+        notes: d.notes,
+      }));
+    } catch {
+      return this.fallback.getFootprintsForBusiness(businessId);
+    }
+  }
+
+  public async saveFootprint(footprint: PlatformFootprintCandidate): Promise<void> {
+    this.fallback.saveFootprint(footprint);
+    const supabase = this.getClient(true);
+    if (!supabase) return;
+    try {
+      await supabase.from('platform_footprints').upsert({
+        id: footprint.id,
+        business_id: footprint.businessId,
+        platform: footprint.platform,
+        profile_url: footprint.profileUrl,
+        source: footprint.source,
+        verification_status: footprint.verificationStatus,
+        confidence: footprint.confidence,
+        last_checked: footprint.lastChecked,
+        notes: footprint.notes,
+      });
+    } catch {}
+  }
+
+  public async deleteFootprint(id: string): Promise<void> {
+    this.fallback.deleteFootprint(id);
+    const supabase = this.getClient(true);
+    if (!supabase) return;
+    try {
+      await supabase.from('platform_footprints').delete().eq('id', id);
+    } catch {}
+  }
+
+  // --- Marketplace Hot Requests (Group A) ---
+  public async getHotRequests(filters?: any): Promise<MarketplaceHotRequestEntity[]> {
+    const supabase = this.getClient(false);
+    if (!supabase) return this.fallback.getHotRequests(filters);
+    try {
+      let q = supabase.from('marketplace_hot_requests').select('*').order('fit_score', { ascending: false });
+      if (filters?.platform && filters.platform !== 'all') q = q.eq('platform', filters.platform);
+      if (filters?.status && filters.status !== 'all') q = q.eq('status', filters.status);
+      const { data, error } = await q;
+      if (error || !data || data.length === 0) return this.fallback.getHotRequests(filters);
+      return data.map((d: any) => ({
+        id: d.id,
+        platform: d.platform,
+        title: d.title,
+        description: d.description,
+        postUrl: d.post_url,
+        postType: d.post_type,
+        fitScore: d.fit_score,
+        freshnessHours: Number(d.freshness_hours),
+        isScam: d.is_scam,
+        budgetRange: d.budget_range,
+        proposalDraft: d.proposal_draft,
+        screeningAnswers: d.screening_answers || {},
+        postedAt: d.posted_at,
+        respondBefore: d.respond_before,
+        status: d.status,
+        createdAt: d.created_at,
+      }));
+    } catch {
+      return this.fallback.getHotRequests(filters);
+    }
+  }
+
+  public async saveHotRequest(request: MarketplaceHotRequestEntity): Promise<void> {
+    this.fallback.saveHotRequest(request);
+    const supabase = this.getClient(true);
+    if (!supabase) return;
+    try {
+      await supabase.from('marketplace_hot_requests').upsert({
+        id: request.id,
+        platform: request.platform,
+        title: request.title,
+        description: request.description,
+        post_url: request.postUrl,
+        post_type: request.postType,
+        fit_score: request.fitScore,
+        freshness_hours: request.freshnessHours,
+        is_scam: request.isScam,
+        budget_range: request.budgetRange,
+        proposal_draft: request.proposalDraft,
+        screening_answers: request.screeningAnswers,
+        posted_at: request.postedAt,
+        respond_before: request.respondBefore,
+        status: request.status,
+      });
+    } catch {}
+  }
+
+  public async updateHotRequestStatus(id: string, status: 'new' | 'proposal_copied' | 'submitted' | 'declined'): Promise<boolean> {
+    const res = this.fallback.updateHotRequestStatus(id, status);
+    const supabase = this.getClient(true);
+    if (!supabase) return res;
+    try {
+      await supabase.from('marketplace_hot_requests').update({ status }).eq('id', id);
+    } catch {}
+    return res;
+  }
+
+  // --- Platform Spend Logs ---
+  public async getPlatformSpendLogs(platformId?: string): Promise<PlatformSpendLogEntity[]> {
+    return this.fallback.getPlatformSpendLogs(platformId);
+  }
+
+  public async recordPlatformSpend(spend: PlatformSpendLogEntity): Promise<void> {
+    this.fallback.recordPlatformSpend(spend);
+    const supabase = this.getClient(true);
+    if (!supabase) return;
+    try {
+      await supabase.from('platform_spend_logs').insert({
+        id: spend.id,
+        platform_id: spend.platformId,
+        platform_name: spend.platformName,
+        cost_type: spend.costType,
+        amount_spent: spend.amountSpent,
+        currency: spend.currency,
+        notes: spend.notes,
+        logged_at: spend.loggedAt,
+      });
+    } catch {}
   }
 }
 

@@ -3,25 +3,26 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './e2e',
   timeout: 30000,
-  fullyParallel: true,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
-  reporter: 'html',
+  fullyParallel: false,
+  workers: 1,
+  reporter: 'list',
   use: {
-    baseURL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-    trace: 'on-first-retry',
+    baseURL: 'http://127.0.0.1:3000',
+    trace: 'off',
   },
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: { 
+        ...devices['Desktop Chrome'],
+        channel: 'chrome',
+      },
     },
   ],
   webServer: {
-    command: 'npm run start',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
+    command: 'node node_modules/next/dist/bin/next start -p 3000',
+    url: 'http://127.0.0.1:3000/api/health',
+    reuseExistingServer: true,
+    timeout: 60000,
   },
 });

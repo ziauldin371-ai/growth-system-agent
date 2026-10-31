@@ -3,7 +3,7 @@ import { dataStore } from '@/services/repository/data-store';
 
 export async function GET() {
   try {
-    const runs = dataStore.getSchedulerRuns();
+    const runs = await dataStore.getSchedulerRuns();
     return NextResponse.json({
       success: true,
       total: runs.length,

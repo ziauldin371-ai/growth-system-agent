@@ -5,7 +5,7 @@ import { outreachService } from '@/services/ai/outreach-service';
 import { emailService } from '@/services/email/email-service';
 
 export async function GET() {
-  const stats = dataStore.getPlatformStats();
+  const stats = await dataStore.getPlatformStats();
   
   return NextResponse.json({
     success: true,

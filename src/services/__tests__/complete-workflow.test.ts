@@ -5,7 +5,7 @@ import { icpEngine } from '../scoring/icp-engine';
 import { outreachService } from '../ai/outreach-service';
 import { emailService } from '../email/email-service';
 import { webhookVerifier } from '../email/webhook-verifier';
-import { dataStore } from '../repository/data-store';
+import { inMemoryDataStore as dataStore } from '../repository/data-store';
 import { isDuplicateBusiness, normalizeBusinessName } from '../crm/normalization';
 
 describe('Complete End-to-End Workflow Audit', () => {

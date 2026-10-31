@@ -121,7 +121,7 @@ export default function CampaignsPage() {
                       ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300'
                       : 'bg-purple-500/10 border-purple-500/30 text-purple-300'
                   }`}>
-                    {camp.targetPipeline === 'website_opportunities' ? 'Pipeline A: Web Dev' : 'Pipeline B: AI & Software'}
+                    {camp.targetPipeline === 'website_opportunities' ? 'Needs a website: Web Dev' : 'Needs AI / software: AI & Software'}
                   </span>
                   <h3 className="text-base font-bold text-white mt-1.5">{camp.name}</h3>
                   <div className="text-xs text-slate-400 font-mono mt-0.5">Strategy: {camp.strategy}</div>
@@ -192,8 +192,8 @@ export default function CampaignsPage() {
                   onChange={(e: any) => setTargetPipeline(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
                 >
-                  <option value="ai_software_opportunities">Pipeline B: AI & Software Opportunities</option>
-                  <option value="website_opportunities">Pipeline A: Website Opportunities</option>
+                  <option value="ai_software_opportunities">Needs AI / software: AI & Software Opportunities</option>
+                  <option value="website_opportunities">Needs a website: Website Opportunities</option>
                 </select>
               </div>
 
@@ -209,7 +209,7 @@ export default function CampaignsPage() {
                   <option value="python_engineering">Python Engineering & APIs</option>
                   <option value="data_science">Data Science & Pipelines</option>
                   <option value="agency_partner">Agency White-Label Partner</option>
-                  <option value="web_development">Web Development (Pipeline A)</option>
+                  <option value="web_development">Web Development (Needs a website)</option>
                 </select>
               </div>
 

@@ -12,7 +12,7 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const campaign = dataStore.getCampaignById(params.id);
+  const campaign = await dataStore.getCampaignById(params.id);
   if (!campaign) {
     return NextResponse.json({ success: false, error: 'Campaign not found' }, { status: 404 });
   }
@@ -28,7 +28,7 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const campaign = dataStore.getCampaignById(params.id);
+    const campaign = await dataStore.getCampaignById(params.id);
     if (!campaign) {
       return NextResponse.json({ success: false, error: 'Campaign not found' }, { status: 404 });
     }
@@ -41,7 +41,7 @@ export async function PATCH(
     if (validated.name) campaign.name = validated.name;
     campaign.updatedAt = new Date().toISOString();
 
-    dataStore.saveCampaign(campaign);
+    await dataStore.saveCampaign(campaign);
 
     return NextResponse.json({
       success: true,

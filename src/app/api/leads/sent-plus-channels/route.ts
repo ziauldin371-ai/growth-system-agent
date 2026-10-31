@@ -3,7 +3,7 @@ import { dataStore } from '@/services/repository/data-store';
 
 export async function GET() {
   try {
-    const list = dataStore.getEmailSentPlusOtherChannels();
+    const list = await dataStore.getEmailSentPlusOtherChannels();
     return NextResponse.json({
       success: true,
       total: list.length,

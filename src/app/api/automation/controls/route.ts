@@ -9,14 +9,14 @@ const ControlActionSchema = z.object({
 });
 
 export async function GET() {
-  const stats = dataStore.getPlatformStats();
-  const runs = dataStore.getSchedulerRuns();
+  const stats = await dataStore.getPlatformStats();
+  const runs = await dataStore.getSchedulerRuns();
 
   return NextResponse.json({
     success: true,
     operatingMode: dataStore.getOperatingMode(),
     automationPaused: dataStore.isAutomationPaused(),
-    lastSchedulerRun: dataStore.getLastSchedulerRun(),
+    lastSchedulerRun: await dataStore.getLastSchedulerRun(),
     recentRuns: runs.slice(0, 10),
     scheduleConfig: {
       pkTime: '09:00 & 17:00 (Asia/Karachi, PKT)',

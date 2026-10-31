@@ -1,11 +1,11 @@
 const { spawn, execSync } = require('child_process');
 const crypto = require('crypto');
 
+const dynamicCronSecret = crypto.randomBytes(24).toString('hex');
+const dynamicUnsubscribeSecret = crypto.randomBytes(24).toString('hex');
+
 function generateUnsubscribeToken(email, expiresInDays = 90) {
-  const secret = process.env.UNSUBSCRIBE_SECRET ||
-    process.env.SESSION_SECRET ||
-    process.env.ADMIN_PASSWORD ||
-    'growth_system_unsubscribe_hmac_secret_2026';
+  const secret = process.env.UNSUBSCRIBE_SECRET || dynamicUnsubscribeSecret;
   
   const payload = {
     email: email.trim().toLowerCase(),
@@ -27,7 +27,8 @@ async function runAudit() {
       ...process.env,
       PORT: String(port),
       NODE_ENV: 'production',
-      CRON_SECRET: 'growth_system_cron_secret_key_2026',
+      CRON_SECRET: dynamicCronSecret,
+      UNSUBSCRIBE_SECRET: dynamicUnsubscribeSecret,
     },
     stdio: 'pipe',
   });
@@ -102,7 +103,7 @@ async function runAudit() {
 
   runCurl(
     'Cron route with valid CRON_SECRET header succeeds (HTTP 200)',
-    `curl.exe -i -s -H "Authorization: Bearer growth_system_cron_secret_key_2026" ${baseUrl}/api/cron/scheduled-run`
+    `curl.exe -i -s -H "Authorization: Bearer ${dynamicCronSecret}" ${baseUrl}/api/cron/scheduled-run`
   );
 
   // 3. Unsubscribe route: Publicly works via signed token

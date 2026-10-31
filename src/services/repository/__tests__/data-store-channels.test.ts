@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { dataStore } from '../data-store';
+import { inMemoryDataStore as dataStore } from '../data-store';
 
 describe('DataStore Alternative Channels & Specialized Queries', () => {
   beforeEach(() => {

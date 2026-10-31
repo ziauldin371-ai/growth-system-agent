@@ -150,7 +150,7 @@ export function DashboardControls() {
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              Research Only
+              Find only, no emails
             </button>
             <button
               onClick={() => handleModeChange('approval')}
@@ -161,7 +161,7 @@ export function DashboardControls() {
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              Approval Mode (Default)
+              Review first
             </button>
             <button
               onClick={() => handleModeChange('auto_send')}
@@ -172,7 +172,7 @@ export function DashboardControls() {
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              Controlled Auto-Send
+              Send automatically (safe limits)
             </button>
           </div>
         </div>

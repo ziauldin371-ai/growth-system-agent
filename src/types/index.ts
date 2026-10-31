@@ -221,6 +221,7 @@ export interface EmailDraftEntity {
 
 export type AlternativeChannelPlatform = 
   | 'linkedin' 
+  | 'whatsapp'
   | 'contact_form' 
   | 'instagram' 
   | 'facebook' 
@@ -493,3 +494,189 @@ export interface CommunityPitchRuleEntity {
   toneGuidance?: string;
   createdAt: string;
 }
+
+// ==============================================================================
+// Client-Acquisition Platform Engine Types (Platform Registry, Footprints & Adapters)
+// ==============================================================================
+
+export type PlatformCategory = 
+  | 'marketplace' 
+  | 'vetted_network' 
+  | 'expert_network' 
+  | 'lead_database' 
+  | 'contact_finder' 
+  | 'company_intel' 
+  | 'b2b_directory' 
+  | 'startup_community' 
+  | 'social' 
+  | 'local_business_directory' 
+  | 'job_feed' 
+  | 'tender_portal' 
+  | 'email_sending_tool' 
+  | 'other';
+
+export type PlatformPitchMode = 
+  | 'proposal' 
+  | 'application' 
+  | 'connection_note' 
+  | 'direct_message' 
+  | 'email' 
+  | 'contact_form' 
+  | 'comment_reply' 
+  | 'research_only' 
+  | 'matching_only';
+
+export type PlatformIntegrationMode = 
+  | 'official_api' 
+  | 'rss_or_feed' 
+  | 'csv_import' 
+  | 'manual_link' 
+  | 'paste_importer' 
+  | 'none';
+
+export type CountryEligibilityStatus = 
+  | 'unknown' 
+  | 'eligible' 
+  | 'not_eligible' 
+  | 'needs_check';
+
+export type MyAccountStatus = 
+  | 'none' 
+  | 'profile_created' 
+  | 'applied' 
+  | 'approved' 
+  | 'active' 
+  | 'rejected';
+
+export type PlatformPriority = 'High' | 'Medium' | 'Low';
+
+export interface PlatformEntity {
+  id: string;
+  name: string;
+  category: PlatformCategory;
+  url: string;
+  officialTermsUrl: string;
+  howToGetClients: string;
+  aiMlRelevance: string;
+  pitchMode: PlatformPitchMode;
+  integrationMode: PlatformIntegrationMode;
+  priority: PlatformPriority;
+  costAccessNotes: string;
+  practicalNote: string;
+  countryEligibilityStatus: CountryEligibilityStatus;
+  myAccountStatus: MyAccountStatus;
+  lastVerified?: string | null;
+  isActive: boolean;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface VettedApplicationEntity {
+  id: string;
+  platformId: string;
+  platformName: string;
+  status: 'not_started' | 'screening' | 'interview_scheduled' | 'under_review' | 'approved' | 'rejected';
+  readinessScore: number; // 0 - 100
+  checklist: Array<{ id: string; label: string; completed: boolean }>;
+  hasCv: boolean;
+  hasGithub: boolean;
+  caseStudiesCount: number;
+  hasDemoVideo: boolean;
+  appliedDate?: string | null;
+  nextActionDate?: string | null;
+  interviewNotes?: string | null;
+  pakistanCheck: {
+    onboardingChecked: boolean;
+    payoutMethod: string;
+    withdrawalFeePercent: number;
+    taxObligationsNoted: boolean;
+    contractorEligibility: string;
+    notes?: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LeadSourceConfigEntity {
+  id: string;
+  sourceName: 'hunter' | 'apollo' | 'snov' | 'crunchbase' | string;
+  monthlyCreditBudget: number;
+  creditsUsedThisMonth: number;
+  status: 'active' | 'not_configured' | 'rate_limited' | 'error';
+  lastTestedAt?: string | null;
+  apiKeyConfigured: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PlatformFootprintCandidate {
+  id: string;
+  businessId: string;
+  platform: string;
+  profileUrl: string;
+  source: 'website' | 'schema_same_as' | 'google_places' | 'directory' | 'manual_paste';
+  verificationStatus: 'verified' | 'possible_match';
+  confidence: number;
+  lastChecked: string;
+  notes?: string;
+}
+
+export interface PlatformPitchEntity {
+  id: string;
+  businessId: string;
+  platform: string;
+  pitchMode: PlatformPitchMode;
+  pitchContent: string;
+  wordCount: number;
+  characterCount: number;
+  offerTitle: string;
+  proofUsed?: string | null;
+  evidenceClaims: Array<{ claim: string; sourceUrl: string; date: string }>;
+  qualityGatePassed: boolean;
+  rejectionReason?: string | null;
+  createdAt: string;
+}
+
+export interface MarketplaceHotRequestEntity {
+  id: string;
+  platform: string;
+  title: string;
+  description: string;
+  postUrl: string;
+  postType: 'explicit_hire' | 'job_posting' | 'recommendation_request' | 'tender' | 'partnership_request';
+  fitScore: number;
+  freshnessHours: number;
+  isScam: boolean;
+  budgetRange?: string | null;
+  proposalDraft: string;
+  screeningAnswers?: Record<string, string>;
+  postedAt: string;
+  respondBefore: string;
+  status: 'new' | 'proposal_copied' | 'submitted' | 'declined';
+  createdAt: string;
+}
+
+export interface PlatformSpendLogEntity {
+  id: string;
+  platformId: string;
+  platformName: string;
+  costType: 'connects' | 'bids' | 'subscription' | 'ad_spend';
+  amountSpent: number;
+  currency: string;
+  notes?: string;
+  loggedAt: string;
+}
+
+export interface ICPNicheEntity {
+  id: string;
+  title: string;
+  vertical: string;
+  targetRoles: string[];
+  triggerSignals: string[];
+  defaultOffer: string;
+  sampleScope: string;
+  typicalPriceRange: string;
+  isActive: boolean;
+}
+

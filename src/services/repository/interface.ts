@@ -12,7 +12,13 @@ import {
   OperatingMode,
   AlternativeChannelEntity,
   AlternativeChannelStatus,
-  SchedulerRunHistoryEntity
+  SchedulerRunHistoryEntity,
+  PlatformEntity,
+  VettedApplicationEntity,
+  LeadSourceConfigEntity,
+  PlatformFootprintCandidate,
+  MarketplaceHotRequestEntity,
+  PlatformSpendLogEntity
 } from '@/types';
 
 export interface IDataStore {
@@ -24,6 +30,7 @@ export interface IDataStore {
     country?: string;
     limit?: number;
     offset?: number;
+    includeDemo?: boolean;
   }): { businesses: BusinessEntity[]; total: number } | Promise<{ businesses: BusinessEntity[]; total: number }>;
 
   getBusinessById(id: string): (BusinessEntity | null) | Promise<BusinessEntity | null>;
@@ -34,7 +41,7 @@ export interface IDataStore {
   saveContact(contact: ContactEntity): void | Promise<void>;
 
   // Drafts
-  getDrafts(filter?: { status?: string; campaignId?: string }): EmailDraftEntity[] | Promise<EmailDraftEntity[]>;
+  getDrafts(filter?: { status?: string; campaignId?: string; limit?: number; offset?: number; includeDemo?: boolean }): EmailDraftEntity[] | Promise<EmailDraftEntity[]>;
   getDraftById(id: string): (EmailDraftEntity | null) | Promise<EmailDraftEntity | null>;
   saveDraft(draft: EmailDraftEntity): void | Promise<void>;
   updateDraftStatus(
@@ -78,11 +85,11 @@ export interface IDataStore {
 
   // Views & Queries
   getWorldwideLeads(filters?: any): BusinessEntity[] | Promise<BusinessEntity[]>;
-  getReadyForEmailLeads(): Array<any> | Promise<Array<any>>;
-  getSentEmails(): Array<any> | Promise<Array<any>>;
-  getOtherOutreachOpportunities(): Array<any> | Promise<Array<any>>;
-  getEmailSentPlusOtherChannels(): Array<any> | Promise<Array<any>>;
-  getNoEmailBusinesses(): Array<any> | Promise<Array<any>>;
+  getReadyForEmailLeads(options?: any): Array<any> | Promise<Array<any>>;
+  getSentEmails(options?: any): Array<any> | Promise<Array<any>>;
+  getOtherOutreachOpportunities(options?: any): Array<any> | Promise<Array<any>>;
+  getEmailSentPlusOtherChannels(options?: any): Array<any> | Promise<Array<any>>;
+  getNoEmailBusinesses(options?: any): Array<any> | Promise<Array<any>>;
   lockAllChannelsForBusiness(businessId: string, reason: string): void | Promise<void>;
   recordChannelContact(channelId: string, contactedAt?: string): void | Promise<void>;
 
@@ -94,6 +101,41 @@ export interface IDataStore {
   recordSchedulerRun(run: any): void | Promise<void>;
   getSchedulerRuns(): any[] | Promise<any[]>;
   getLastSchedulerRun(): any | null | Promise<any | null>;
-  getPlatformStats(): any | Promise<any>;
+  getPlatformStats(options?: any): any | Promise<any>;
+
+  // Platform Registry & Acquisition Engine (Prompt: Platforms)
+  getPlatforms(filters?: { category?: string; priority?: string; pitchMode?: string; countryEligibility?: string; myAccountStatus?: string; search?: string }): PlatformEntity[] | Promise<PlatformEntity[]>;
+  getPlatformById(id: string): (PlatformEntity | null) | Promise<PlatformEntity | null>;
+  savePlatform(platform: PlatformEntity): void | Promise<void>;
+  updatePlatform(id: string, updates: Partial<PlatformEntity>): (PlatformEntity | null) | Promise<PlatformEntity | null>;
+  verifyPlatformTerms(id: string, verifiedAt?: string): (PlatformEntity | null) | Promise<PlatformEntity | null>;
+
+  // Vetted Applications Tracker (Group B)
+  getVettedApplications(): VettedApplicationEntity[] | Promise<VettedApplicationEntity[]>;
+  getVettedApplicationById(id: string): (VettedApplicationEntity | null) | Promise<VettedApplicationEntity | null>;
+  saveVettedApplication(app: VettedApplicationEntity): void | Promise<void>;
+  updateVettedApplication(id: string, updates: Partial<VettedApplicationEntity>): (VettedApplicationEntity | null) | Promise<VettedApplicationEntity | null>;
+
+  // Lead Source Configs (Group C)
+  getLeadSourceConfigs(): LeadSourceConfigEntity[] | Promise<LeadSourceConfigEntity[]>;
+  saveLeadSourceConfig(config: LeadSourceConfigEntity): void | Promise<void>;
+  recordLeadSourceUsage(sourceName: string, creditsUsed?: number): void | Promise<void>;
+
+  // Platform Footprints ("Where else can I reach them?")
+  getFootprintsForBusiness(businessId: string): PlatformFootprintCandidate[] | Promise<PlatformFootprintCandidate[]>;
+  saveFootprint(footprint: PlatformFootprintCandidate): void | Promise<void>;
+  deleteFootprint(id: string): void | Promise<void>;
+
+  // Marketplace Hot Requests (Group A)
+  getHotRequests(filters?: { platform?: string; minFit?: number; status?: string }): MarketplaceHotRequestEntity[] | Promise<MarketplaceHotRequestEntity[]>;
+  saveHotRequest(request: MarketplaceHotRequestEntity): void | Promise<void>;
+  updateHotRequestStatus(id: string, status: 'new' | 'proposal_copied' | 'submitted' | 'declined'): boolean | Promise<boolean>;
+
+  // Platform Spend Logs
+  getPlatformSpendLogs(platformId?: string): PlatformSpendLogEntity[] | Promise<PlatformSpendLogEntity[]>;
+  recordPlatformSpend(spend: PlatformSpendLogEntity): void | Promise<void>;
+  seedDemoData?(force?: boolean): void | Promise<void>;
+  clearDemoData?(): void | Promise<void>;
+  hasDemoData?(): boolean | Promise<boolean>;
 }
 

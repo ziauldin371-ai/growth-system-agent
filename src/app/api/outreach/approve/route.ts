@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     const { draftId, action } = ApproveSchema.parse(body);
 
     const targetStatus = action === 'approve' ? 'approved' : 'rejected';
-    const updated = dataStore.updateDraftStatus(draftId, targetStatus, 'admin@growthsignal.ai');
+    const updated = await dataStore.updateDraftStatus(draftId, targetStatus, 'admin@growthsignal.ai');
 
     if (!updated) {
       return NextResponse.json({ success: false, error: 'Draft not found' }, { status: 404 });

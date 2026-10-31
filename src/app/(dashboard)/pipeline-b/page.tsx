@@ -4,8 +4,8 @@ import { Cpu, AlertCircle, ArrowUpRight, Sparkles, Code2, Briefcase } from 'luci
 
 export const dynamic = 'force-dynamic';
 
-export default function PipelineBPage() {
-  const { businesses } = dataStore.getBusinesses({
+export default async function PipelineBPage() {
+  const { businesses } = await dataStore.getBusinesses({
     pipeline: 'ai_software_opportunities',
     limit: 100,
   });
@@ -17,7 +17,7 @@ export default function PipelineBPage() {
         <div>
           <div className="inline-flex items-center space-x-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-500/10 border border-purple-500/30 text-purple-300 mb-2">
             <Cpu className="w-3.5 h-3.5" />
-            <span>Pipeline B</span>
+            <span>Needs AI / software</span>
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-white">
             AI & Software Engineering Opportunities
@@ -134,7 +134,7 @@ export default function PipelineBPage() {
                         href={`/businesses/${biz.id}`}
                         className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition-colors inline-block"
                       >
-                        Inspect Dossier →
+                        View details →
                       </Link>
                     </td>
                   </tr>

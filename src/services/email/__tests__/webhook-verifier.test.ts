@@ -43,7 +43,7 @@ describe('Webhook Signature Verification & Delivery Events', () => {
     expect(result.actionTaken).toBe('suppressed_hard_bounce');
 
     // Verify it is now in dataStore suppression
-    expect(dataStore.isSuppressed(bounceEmail)).toBe(true);
+    expect(await dataStore.isSuppressed(bounceEmail)).toBe(true);
   });
 
   it('automatically adds spam complaint recipient to suppression list', async () => {
@@ -61,7 +61,7 @@ describe('Webhook Signature Verification & Delivery Events', () => {
     expect(result.actionTaken).toBe('suppressed_spam_complaint');
 
     // Verify it is now in dataStore suppression
-    expect(dataStore.isSuppressed(complaintEmail)).toBe(true);
+    expect(await dataStore.isSuppressed(complaintEmail)).toBe(true);
   });
 });
 

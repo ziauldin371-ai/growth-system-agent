@@ -2,9 +2,9 @@ import './globals.css';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Growth System Agent — Autonomous Lead Generation Platform',
+  title: 'Growth System — Simple Client Finder',
   description:
-    'Automated B2B discovery, website verification, and personalized outreach for Zia Ul Din (Full Stack AI Developer & Automation Architect).',
+    'Autonomous client finder, website verification, and personalized outreach for Zia Ul Din.',
 };
 
 export default function RootLayout({
@@ -14,7 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className="antialiased bg-slate-950 text-slate-100 min-h-screen">
+      <body className="bg-surface font-body-md text-on-surface flex flex-col min-h-screen selection:bg-primary-container selection:text-on-primary-container antialiased">
         {children}
       </body>
     </html>
