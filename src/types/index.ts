@@ -680,3 +680,58 @@ export interface ICPNicheEntity {
   isActive: boolean;
 }
 
+
+
+export type PlatformTrackerStatus =
+  | 'not_started'
+  | 'profile_ready'
+  | 'applied'
+  | 'proposals_sent'
+  | 'replied'
+  | 'won';
+
+export interface PlatformTrackerEntity {
+  id: string;
+  platformId: string;
+  status: PlatformTrackerStatus;
+  myProfileUrl?: string | null;
+  notes?: string | null;
+  lastActionDate?: string | null;
+  followUpDate?: string | null;
+  checklist?: {
+    headline?: boolean;
+    bio?: boolean;
+    portfolio?: boolean;
+    rates?: boolean;
+    skills?: boolean;
+    verification?: boolean;
+    payout?: boolean;
+  };
+  customPitch?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface PlatformDailyTargetEntity {
+  id: string;
+  targetDate: string;
+  targetCount: number;
+  completedCount: number;
+  updatedAt?: string;
+}
+
+export interface OperatorProfileEntity {
+  id: string;
+  name: string;
+  headline: string;
+  services: string;
+  portfolioLinks: string[];
+  bio: string;
+  yearsOfExperience?: string;
+  rateRange: string;
+  availability: string;
+  languages: string;
+  timezone: string;
+  demoModeEnabled: boolean;
+  updatedAt?: string;
+}

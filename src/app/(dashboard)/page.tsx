@@ -220,20 +220,27 @@ export default async function HomePage(props: PageProps) {
         </div>
 
         {/* Quick Mobile Action Launchpad */}
-        <div className="grid grid-cols-2 gap-2.5 pt-1 sm:hidden">
+        <div className="grid grid-cols-3 gap-2 pt-1 sm:hidden">
           <Link
             href="/run-and-schedule"
-            className="min-h-[44px] px-3 py-2 rounded-xl bg-primary-container text-on-primary-container font-semibold text-xs shadow-md flex items-center justify-center gap-1.5 active:opacity-90 transition-opacity"
+            className="min-h-[44px] px-2 py-2 rounded-xl bg-primary-container text-on-primary-container font-semibold text-[11px] shadow-md flex items-center justify-center gap-1 active:opacity-90 transition-opacity"
           >
-            <span className="material-symbols-outlined text-[18px]">bolt</span>
-            <span className="truncate">Find Businesses</span>
+            <span className="material-symbols-outlined text-[16px]">bolt</span>
+            <span className="truncate">Find Leads</span>
+          </Link>
+          <Link
+            href="/platforms"
+            className="min-h-[44px] px-2 py-2 rounded-xl bg-secondary-container text-on-secondary-container font-semibold text-[11px] shadow-md flex items-center justify-center gap-1 active:opacity-90 transition-opacity"
+          >
+            <span className="material-symbols-outlined text-[16px]">hub</span>
+            <span className="truncate">Platforms (68)</span>
           </Link>
           <Link
             href="/contact-manually"
-            className="min-h-[44px] px-3 py-2 rounded-xl bg-surface-container-highest text-on-surface font-semibold text-xs flex items-center justify-center gap-1.5 active:bg-surface-bright transition-colors"
+            className="min-h-[44px] px-2 py-2 rounded-xl bg-surface-container-highest text-on-surface font-semibold text-[11px] flex items-center justify-center gap-1 active:bg-surface-bright transition-colors"
           >
-            <span className="material-symbols-outlined text-[18px] text-tertiary">phone_in_talk</span>
-            <span className="truncate">Call Hot Lead</span>
+            <span className="material-symbols-outlined text-[16px] text-tertiary">call</span>
+            <span className="truncate">Local Contacts</span>
           </Link>
         </div>
       </section>

@@ -187,14 +187,14 @@ function ContactManuallyContent() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-base sm:text-lg font-bold text-on-surface">
-                Direct Leads (Calls &amp; Social Media)
+                Local Business Contacts
               </h1>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary-container/20 text-primary font-semibold">
-                AI Auto-Discovered
+                Discovered Leads
               </span>
             </div>
             <p className="text-xs text-on-surface-variant mt-0.5">
-              Businesses found automatically by AI worldwide that lack an email address. 1-click WhatsApp, LinkedIn InMail, and Phone links.
+              Local businesses found by discovery with no email: reach out via WhatsApp, phone, website contact form, or social profiles.
             </p>
           </div>
 
@@ -233,10 +233,10 @@ function ContactManuallyContent() {
             </div>
             <div className="min-w-0">
               <span className="text-xs sm:text-sm text-on-surface font-semibold block truncate">
-                Your 30-Second Phone Script (Proven Template)
+                Phone script (template)
               </span>
               <span className="text-[11px] text-on-surface-variant">
-                Natural, conversational script to convert local business leads into clients
+                Two honest conversation starters. Check local do-not-call rules before phoning.
               </span>
             </div>
           </div>
@@ -251,24 +251,49 @@ function ContactManuallyContent() {
 
         {isScriptExpanded && (
           <div className="p-4 pt-0 space-y-3 border-t border-outline-variant/10">
-            <div className="p-3.5 rounded-xl bg-surface-container-low text-on-surface text-xs sm:text-sm leading-relaxed italic border border-outline-variant/20">
-              &ldquo;Hi! I noticed your listing on Google Maps doesn&apos;t have a modern mobile website. I built a quick 2-page preview for you—can I send it to your WhatsApp or email?&rdquo;
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/20 space-y-2">
+                <div className="text-[11px] font-bold text-primary uppercase tracking-wider">Variant 1: Direct Observation</div>
+                <div className="text-on-surface text-xs leading-relaxed italic">
+                  &ldquo;Hi, I noticed your business listing on Google doesn&apos;t have a working modern website attached. A lot of local customers search on their phones and end up clicking competitors. I&apos;m a local web developer—would you like me to send over a quick layout idea to your email or WhatsApp?&rdquo;
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const text = "Hi, I noticed your business listing on Google doesn't have a working modern website attached. A lot of local customers search on their phones and end up clicking competitors. I'm a local web developer—would you like me to send over a quick layout idea to your email or WhatsApp?";
+                    copyToClipboard(text, 'script1', 'Variant 1');
+                  }}
+                  className="py-1.5 px-3 bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs rounded-lg flex items-center gap-1.5 font-medium transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[15px]">{copiedKey === 'script1' ? 'check' : 'content_copy'}</span>
+                  <span>{copiedKey === 'script1' ? 'Copied' : 'Copy Variant 1'}</span>
+                </button>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/20 space-y-2">
+                <div className="text-[11px] font-bold text-secondary uppercase tracking-wider">Variant 2: Speed &amp; Mobile Accessibility</div>
+                <div className="text-on-surface text-xs leading-relaxed italic">
+                  &ldquo;Hi, I was reviewing local services in the area and came across your listing. If you&apos;ve been thinking about getting a clean, mobile-friendly page up so customers can find your services and call you directly, I can put together a simple design for you. What is the best email or number to send details to?&rdquo;
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const text = "Hi, I was reviewing local services in the area and came across your listing. If you've been thinking about getting a clean, mobile-friendly page up so customers can find your services and call you directly, I can put together a simple design for you. What is the best email or number to send details to?";
+                    copyToClipboard(text, 'script2', 'Variant 2');
+                  }}
+                  className="py-1.5 px-3 bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs rounded-lg flex items-center gap-1.5 font-medium transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[15px]">{copiedKey === 'script2' ? 'check' : 'content_copy'}</span>
+                  <span>{copiedKey === 'script2' ? 'Copied' : 'Copy Variant 2'}</span>
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  const text = "Hi! I noticed your listing on Google Maps doesn't have a modern mobile website. I built a quick 2-page preview for you—can I send it to your WhatsApp or email?";
-                  copyToClipboard(text, 'masterScript', 'Script');
-                }}
-                className="py-2 px-3.5 bg-primary-container hover:bg-primary-container/80 text-on-primary-container font-semibold text-xs rounded-xl flex items-center gap-1.5 active:opacity-90 transition-all min-h-[44px]"
-                aria-label="Copy Script to Clipboard"
-              >
-                <span className="material-symbols-outlined text-[16px]">
-                  {copiedKey === 'masterScript' ? 'check' : 'content_copy'}
-                </span>
-                <span>{copiedKey === 'masterScript' ? 'Script Copied!' : 'Copy Script to Clipboard'}</span>
-              </button>
+
+            <div className="p-2.5 rounded-lg bg-surface-container-lowest border border-outline-variant/30 text-[11px] text-on-surface-variant flex items-start gap-2">
+              <span className="material-symbols-outlined text-[16px] text-primary shrink-0">info</span>
+              <span>
+                <strong>Compliance Note:</strong> Check local and national Do-Not-Call (DNC) registry rules before making unsolicited phone calls. Never claim to have already built a custom preview site unless you actually have one.
+              </span>
             </div>
           </div>
         )}
@@ -505,9 +530,15 @@ function ContactManuallyContent() {
                     <span>{copiedKey === 'phoneScript' ? 'Copied' : 'Copy Script'}</span>
                   </button>
                 </div>
-                <p className="text-xs sm:text-sm text-on-surface leading-relaxed italic">
-                  &ldquo;Hi, is this {selectedLead.name}? My name is Zia, I run a local web consultancy. I noticed your profile doesn&apos;t have an active mobile website link, and I built a quick 2-page preview that helps capture customer quotes. Can I send it to your WhatsApp or email?&rdquo;
-                </p>
+                <div className="space-y-2">
+                  <p className="text-xs sm:text-sm text-on-surface leading-relaxed italic">
+                    &ldquo;Hi, is this {selectedLead.name}? My name is Zia, I&apos;m a local web developer. I noticed your business listing on Google doesn&apos;t have a working modern website attached, which means potential customers on mobile may not be able to view your services or call you easily. Would you like me to send a quick layout idea to your WhatsApp or email?&rdquo;
+                  </p>
+                  <div className="text-[11px] text-on-surface-variant flex items-center gap-1.5 pt-1 border-t border-outline-variant/10">
+                    <span className="material-symbols-outlined text-[14px] text-amber-400">gavel</span>
+                    <span>Check local do-not-call rules before phoning. Never claim a preview exists unless you have prepared one.</span>
+                  </div>
+                </div>
               </div>
 
               {/* Multi-Platform Outreach Channels (LinkedIn, WhatsApp, Instagram, Facebook, X, Phone) */}
@@ -521,7 +552,10 @@ function ContactManuallyContent() {
                           <span className="material-symbols-outlined text-[16px]">work</span>
                         </div>
                         <div>
-                          <span className="text-xs font-bold text-on-surface block">LinkedIn Connection / InMail</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-on-surface block">LinkedIn Connection / InMail</span>
+                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-300 font-medium">Possible match (check before using)</span>
+                          </div>
                           <span className="text-[11px] text-on-surface-variant truncate max-w-[260px] block">
                             {getLinkedIn(selectedLead)}
                           </span>

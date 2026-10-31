@@ -18,6 +18,12 @@ export function Sidebar() {
       activeExact: true,
     },
     {
+      href: '/platforms',
+      label: t('nav.platforms', 'Find Clients on Platforms'),
+      description: t('nav.platforms_sub', 'Upwork, Fiverr, Toptal and more'),
+      icon: 'hub',
+    },
+    {
       href: '/businesses',
       label: t('nav.businesses', 'Businesses Found'),
       description: t('nav.businesses_sub', 'No website, broken & hot leads'),
@@ -31,8 +37,8 @@ export function Sidebar() {
     },
     {
       href: '/contact-manually',
-      label: t('nav.manual', 'Contact Manually'),
-      description: t('nav.manual_sub', 'No email: phone & social pitches'),
+      label: t('nav.manual', 'Local Business Contacts'),
+      description: t('nav.manual_sub', 'WhatsApp, social & phone for local leads'),
       icon: 'call',
     },
     {

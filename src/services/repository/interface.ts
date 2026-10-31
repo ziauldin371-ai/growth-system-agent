@@ -18,7 +18,10 @@ import {
   LeadSourceConfigEntity,
   PlatformFootprintCandidate,
   MarketplaceHotRequestEntity,
-  PlatformSpendLogEntity
+  PlatformSpendLogEntity,
+  PlatformTrackerEntity,
+  PlatformDailyTargetEntity,
+  OperatorProfileEntity
 } from '@/types';
 
 export interface IDataStore {
@@ -134,6 +137,13 @@ export interface IDataStore {
   // Platform Spend Logs
   getPlatformSpendLogs(platformId?: string): PlatformSpendLogEntity[] | Promise<PlatformSpendLogEntity[]>;
   recordPlatformSpend(spend: PlatformSpendLogEntity): void | Promise<void>;
+  // Platform Trackers & Targets
+  getPlatformTrackers(): Record<string, PlatformTrackerEntity> | Promise<Record<string, PlatformTrackerEntity>>;
+  savePlatformTracker(tracker: Partial<PlatformTrackerEntity> & { platformId: string }): PlatformTrackerEntity | Promise<PlatformTrackerEntity>;
+  getDailyTarget(dateStr?: string): PlatformDailyTargetEntity | Promise<PlatformDailyTargetEntity>;
+  incrementDailyProposals(dateStr?: string): PlatformDailyTargetEntity | Promise<PlatformDailyTargetEntity>;
+  getOperatorProfile(): OperatorProfileEntity | Promise<OperatorProfileEntity>;
+  saveOperatorProfile(profile: Partial<OperatorProfileEntity>): OperatorProfileEntity | Promise<OperatorProfileEntity>;
   seedDemoData?(force?: boolean): void | Promise<void>;
   clearDemoData?(): void | Promise<void>;
   hasDemoData?(): boolean | Promise<boolean>;

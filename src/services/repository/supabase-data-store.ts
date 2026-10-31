@@ -17,12 +17,16 @@ import {
   LeadSourceConfigEntity,
   PlatformFootprintCandidate,
   MarketplaceHotRequestEntity,
-  PlatformSpendLogEntity
+  PlatformSpendLogEntity,
+  PlatformTrackerEntity,
+  PlatformDailyTargetEntity,
+  OperatorProfileEntity,
 } from '@/types';
 import { IDataStore } from './interface';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 export class SupabaseDataStore implements IDataStore {
+  private demoModeActive: boolean = false;
   private fallbackStore?: any;
 
   constructor(fallbackStore?: any) {
@@ -994,17 +998,25 @@ export class SupabaseDataStore implements IDataStore {
     return this.fallback.getPlatformStats(options);
   }
 
-  public seedDemoData(force = false): void {
-    if (process.env.NODE_ENV === 'production' && !force) return;
-    this.fallback.seedDemoData?.(force);
-  }
-
-  public clearDemoData(): void {
-    this.fallback.clearDemoData?.();
-  }
-
   public hasDemoData(): boolean {
+    if (process.env.NODE_ENV === 'production') {
+      return this.demoModeActive;
+    }
     return this.fallback.hasDemoData?.() ?? false;
+  }
+
+  public async seedDemoData(force = false): Promise<void> {
+    this.demoModeActive = true;
+    if (this.fallback.seedDemoData) {
+      await this.fallback.seedDemoData(force);
+    }
+  }
+
+  public async clearDemoData(): Promise<void> {
+    this.demoModeActive = false;
+    if (this.fallback.clearDemoData) {
+      await this.fallback.clearDemoData();
+    }
   }
 
   public resetToSeedData(): void {
@@ -1409,6 +1421,158 @@ export class SupabaseDataStore implements IDataStore {
       });
     } catch {}
   }
+  // Platform Trackers & Targets
+  public async getPlatformTrackers(): Promise<Record<string, PlatformTrackerEntity>> {
+    const supabase = this.getClient(false);
+    if (!supabase) return this.fallback.getPlatformTrackers();
+    try {
+      const { data, error } = await supabase.from('platform_tracker').select('*');
+      if (error || !data) return this.fallback.getPlatformTrackers();
+      const map: Record<string, PlatformTrackerEntity> = {};
+      for (const row of data) {
+        map[row.platform_id] = {
+          id: row.id,
+          platformId: row.platform_id,
+          status: row.status,
+          myProfileUrl: row.my_profile_url,
+          notes: row.notes,
+          lastActionDate: row.last_action_date,
+          followUpDate: row.follow_up_date,
+          checklist: row.checklist,
+          customPitch: row.custom_pitch,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+        };
+      }
+      return map;
+    } catch {
+      return this.fallback.getPlatformTrackers();
+    }
+  }
+
+  public async savePlatformTracker(tracker: Partial<PlatformTrackerEntity> & { platformId: string }): Promise<PlatformTrackerEntity> {
+    const fallbackRes = await this.fallback.savePlatformTracker(tracker);
+    const supabase = this.getClient(true);
+    if (!supabase) return fallbackRes;
+    try {
+      const id = tracker.id || fallbackRes.id;
+      const row = {
+        id,
+        platform_id: tracker.platformId,
+        status: tracker.status || fallbackRes.status,
+        my_profile_url: tracker.myProfileUrl !== undefined ? tracker.myProfileUrl : fallbackRes.myProfileUrl,
+        notes: tracker.notes !== undefined ? tracker.notes : fallbackRes.notes,
+        last_action_date: tracker.lastActionDate || fallbackRes.lastActionDate,
+        follow_up_date: tracker.followUpDate !== undefined ? tracker.followUpDate : fallbackRes.followUpDate,
+        checklist: tracker.checklist || fallbackRes.checklist,
+        custom_pitch: tracker.customPitch !== undefined ? tracker.customPitch : fallbackRes.customPitch,
+        updated_at: new Date().toISOString(),
+      };
+      await supabase.from('platform_tracker').upsert(row);
+      return fallbackRes;
+    } catch {
+      return fallbackRes;
+    }
+  }
+
+  public async getDailyTarget(dateStr?: string): Promise<PlatformDailyTargetEntity> {
+    const today = dateStr || new Date().toISOString().split('T')[0];
+    const supabase = this.getClient(false);
+    if (!supabase) return this.fallback.getDailyTarget(today);
+    try {
+      const { data, error } = await supabase
+        .from('platform_daily_targets')
+        .select('*')
+        .eq('target_date', today)
+        .maybeSingle();
+      if (error || !data) return this.fallback.getDailyTarget(today);
+      return {
+        id: data.id,
+        targetDate: data.target_date,
+        targetCount: data.target_count,
+        completedCount: data.completed_count,
+        updatedAt: data.updated_at,
+      };
+    } catch {
+      return this.fallback.getDailyTarget(today);
+    }
+  }
+
+  public async incrementDailyProposals(dateStr?: string): Promise<PlatformDailyTargetEntity> {
+    const today = dateStr || new Date().toISOString().split('T')[0];
+    const target = await this.fallback.incrementDailyProposals(today);
+    const supabase = this.getClient(true);
+    if (!supabase) return target;
+    try {
+      await supabase.from('platform_daily_targets').upsert({
+        id: target.id,
+        target_date: target.targetDate,
+        target_count: target.targetCount,
+        completed_count: target.completedCount,
+        updated_at: target.updatedAt,
+      });
+      return target;
+    } catch {
+      return target;
+    }
+  }
+
+  public async getOperatorProfile(): Promise<OperatorProfileEntity> {
+    const supabase = this.getClient(false);
+    if (!supabase) return this.fallback.getOperatorProfile();
+    try {
+      const { data, error } = await supabase
+        .from('operator_profile')
+        .select('*')
+        .eq('id', 'default')
+        .maybeSingle();
+      if (error || !data) return this.fallback.getOperatorProfile();
+      return {
+        id: data.id,
+        name: data.name,
+        headline: data.headline,
+        services: data.services,
+        portfolioLinks: data.portfolio_links,
+        bio: data.bio,
+        yearsOfExperience: data.years_of_experience,
+        rateRange: data.rate_range,
+        availability: data.availability,
+        languages: data.languages,
+        timezone: data.timezone,
+        demoModeEnabled: data.demo_mode_enabled,
+        updatedAt: data.updated_at,
+      };
+    } catch {
+      return this.fallback.getOperatorProfile();
+    }
+  }
+
+  public async saveOperatorProfile(profile: Partial<OperatorProfileEntity>): Promise<OperatorProfileEntity> {
+    const fallbackRes = await this.fallback.saveOperatorProfile(profile);
+    const supabase = this.getClient(true);
+    if (!supabase) return fallbackRes;
+    try {
+      await supabase.from('operator_profile').upsert({
+        id: 'default',
+        name: fallbackRes.name,
+        headline: fallbackRes.headline,
+        services: fallbackRes.services,
+        portfolio_links: fallbackRes.portfolioLinks,
+        bio: fallbackRes.bio,
+        years_of_experience: fallbackRes.yearsOfExperience,
+        rate_range: fallbackRes.rateRange,
+        availability: fallbackRes.availability,
+        languages: fallbackRes.languages,
+        timezone: fallbackRes.timezone,
+        demo_mode_enabled: fallbackRes.demoModeEnabled,
+        updated_at: new Date().toISOString(),
+      });
+      return fallbackRes;
+    } catch {
+      return fallbackRes;
+    }
+  }
+
 }
 
 export const supabaseDataStore = new SupabaseDataStore();

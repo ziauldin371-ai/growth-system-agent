@@ -21,8 +21,12 @@ import {
   LeadSourceConfigEntity,
   PlatformFootprintCandidate,
   MarketplaceHotRequestEntity,
-  PlatformSpendLogEntity
+  PlatformSpendLogEntity,
+  PlatformTrackerEntity,
+  PlatformDailyTargetEntity,
+  OperatorProfileEntity,
 } from '@/types';
+import { DEFAULT_OPERATOR_PROFILE } from '@/services/ai/platform-pitch-templates';
 import { IDataStore } from './interface';
 import { normalizeBusinessName, normalizeEmail } from '../crm/normalization';
 import { normalizeDomain } from '../website/verifier';
@@ -53,6 +57,15 @@ export class DataStore implements IDataStore {
   private platformFootprints: Map<string, PlatformFootprintCandidate[]> = new Map(); // businessId -> footprints[]
   private hotRequests: Map<string, MarketplaceHotRequestEntity> = new Map(); // requestId -> request
   private platformSpendLogs: Array<PlatformSpendLogEntity> = [];
+  private demoModeActive: boolean = false;
+  private platformTrackers: Map<string, PlatformTrackerEntity> = new Map();
+  private platformDailyTargets: Map<string, PlatformDailyTargetEntity> = new Map();
+  private operatorProfile: OperatorProfileEntity = {
+    ...DEFAULT_OPERATOR_PROFILE,
+    id: 'default',
+    demoModeEnabled: false,
+    updatedAt: new Date().toISOString(),
+  };
 
   constructor(customPersistencePath?: string) {
     const dataDir = path.join(process.cwd(), '.data');
@@ -982,12 +995,14 @@ ziauldin371@gmail.com`,
   }
 
   public seedDemoData(force = false): void {
+    this.demoModeActive = true;
     if (process.env.NODE_ENV === 'production' && !force) return;
     this.seedInitialData(force);
     this.persistState();
   }
 
   public clearDemoData(): void {
+    this.demoModeActive = false;
     for (const [id, b] of Array.from(this.businesses.entries())) {
       if (isDemoOrSandboxRecord(b)) {
         this.businesses.delete(id);
@@ -1012,6 +1027,9 @@ ziauldin371@gmail.com`,
   }
 
   public hasDemoData(): boolean {
+    if (process.env.NODE_ENV === 'production') {
+      return this.demoModeActive;
+    }
     return Array.from(this.businesses.values()).some(b => isDemoOrSandboxRecord(b));
   }
 
@@ -1653,7 +1671,7 @@ ziauldin371@gmail.com`,
   // ==============================================================================
 
   private seedPlatforms(): void {
-    if (this.platforms.size > 0) return;
+    this.platforms.clear();
     try {
       const seedPath = path.join(process.cwd(), 'src', 'data', 'seed-platforms.json');
       if (fs.existsSync(seedPath)) {
@@ -1911,6 +1929,81 @@ ziauldin371@gmail.com`,
     this.platformSpendLogs.push(spend);
     this.persistState();
   }
+  // Platform Trackers & Targets
+  public getPlatformTrackers(): Record<string, PlatformTrackerEntity> {
+    const res: Record<string, PlatformTrackerEntity> = {};
+    for (const [k, v] of Array.from(this.platformTrackers.entries())) {
+      res[k] = v;
+    }
+    return res;
+  }
+
+  public savePlatformTracker(tracker: Partial<PlatformTrackerEntity> & { platformId: string }): PlatformTrackerEntity {
+    const existing = this.platformTrackers.get(tracker.platformId);
+    const updated: PlatformTrackerEntity = {
+      id: existing?.id || `trk_${tracker.platformId}`,
+      platformId: tracker.platformId,
+      status: tracker.status || existing?.status || 'not_started',
+      myProfileUrl: tracker.myProfileUrl !== undefined ? tracker.myProfileUrl : (existing?.myProfileUrl || null),
+      notes: tracker.notes !== undefined ? tracker.notes : (existing?.notes || null),
+      lastActionDate: tracker.lastActionDate || new Date().toISOString(),
+      followUpDate: tracker.followUpDate !== undefined ? tracker.followUpDate : (existing?.followUpDate || null),
+      checklist: tracker.checklist || existing?.checklist || {
+        headline: false,
+        bio: false,
+        portfolio: false,
+        rates: false,
+        skills: false,
+        verification: false,
+        payout: false,
+      },
+      customPitch: tracker.customPitch !== undefined ? tracker.customPitch : (existing?.customPitch || null),
+      createdAt: existing?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    this.platformTrackers.set(tracker.platformId, updated);
+    this.persistState();
+    return updated;
+  }
+
+  public getDailyTarget(dateStr?: string): PlatformDailyTargetEntity {
+    const today = dateStr || new Date().toISOString().split('T')[0];
+    const existing = this.platformDailyTargets.get(today);
+    if (existing) return existing;
+    const initial: PlatformDailyTargetEntity = {
+      id: `tgt_${today}`,
+      targetDate: today,
+      targetCount: 5,
+      completedCount: 0,
+      updatedAt: new Date().toISOString(),
+    };
+    this.platformDailyTargets.set(today, initial);
+    return initial;
+  }
+
+  public incrementDailyProposals(dateStr?: string): PlatformDailyTargetEntity {
+    const target = this.getDailyTarget(dateStr);
+    target.completedCount += 1;
+    target.updatedAt = new Date().toISOString();
+    this.platformDailyTargets.set(target.targetDate, target);
+    this.persistState();
+    return target;
+  }
+
+  public getOperatorProfile(): OperatorProfileEntity {
+    return { ...this.operatorProfile };
+  }
+
+  public saveOperatorProfile(profile: Partial<OperatorProfileEntity>): OperatorProfileEntity {
+    this.operatorProfile = {
+      ...this.operatorProfile,
+      ...profile,
+      updatedAt: new Date().toISOString(),
+    };
+    this.persistState();
+    return { ...this.operatorProfile };
+  }
+
 }
 
 import { SupabaseDataStore } from './supabase-data-store';
