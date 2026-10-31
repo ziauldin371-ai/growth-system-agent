@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   // 1. Authenticate: Session Cookie or Authorization Bearer header
   let isAuthenticated = false;
 
-  const sessionCookie = req.cookies.get('admin_session')?.value;
+  const sessionCookie = req.cookies.get('growth_agent_session')?.value || req.cookies.get('admin_session')?.value;
   if (sessionCookie) {
     const verified = await verifySessionToken(sessionCookie);
     if (verified.valid) {
