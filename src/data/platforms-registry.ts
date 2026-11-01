@@ -886,7 +886,7 @@ export const CLIENT_PLATFORMS: PlatformItem[] = [
   },
   {
     id: 'n8n-experts',
-    name: 'n8n (Experts / community programs)',
+    name: 'n8n',
     officialUrl: 'https://n8n.io',
     group: 'D',
     groupName: 'Automation & Web Directories',
@@ -911,7 +911,7 @@ export const CLIENT_PLATFORMS: PlatformItem[] = [
   },
   {
     id: 'webflow-experts',
-    name: 'Webflow Experts / Partners',
+    name: 'Webflow Experts',
     officialUrl: 'https://webflow.com',
     group: 'D',
     groupName: 'Automation & Web Directories',
@@ -936,7 +936,7 @@ export const CLIENT_PLATFORMS: PlatformItem[] = [
   },
   {
     id: 'shopify-partners',
-    name: 'Shopify Partners / Experts',
+    name: 'Shopify Partners',
     officialUrl: 'https://www.shopify.com/partners',
     group: 'D',
     groupName: 'Automation & Web Directories',
@@ -986,7 +986,7 @@ export const CLIENT_PLATFORMS: PlatformItem[] = [
   },
   {
     id: 'bubble-hire',
-    name: 'Bubble (hire an expert)',
+    name: 'Bubble',
     officialUrl: 'https://bubble.io/hire',
     group: 'D',
     groupName: 'Automation & Web Directories',
@@ -1016,7 +1016,7 @@ export const CLIENT_PLATFORMS: PlatformItem[] = [
   // ==========================================
   {
     id: 'apollo-io',
-    name: 'Apollo.io',
+    name: 'Apollo',
     officialUrl: 'https://www.apollo.io',
     group: 'E',
     groupName: 'Lead Databases & Contact Finders',
@@ -1066,7 +1066,7 @@ export const CLIENT_PLATFORMS: PlatformItem[] = [
   },
   {
     id: 'hunter-io',
-    name: 'Hunter.io',
+    name: 'Hunter',
     officialUrl: 'https://hunter.io',
     group: 'E',
     groupName: 'Lead Databases & Contact Finders',
@@ -1090,7 +1090,7 @@ export const CLIENT_PLATFORMS: PlatformItem[] = [
   },
   {
     id: 'snov-io',
-    name: 'Snov.io',
+    name: 'Snov',
     officialUrl: 'https://snov.io',
     group: 'E',
     groupName: 'Lead Databases & Contact Finders',

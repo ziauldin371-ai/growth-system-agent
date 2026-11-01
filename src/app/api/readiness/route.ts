@@ -52,43 +52,24 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  const isAdminConfigured = Boolean(process.env.ADMIN_PASSWORD && process.env.ADMIN_PASSWORD.trim().length > 0);
   const isGmailConfigured = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_REFRESH_TOKEN);
   const isPlacesConfigured = Boolean(process.env.GOOGLE_PLACES_API_KEY && process.env.GOOGLE_PLACES_API_KEY.trim().length > 0);
   const isGeminiConfigured = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim().length > 0);
   const isSchedulerSecretConfigured = Boolean(process.env.CRON_SECRET && process.env.CRON_SECRET.trim().length > 0);
+  const isAddressConfigured = Boolean(process.env.PHYSICAL_MAILING_ADDRESS && process.env.PHYSICAL_MAILING_ADDRESS.trim().length > 0);
+  const sendMode = process.env.DEFAULT_SEND_MODE || 'approval';
 
   const missing: string[] = [];
   const configured: string[] = [];
 
-  if (isDbConnected) {
-    configured.push('database');
-  } else {
-    missing.push('database');
-  }
-
-  if (isGmailConfigured) {
-    configured.push('gmail');
-  } else {
-    missing.push('gmail');
-  }
-
-  if (isPlacesConfigured) {
-    configured.push('places_key');
-  } else {
-    missing.push('places_key');
-  }
-
-  if (isGeminiConfigured) {
-    configured.push('gemini_key');
-  } else {
-    missing.push('gemini_key');
-  }
-
-  if (isSchedulerSecretConfigured) {
-    configured.push('scheduler_secret');
-  } else {
-    missing.push('scheduler_secret');
-  }
+  if (isDbConnected) configured.push('database'); else missing.push('database');
+  if (isAdminConfigured) configured.push('admin_auth'); else missing.push('admin_auth');
+  if (isSchedulerSecretConfigured) configured.push('scheduler_secret'); else missing.push('scheduler_secret');
+  if (isPlacesConfigured) configured.push('places_key'); else missing.push('places_key');
+  if (isGeminiConfigured) configured.push('gemini_key'); else missing.push('gemini_key');
+  if (isGmailConfigured) configured.push('gmail'); else missing.push('gmail');
+  if (isAddressConfigured) configured.push('mailing_address'); else missing.push('mailing_address');
 
   const isFullyReady = missing.length === 0;
 
@@ -100,12 +81,14 @@ export async function GET(req: NextRequest) {
     configured,
     services: {
       database: isDbConnected ? 'connected' : 'missing',
-      gmail: isGmailConfigured ? 'configured' : 'missing',
+      admin_auth: isAdminConfigured ? 'configured' : 'missing',
+      scheduler_secret: isSchedulerSecretConfigured ? 'configured' : 'missing',
       places_key: isPlacesConfigured ? 'configured' : 'missing',
       gemini_key: isGeminiConfigured ? 'configured' : 'missing',
-      scheduler_secret: isSchedulerSecretConfigured ? 'configured' : 'missing',
+      gmail: isGmailConfigured ? 'configured' : 'missing',
+      mailing_address: isAddressConfigured ? 'configured' : 'missing',
+      auto_send: sendMode === 'auto_send' ? 'active' : 'approval_mode',
     },
     checkedAt: new Date().toISOString(),
   });
 }
-

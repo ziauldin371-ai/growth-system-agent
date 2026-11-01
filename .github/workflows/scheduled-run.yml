@@ -6,19 +6,28 @@ on:
     - cron: '0 4,12 * * *'
   workflow_dispatch:
 
+concurrency:
+  group: scheduled-run-production
+  cancel-in-progress: false
+
 jobs:
   run-scheduler:
     name: Cloud Scheduled Run
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Trigger Automated Discovery & Queue
         run: |
           set -e
-          echo "Triggering cloud automated discovery run at: ${{ secrets.APP_BASE_URL }}/api/cron/scheduled-run"
+          TARGET_URL="${{ secrets.APP_BASE_URL }}/api/cron/scheduled-run"
+          echo "Triggering cloud automated run at: $TARGET_URL"
           
-          # Execute POST request with CRON_SECRET Bearer token
-          # Using curl with write-out to capture HTTP code and response body
-          HTTP_RESPONSE=$(curl -s -S -w "\n%{http_code}" -X POST "${{ secrets.APP_BASE_URL }}/api/cron/scheduled-run" \
+          # Execute POST request with CRON_SECRET Bearer token, max-time 120s, up to 2 retries
+          HTTP_RESPONSE=$(curl -s -S -w "\n%{http_code}" \
+            --max-time 120 \
+            --retry 2 \
+            --retry-delay 5 \
+            -X POST "$TARGET_URL" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json" \
             -H "User-Agent: GitHub-Actions-Scheduler/1.0")
@@ -34,12 +43,29 @@ jobs:
           echo "$HTTP_BODY"
           echo "=================================================="
           
-          # Fail loudly on any non-200 HTTP status code
+          # Check for non-200 HTTP status code
           if [ "$HTTP_STATUS" -ne 200 ]; then
             echo "::error::Scheduled run failed with HTTP status code $HTTP_STATUS"
-            echo "::error::Response: $HTTP_BODY"
+            echo "### ❌ Scheduled Run Failed" >> $GITHUB_STEP_SUMMARY
+            echo "- **Target**: \`$TARGET_URL\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **Status**: \`$HTTP_STATUS\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **Response**: \`$HTTP_BODY\`" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
           
-          echo "Automated scheduled run completed successfully with HTTP 200."
-
+          # Check if the execution was skipped gracefully (e.g. Places API key missing or safety lock)
+          IS_SKIPPED=$(echo "$HTTP_BODY" | grep -o '"status":"skipped"' || true)
+          REASON=$(echo "$HTTP_BODY" | grep -o '"reason":"[^"]*"' | cut -d'"' -f4 || echo "Conditions not met")
+          
+          if [ -n "$IS_SKIPPED" ]; then
+            echo "::warning::Scheduled run executed successfully but skipped actions: $REASON"
+            echo "### ⚠️ Scheduled Run Completed (Actions Skipped)" >> $GITHUB_STEP_SUMMARY
+            echo "- **Status**: \`HTTP 200 OK\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **State**: \`skipped\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **Reason**: $REASON" >> $GITHUB_STEP_SUMMARY
+            echo "- **Note**: Real discovery will trigger automatically once Google Places API key is configured in Vercel." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ✅ Scheduled Run Completed Successfully" >> $GITHUB_STEP_SUMMARY
+            echo "- **Status**: \`HTTP 200 OK\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **Result**: Lead discovery and queue processing executed successfully." >> $GITHUB_STEP_SUMMARY
+          fi

@@ -1201,7 +1201,7 @@
   },
   {
     "id": "n8n-experts",
-    "name": "n8n (Experts / community programs)",
+    "name": "n8n",
     "category": "automation_web_directories",
     "group": "D",
     "groupName": "Automation & Web Directories",
@@ -1237,7 +1237,7 @@
   },
   {
     "id": "webflow-experts",
-    "name": "Webflow Experts / Partners",
+    "name": "Webflow Experts",
     "category": "automation_web_directories",
     "group": "D",
     "groupName": "Automation & Web Directories",
@@ -1273,7 +1273,7 @@
   },
   {
     "id": "shopify-partners",
-    "name": "Shopify Partners / Experts",
+    "name": "Shopify Partners",
     "category": "automation_web_directories",
     "group": "D",
     "groupName": "Automation & Web Directories",
@@ -1345,7 +1345,7 @@
   },
   {
     "id": "bubble-hire",
-    "name": "Bubble (hire an expert)",
+    "name": "Bubble",
     "category": "automation_web_directories",
     "group": "D",
     "groupName": "Automation & Web Directories",
@@ -1380,7 +1380,7 @@
   },
   {
     "id": "apollo-io",
-    "name": "Apollo.io",
+    "name": "Apollo",
     "category": "lead_databases_contact_finders",
     "group": "E",
     "groupName": "Lead Databases & Contact Finders",
@@ -1450,7 +1450,7 @@
   },
   {
     "id": "hunter-io",
-    "name": "Hunter.io",
+    "name": "Hunter",
     "category": "lead_databases_contact_finders",
     "group": "E",
     "groupName": "Lead Databases & Contact Finders",
@@ -1484,7 +1484,7 @@
   },
   {
     "id": "snov-io",
-    "name": "Snov.io",
+    "name": "Snov",
     "category": "lead_databases_contact_finders",
     "group": "E",
     "groupName": "Lead Databases & Contact Finders",

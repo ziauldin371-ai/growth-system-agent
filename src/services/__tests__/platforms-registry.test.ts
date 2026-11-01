@@ -38,11 +38,11 @@ describe('Platforms Registry (68 Platforms + 7 Local Channels)', () => {
     expect(counts['B']).toBe(13);
     // Group C: Specialized AI & Machine Learning (3)
     expect(counts['C']).toBe(3);
-    // Group D: Tech Job Boards with Contract/Fractional Roles (7)
+    // Group D: Automation / No-Code / Web Ecosystem Directories (7)
     expect(counts['D']).toBe(7);
-    // Group E: B2B Directories & Market Intelligence (12)
+    // Group E: Lead Databases and Contact Finders (12)
     expect(counts['E']).toBe(12);
-    // Group F: B2B Prospecting & Contact Finders (13)
+    // Group F: Company Research and Directories (13)
     expect(counts['F']).toBe(13);
     // Group G: Tech Communities & Social Channels (3)
     expect(counts['G']).toBe(3);
@@ -75,6 +75,52 @@ describe('Platforms Registry (68 Platforms + 7 Local Channels)', () => {
     const toptal = getPlatformById('toptal');
     expect(toptal).toBeDefined();
     expect(toptal?.group).toBe('B');
+  });
+
+  it('verifies exact platform names match required specifications for Groups D, E, and F', () => {
+    const groupDNames = getPlatformsByGroup('D').map((p) => p.name);
+    expect(groupDNames).toEqual([
+      'Make Partners Directory',
+      'Zapier Expert Directory',
+      'n8n',
+      'Webflow Experts',
+      'Shopify Partners',
+      'HubSpot Solutions Directory',
+      'Bubble',
+    ]);
+
+    const groupENames = getPlatformsByGroup('E').map((p) => p.name);
+    expect(groupENames).toEqual([
+      'Apollo',
+      'Clay',
+      'Hunter',
+      'Snov',
+      'LinkedIn Sales Navigator',
+      'Lusha',
+      'RocketReach',
+      'LeadIQ',
+      'Seamless.AI',
+      'UpLead',
+      'Kaspr',
+      'Findymail',
+    ]);
+
+    const groupFNames = getPlatformsByGroup('F').map((p) => p.name);
+    expect(groupFNames).toEqual([
+      'Crunchbase',
+      'Clutch',
+      'GoodFirms',
+      'G2',
+      'BuiltWith',
+      'Wappalyzer',
+      'DesignRush',
+      'Sortlist',
+      'The Manifest',
+      'UpCity',
+      'Wellfound',
+      'Product Hunt',
+      'Y Combinator Work at a Startup',
+    ]);
   });
 
   it('filters platforms by group correctly', () => {
