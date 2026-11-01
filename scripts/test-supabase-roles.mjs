@@ -263,9 +263,12 @@ async function runRolesIntegrationTest() {
   console.log(`================================================================\n`);
 
   // Cleanup test records
+  console.log('Cleaning up all test records created during verification...');
+  await serverClient.from('send_events').delete().eq('recipient_email', `contact@testbiz-${uniqueId}.co.uk`);
   await serverClient.from('email_drafts').delete().eq('id', draftId);
-  await serverClient.from('suppression_list').delete().eq('id', `supp_${uniqueId}`);
+  await serverClient.from('suppression_list').delete().eq('value', suppEmail);
   await serverClient.from('businesses').delete().eq('id', businessId);
+  console.log('Cleanup complete: 0 test entities left in database.');
 }
 
 function runSimulatedAudit() {

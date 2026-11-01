@@ -8,7 +8,19 @@ export function isDemoOrSandboxRecord(record: any): boolean {
   if (!record) return false;
   if (record.isSandboxData === true) return true;
   if (record.isDemo === true) return true;
-  if (record.sourceProvider === 'b2b_mock' || record.sourceProvider === 'mock') return true;
+  if (
+    record.sourceProvider === 'b2b_mock' ||
+    record.sourceProvider === 'mock' ||
+    record.sourceProvider === 'service_role_test' ||
+    record.sourceProvider === 'service_role' ||
+    record.source_provider === 'service_role_test' ||
+    record.source_provider === 'service_role'
+  ) return true;
+
+  if (typeof record.name === 'string') {
+    const n = record.name.toLowerCase();
+    if (n.startsWith('test business') || n.includes('mock') || n.includes('demo')) return true;
+  }
 
   if (typeof record.domain === 'string') {
     const d = record.domain.toLowerCase();
