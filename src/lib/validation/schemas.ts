@@ -9,7 +9,7 @@ export const DiscoveryRequestSchema = z.object({
   keywords: z.array(z.string()).default([]),
   companyType: z.string().optional(),
   companySize: z.string().optional(),
-  provider: z.enum(['auto', 'google_places', 'companies_house', 'b2b_mock']).default('auto'),
+  provider: z.enum(['auto', 'osm', 'geoapify', 'google_places', 'companies_house', 'b2b_mock']).default('auto'),
   limit: z.number().int().min(1).max(100).default(20),
 });
 

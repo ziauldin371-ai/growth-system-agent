@@ -1,16 +1,40 @@
 import { DiscoveryRequest, DiscoveryRequestSchema } from '@/lib/validation/schemas';
 import { IDiscoveryProvider, RawDiscoveredLead } from './types';
 import { B2BMockProvider } from './providers/b2b-mock-provider';
+import { OpenStreetMapProvider } from './providers/open-street-map-provider';
 import { GooglePlacesProvider } from './providers/google-places-provider';
 import { CompaniesHouseProvider } from './providers/companies-house-provider';
+import { GeoapifyProvider } from './providers/geoapify-provider';
 
 export class DiscoveryService {
   private providers: Map<string, IDiscoveryProvider> = new Map();
 
   constructor() {
     this.registerProvider(new B2BMockProvider());
+    this.registerProvider(new OpenStreetMapProvider());
     this.registerProvider(new GooglePlacesProvider());
     this.registerProvider(new CompaniesHouseProvider());
+    this.registerProvider(new GeoapifyProvider());
+  }
+
+  public getActiveProviderId(): string {
+    const envProvider = (process.env.DISCOVERY_PROVIDER || '').trim().toLowerCase();
+    if (envProvider === 'google' || envProvider === 'google_places') {
+      return 'google_places';
+    }
+    if (envProvider === 'geoapify') {
+      return 'geoapify';
+    }
+    if (envProvider === 'osm' || envProvider === 'openstreetmap') {
+      return 'osm';
+    }
+    if (this.providers.get('google_places')?.isConfigured()) {
+      return 'google_places';
+    }
+    if (this.providers.get('geoapify')?.isConfigured()) {
+      return 'geoapify';
+    }
+    return 'osm';
   }
 
   public registerProvider(provider: IDiscoveryProvider): void {
@@ -41,16 +65,19 @@ export class DiscoveryService {
     let provider: IDiscoveryProvider;
 
     if (validatedRequest.provider === 'auto') {
-      if (validatedRequest.market === 'UK' && this.providers.get('companies_house')?.isConfigured()) {
-        provider = this.providers.get('companies_house')!;
-      } else if (this.providers.get('google_places')?.isConfigured()) {
+      const activeId = this.getActiveProviderId();
+      if (activeId === 'google_places' && this.providers.get('google_places')?.isConfigured()) {
         provider = this.providers.get('google_places')!;
-      } else {
-        if (process.env.NODE_ENV === 'production') {
-          throw new Error('Live discovery credentials missing: GOOGLE_PLACES_API_KEY (or COMPANIES_HOUSE_API_KEY for UK) is required in production. Silent fallback to mock data is disabled.');
-        }
+      } else if (activeId === 'geoapify' && this.providers.get('geoapify')?.isConfigured()) {
+        provider = this.providers.get('geoapify')!;
+      } else if (process.env.DISCOVERY_PROVIDER === 'osm') {
+        provider = this.providers.get('osm')!;
+      } else if (process.env.NODE_ENV === 'test') {
         provider = this.providers.get('b2b_mock')!;
-        warnings.push('External live discovery APIs are unconfigured (no API keys in environment). Running via Demo Sandbox Adapter. Records will be labeled DEMO.');
+      } else if (process.env.NODE_ENV === 'production') {
+        provider = this.providers.get('osm')!;
+      } else {
+        provider = this.providers.get('osm')!;
       }
     } else {
       const selected = this.providers.get(validatedRequest.provider);

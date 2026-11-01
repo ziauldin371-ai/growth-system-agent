@@ -297,6 +297,17 @@ function BusinessesContent() {
         </div>
       )}
 
+      {/* OpenStreetMap Fair-use Attribution */}
+      <div className="px-4 py-2 bg-surface-container-low rounded-xl border border-outline-variant/30 text-[11px] text-on-surface-variant flex items-center justify-between gap-2 shadow-sm">
+        <span className="flex items-center gap-1.5">
+          <span className="material-symbols-outlined text-[15px] text-primary">public</span>
+          <span>Free Business Discovery: <strong>© OpenStreetMap contributors (ODbL)</strong></span>
+        </span>
+        <span className="text-[10px] bg-surface-container px-2 py-0.5 rounded border border-outline-variant/40 font-mono">
+          Fair-Use Compliant
+        </span>
+      </div>
+
       {/* Interactive Overview Banner (Stitch Live Radar) */}
       <section className="bg-surface-container rounded-2xl p-4 sm:p-5 shadow-sm relative overflow-hidden border border-outline-variant/20">
         <div className="flex items-center justify-between gap-2 mb-2">
