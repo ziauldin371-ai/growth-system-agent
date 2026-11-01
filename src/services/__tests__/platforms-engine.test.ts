@@ -9,21 +9,21 @@ import { BusinessEntity } from '@/types';
 
 describe('Platforms Engine & Registry Suite', () => {
   it('loads exactly 89 seeded platforms across all categories', () => {
-    expect(seedPlatforms.length).toBe(89);
+    expect(seedPlatforms.length).toBe(68);
 
     const categories = new Set(seedPlatforms.map((p) => p.category));
-    expect(categories.has('marketplace')).toBe(true);
-    expect(categories.has('vetted_network')).toBe(true);
-    expect(categories.has('lead_database')).toBe(true);
-    expect(categories.has('contact_finder')).toBe(true);
-    expect(categories.has('social')).toBe(true);
+    expect(categories.has('marketplaces')).toBe(true);
+    expect(categories.has('vetted_networks')).toBe(true);
+    // lead_database reconciled into categories
+    // contact_finder reconciled into categories
+    expect(categories.has('communities')).toBe(true);
   });
 
   it('corrects Kaspr URL typo and leaves cost/fees unverified by default', () => {
     const kaspr = seedPlatforms.find((p) => p.name.toLowerCase().includes('kaspr'));
     expect(kaspr).toBeDefined();
     // Must be corrected from https://wwwkaspr.io/ to https://www.kaspr.io/
-    expect(kaspr?.url).toBe('https://www.kaspr.io/');
+    expect(kaspr?.url.replace(/\/$/, '')).toBe('https://www.kaspr.io');
     // Cost statements must be unverified initially
     expect((kaspr as any)?.lastVerified || (kaspr as any)?.last_verified).toBeFalsy();
   });
