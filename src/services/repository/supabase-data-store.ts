@@ -1578,6 +1578,19 @@ export class SupabaseDataStore implements IDataStore {
     }
   }
 
+  public getDiscoveryCache(key: string, maxAgeMs?: number): any[] | null {
+    if (this.fallback && typeof this.fallback.getDiscoveryCache === 'function') {
+      return this.fallback.getDiscoveryCache(key, maxAgeMs);
+    }
+    return null;
+  }
+
+  public saveDiscoveryCache(key: string, results: any[]): void {
+    if (this.fallback && typeof this.fallback.saveDiscoveryCache === 'function') {
+      this.fallback.saveDiscoveryCache(key, results);
+    }
+  }
+
 }
 
 export const supabaseDataStore = new SupabaseDataStore();

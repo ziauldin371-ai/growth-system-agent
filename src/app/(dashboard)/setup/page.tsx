@@ -132,17 +132,25 @@ function SetupContent() {
     {
       id: 'places',
       stepNumber: 4,
-      name: 'Google Places API (New) - Business Search',
-      shortName: 'Google Places API',
-      description: 'Discovers verified commercial businesses in target cities with real reviews, hours, and domains.',
-      descriptionUrdu: 'Mukhtalif shehron mein verified commercial businesses dhoondnay ke liye Google Places API key.',
-      status: isPlacesOk ? 'connected' : 'missing',
-      statusLabel: isPlacesOk ? 'Active (Commercial Discovery)' : 'Not Configured (Scheduled Run Skips Gracefully)',
-      envVar: 'GOOGLE_PLACES_API_KEY, PLACES_MONTHLY_BUDGET',
+      name: isPlacesOk ? 'Business Finder: Google Places API (Active)' : 'Business finder: OpenStreetMap (free, active)',
+      shortName: isPlacesOk ? 'Google Places API' : 'OpenStreetMap (Active)',
+      description: isPlacesOk
+        ? 'Discovers verified commercial businesses in target cities with real reviews, hours, and domains.'
+        : 'OpenStreetMap free business finder is active and ready (no credit card required). Google Places gives richer data (ratings, reviews) if you add a key later.',
+      descriptionUrdu: isPlacesOk
+        ? 'Google Places API key active hai commercial businesses dhoondnay ke liye.'
+        : 'OpenStreetMap free business finder active hai bina kisi credit card ke. Google Places baad mein ratings aur reviews ke liye add kiya jaa sakta hai.',
+      status: 'connected',
+      statusLabel: isPlacesOk ? 'Active (Google Places)' : 'Active (OpenStreetMap Free Provider)',
+      envVar: 'DISCOVERY_PROVIDER=osm (or GOOGLE_PLACES_API_KEY)',
       docLink: 'https://console.cloud.google.com/apis/library/places.googleapis.com',
-      howToGet: 'In Google Cloud Console, enable "Places API (New)", create an API Key, restrict to Places API, and set a $10 monthly budget cap.',
-      howToGetUrdu: 'Google Cloud Console mein ja kar Places API (New) enable karein, API key generate karein aur monthly budget cap lagayein.',
-      whereToPut: 'Vercel Production Environment Variables: GOOGLE_PLACES_API_KEY',
+      howToGet: isPlacesOk
+        ? 'Google Places key is configured and active in environment.'
+        : 'OpenStreetMap is active by default. Optional upgrade: enable Places API (New) in Google Cloud Console and set GOOGLE_PLACES_API_KEY.',
+      howToGetUrdu: isPlacesOk
+        ? 'Google Places key pehle se configured hai.'
+        : 'OpenStreetMap pehle se bilkul muft active hai. Google Places key lagana optional hai agar ratings aur review count chahiye.',
+      whereToPut: 'Active: OpenStreetMap (Built-in). Optional: Vercel Environment Variable GOOGLE_PLACES_API_KEY',
     },
     {
       id: 'gemini',

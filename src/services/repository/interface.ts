@@ -145,6 +145,8 @@ export interface IDataStore {
   incrementDailyProposals(dateStr?: string): PlatformDailyTargetEntity | Promise<PlatformDailyTargetEntity>;
   getOperatorProfile(): OperatorProfileEntity | Promise<OperatorProfileEntity>;
   saveOperatorProfile(profile: Partial<OperatorProfileEntity>): OperatorProfileEntity | Promise<OperatorProfileEntity>;
+  getDiscoveryCache?(key: string, maxAgeMs?: number): any[] | null | Promise<any[] | null>;
+  saveDiscoveryCache?(key: string, results: any[]): void | Promise<void>;
   seedDemoData?(force?: boolean): void | Promise<void>;
   clearDemoData?(): void | Promise<void>;
   hasDemoData?(): boolean | Promise<boolean>;

@@ -1600,6 +1600,24 @@ ziauldin371@gmail.com`,
     };
   }
 
+  // --- Discovery Cache (30-day fair-use persistent caching) ---
+  public getDiscoveryCache(key: string, maxAgeMs: number = 30 * 24 * 60 * 60 * 1000): any[] | null {
+    const cp = this.checkpoints.get(`discovery_cache:${key}`);
+    if (!cp || !cp.cursorData) return null;
+    const cachedAt = cp.cursorData.cachedAt;
+    if (!cachedAt || Date.now() - cachedAt > maxAgeMs) {
+      return null;
+    }
+    return cp.cursorData.results || null;
+  }
+
+  public saveDiscoveryCache(key: string, results: any[]): void {
+    this.saveCheckpoint(`discovery_cache:${key}`, {
+      cachedAt: Date.now(),
+      results,
+    });
+  }
+
   // --- Scheduler Runs History ---
   public recordSchedulerRun(run: any): void {
     this.schedulerRuns.unshift({
