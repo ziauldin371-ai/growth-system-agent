@@ -24,6 +24,7 @@ import {
 } from '@/types';
 import { IDataStore } from './interface';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { isDemoOrSandboxRecord } from './demo-guard';
 
 export class SupabaseDataStore implements IDataStore {
   private demoModeActive: boolean = false;
@@ -85,36 +86,125 @@ export class SupabaseDataStore implements IDataStore {
       query = query.range(offset, offset + limit - 1).order('created_at', { ascending: false });
 
       const { data, count, error } = await query;
-      if (error || !data) return this.fallback.getBusinesses(filter);
+      if (error || !data) {
+        if (process.env.NODE_ENV === 'production') return { businesses: [], total: 0 };
+        return this.fallback.getBusinesses(filter);
+      }
 
-      const businesses: BusinessEntity[] = data.map((b: any) => ({
-        id: b.id,
-        organizationId: b.organization_id,
-        name: b.name,
-        normalizedName: b.normalized_name,
-        domain: b.domain,
-        normalizedDomain: b.normalized_domain,
-        country: b.country,
-        region: b.region,
-        city: b.city,
-        postalCode: b.postal_code,
-        address: b.address,
-        phone: b.phone,
-        industry: b.industry,
-        companyType: b.company_type,
-        employeeCountRange: b.employee_count_range,
-        annualRevenueRange: b.annual_revenue_range,
-        pipelineType: b.pipeline_type,
-        qualificationStatus: b.qualification_status,
-        sourceProvider: b.source_provider,
-        sourceIdentifier: b.source_identifier,
-        isArchived: b.is_archived,
-        createdAt: b.created_at,
-        updatedAt: b.updated_at,
-      }));
+      const businessIds = data.map((b: any) => b.id);
+      const checksMap = new Map<string, any>();
+      const scoresMap = new Map<string, any>();
+      const contactsMap = new Map<string, any[]>();
 
-      return { businesses, total: count || businesses.length };
+      if (businessIds.length > 0) {
+        try {
+          const [checksRes, scoresRes, contactsRes] = await Promise.all([
+            supabase.from('website_checks').select('*').in('business_id', businessIds),
+            supabase.from('lead_scores').select('*').in('business_id', businessIds),
+            supabase.from('contacts').select('*').in('business_id', businessIds),
+          ]);
+          if (checksRes.data) {
+            for (const c of checksRes.data) checksMap.set(c.business_id, c);
+          }
+          if (scoresRes.data) {
+            for (const s of scoresRes.data) scoresMap.set(s.business_id, s);
+          }
+          if (contactsRes.data) {
+            for (const ct of contactsRes.data) {
+              const arr = contactsMap.get(ct.business_id) || [];
+              arr.push(ct);
+              contactsMap.set(ct.business_id, arr);
+            }
+          }
+        } catch {
+          // ignore relation fetch errors and proceed
+        }
+      }
+
+      let businesses: BusinessEntity[] = data.map((b: any) => {
+        const check = checksMap.get(b.id);
+        const score = scoresMap.get(b.id);
+        const bContacts = contactsMap.get(b.id) || [];
+
+        return {
+          id: b.id,
+          organizationId: b.organization_id,
+          name: b.name,
+          normalizedName: b.normalized_name,
+          domain: b.domain,
+          normalizedDomain: b.normalized_domain,
+          country: b.country,
+          region: b.region,
+          city: b.city,
+          postalCode: b.postal_code,
+          address: b.address,
+          phone: b.phone,
+          industry: b.industry,
+          companyType: b.company_type,
+          employeeCountRange: b.employee_count_range,
+          annualRevenueRange: b.annual_revenue_range,
+          pipelineType: b.pipeline_type,
+          qualificationStatus: b.qualification_status,
+          sourceProvider: b.source_provider,
+          sourceIdentifier: b.source_identifier,
+          isArchived: b.is_archived,
+          isDemo: b.is_demo ?? false,
+          isSandboxData: b.is_sandbox_data ?? false,
+          createdAt: b.created_at,
+          updatedAt: b.updated_at,
+          websiteCheck: check ? {
+            id: check.id,
+            businessId: check.business_id,
+            domain: check.domain,
+            status: check.status,
+            httpStatusCode: check.http_status_code,
+            tlsValid: check.tls_valid,
+            ipAddress: check.ip_address,
+            isPrivateIp: check.is_private_ip ?? false,
+            socialUrls: check.social_urls || [],
+            pageTitle: check.page_title,
+            metaDescription: check.meta_description,
+            checkedAt: check.checked_at,
+          } : undefined,
+          score: score ? {
+            id: score.id,
+            businessId: score.business_id,
+            overallScore: score.overall_score,
+            activityScore: score.activity_score,
+            serviceFitScore: score.service_fit_score,
+            websiteOpportunityScore: score.website_opportunity_score,
+            aiOpportunityScore: score.ai_opportunity_score,
+            contactQualityScore: score.contact_quality_score,
+            confidenceScore: score.confidence_score,
+            reasoning: score.reasoning,
+            scoreBreakdown: score.score_breakdown || {},
+            scoredAt: score.scored_at,
+          } : undefined,
+          contacts: bContacts.map((ct: any) => ({
+            id: ct.id,
+            businessId: ct.business_id,
+            fullName: ct.full_name,
+            firstName: ct.first_name,
+            lastName: ct.last_name,
+            title: ct.title,
+            email: ct.email,
+            phone: ct.phone,
+            confidence: ct.confidence ?? 0.8,
+            verificationStatus: ct.verification_status || 'unverified',
+            isPrimary: ct.is_primary ?? false,
+            createdAt: ct.created_at || new Date().toISOString(),
+            updatedAt: ct.updated_at || new Date().toISOString(),
+          })),
+        };
+      });
+
+      if (!filter?.includeDemo) {
+        businesses = businesses.filter(b => !isDemoOrSandboxRecord(b));
+      }
+
+      return { businesses, total: businesses.length };
     } catch {
+      if (process.env.NODE_ENV === 'production') return { businesses: [], total: 0 };
       return this.fallback.getBusinesses(filter);
     }
   }
@@ -687,9 +777,45 @@ export class SupabaseDataStore implements IDataStore {
 
   // --- Dashboard Queries ---
   public async getWorldwideLeads(filters?: any): Promise<BusinessEntity[]> {
-    if (filters?.includeDemo) return this.fallback.getWorldwideLeads(filters);
-    if (process.env.NODE_ENV === 'production' && !this.getClient(false)) return [];
-    return this.fallback.getWorldwideLeads(filters);
+    const supabase = this.getClient(false);
+    if (!supabase) {
+      if (process.env.NODE_ENV === 'production') return [];
+      return this.fallback.getWorldwideLeads(filters);
+    }
+
+    try {
+      const { businesses } = await this.getBusinesses({
+        pipeline: filters?.pipeline,
+        country: filters?.country,
+        search: filters?.search,
+        qualificationStatus: filters?.status,
+        limit: filters?.limit || 1000,
+        includeDemo: filters?.includeDemo,
+      });
+
+      let result = businesses;
+
+      if (filters?.industry && filters.industry !== 'all') {
+        const ind = filters.industry.toLowerCase();
+        result = result.filter(b => b.industry?.toLowerCase().includes(ind));
+      }
+
+      if (filters?.minScore !== undefined) {
+        result = result.filter(b => (b.score?.overallScore || 0) >= filters.minScore);
+      }
+
+      if (filters?.hasEmail !== undefined) {
+        result = result.filter(b => {
+          const has = Boolean(b.contacts && b.contacts.some(c => Boolean(c.email)));
+          return filters.hasEmail ? has : !has;
+        });
+      }
+
+      return result;
+    } catch {
+      if (process.env.NODE_ENV === 'production') return [];
+      return this.fallback.getWorldwideLeads(filters);
+    }
   }
 
   public async getReadyForEmailLeads(options?: any): Promise<Array<any>> {

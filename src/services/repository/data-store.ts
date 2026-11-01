@@ -1291,7 +1291,7 @@ ziauldin371@gmail.com`,
   }): BusinessEntity[] {
     let result = Array.from(this.businesses.values());
 
-    if (filters?.includeDemo === false) {
+    if (filters?.includeDemo === false || (process.env.NODE_ENV === 'production' && !filters?.includeDemo)) {
       result = result.filter(b => !isDemoOrSandboxRecord(b));
     }
 

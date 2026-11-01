@@ -158,3 +158,4 @@ export class GeoapifyProvider implements IDiscoveryProvider {
     return leads;
   }
 }
+

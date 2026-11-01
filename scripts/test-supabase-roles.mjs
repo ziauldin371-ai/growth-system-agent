@@ -41,6 +41,12 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+const PROD_HOST = 'lajquqdzqfbhnunftgbn.supabase.co';
+if (supabaseUrl && supabaseUrl.toLowerCase().includes(PROD_HOST) && process.env.ALLOW_PROD_INTEGRATION_TESTS !== 'true') {
+  console.error(`[GUARD] Refusing to run live integration test script against production Supabase (${PROD_HOST}). Set ALLOW_PROD_INTEGRATION_TESTS=true if explicitly intended.`);
+  process.exit(1);
+}
+
 const ALL_SCHEMA_TABLES = [
   'businesses',
   'suppression_list',

@@ -9,6 +9,7 @@ import { BusinessDetailsDrawer } from '@/components/dashboard/business-details-d
 import { ClientRequestsView } from '@/components/marketplace/client-requests-view';
 import { useLanguage } from '@/context/language-context';
 import { useToast } from '@/components/ui/toast-context';
+import { isDemoOrSandboxRecord, getUnifiedBusinessCounts } from '@/services/repository/demo-guard';
 
 type TabKey = 'all' | 'no_website' | 'broken_website' | 'needs_ai' | 'hot_requests';
 type ViewMode = 'grid' | 'table';
@@ -96,13 +97,8 @@ function BusinessesContent() {
     fetchBusinesses();
   }, [fetchBusinesses]);
 
-  const isDemo = (b: any) =>
-    b.isSandboxData === true ||
-    b.isDemo === true ||
-    b.sourceProvider === 'b2b_mock' ||
-    (b.domain && (b.domain.includes('.mock') || b.domain.includes('.internal')));
-
-  const visibleBusinesses = businesses.filter((b) => showDemo || !isDemo(b));
+  const isDemo = isDemoOrSandboxRecord;
+  const visibleBusinesses = businesses.filter((b) => showDemo || !isDemoOrSandboxRecord(b));
 
   // Multi-facet filtering logic
   const filteredBusinesses = visibleBusinesses.filter((b) => {
@@ -208,18 +204,13 @@ function BusinessesContent() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [sortedBusinesses, highlightedIndex, selectedBusiness]);
 
+  const unifiedCounts = getUnifiedBusinessCounts(businesses, { showDemo });
   const counts = {
-    all: visibleBusinesses.length,
-    no_website: visibleBusinesses.filter(
-      (b) => !b.domain || b.websiteCheck?.status === 'apparently_absent' || b.websiteCheck?.status === 'social_only'
-    ).length,
-    broken_website: visibleBusinesses.filter(
-      (b) => b.websiteCheck?.status === 'parked' || b.websiteCheck?.status === 'broken'
-    ).length,
-    needs_ai: visibleBusinesses.filter((b) => b.pipelineType === 'ai_software_opportunities').length,
-    hot_requests: visibleBusinesses.filter(
-      (b) => (b.heatScore || 0) >= 75 || b.sourceProvider === 'hacker_news' || b.sourceProvider === 'reddit'
-    ).length,
+    all: unifiedCounts.total,
+    no_website: unifiedCounts.needsWebsites,
+    broken_website: unifiedCounts.brokenWebsites,
+    needs_ai: unifiedCounts.needsAi,
+    hot_requests: unifiedCounts.hotRequests,
   };
 
   // Safe Batch Queue Handler (Honesty Rule 6)

@@ -13,28 +13,32 @@ export function isDemoOrSandboxRecord(record: any): boolean {
     record.sourceProvider === 'mock' ||
     record.sourceProvider === 'service_role_test' ||
     record.sourceProvider === 'service_role' ||
+    record.sourceProvider === 'test' ||
+    record.source_provider === 'b2b_mock' ||
+    record.source_provider === 'mock' ||
     record.source_provider === 'service_role_test' ||
-    record.source_provider === 'service_role'
+    record.source_provider === 'service_role' ||
+    record.source_provider === 'test'
   ) return true;
 
   if (typeof record.name === 'string') {
     const n = record.name.toLowerCase();
-    if (n.startsWith('test business') || n.includes('mock') || n.includes('demo')) return true;
+    if (n.startsWith('test business') || n.startsWith('test_') || n.includes('mock') || n.includes('demo')) return true;
   }
 
   if (typeof record.domain === 'string') {
     const d = record.domain.toLowerCase();
-    if (d.includes('.mock') || d.includes('.internal') || d.includes('docusynclogistics.io')) return true;
+    if (d.includes('.mock') || d.includes('.internal') || d.includes('docusynclogistics.io') || d.includes('testbiz-') || d.includes('testdomain.com')) return true;
   }
 
   if (typeof record.recipientEmail === 'string') {
     const e = record.recipientEmail.toLowerCase();
-    if (e.includes('.mock') || e.includes('.internal') || e.includes('docusynclogistics.io') || e.includes('competitor.com')) return true;
+    if (e.includes('.mock') || e.includes('.internal') || e.includes('docusynclogistics.io') || e.includes('competitor.com') || e.includes('testdomain.com') || e.includes('testbiz-')) return true;
   }
 
   if (typeof record.id === 'string') {
     const id = record.id.toLowerCase();
-    if (id.startsWith('biz-00') || id.startsWith('draft-00') || id.startsWith('seed-') || id.includes('demo') || id.startsWith('ch-00')) {
+    if (id.startsWith('biz-00') || id.startsWith('draft-00') || id.startsWith('seed-') || id.includes('demo') || id.startsWith('ch-00') || id.startsWith('test_') || id.startsWith('test-')) {
       return true;
     }
   }
@@ -42,6 +46,82 @@ export function isDemoOrSandboxRecord(record: any): boolean {
   if (record.organizationId === 'org-demo-001') return true;
 
   return false;
+}
+
+/**
+ * Determines whether a timestamp represents a record created today (UTC day).
+ */
+export function isCreatedToday(dateStr?: string): boolean {
+  if (!dateStr) return false;
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return false;
+    const now = new Date();
+    return (
+      d.getUTCFullYear() === now.getUTCFullYear() &&
+      d.getUTCMonth() === now.getUTCMonth() &&
+      d.getUTCDate() === now.getUTCDate()
+    );
+  } catch {
+    return false;
+  }
+}
+
+export interface UnifiedBusinessCounts {
+  total: number;
+  foundToday: number;
+  needsWebsites: number;
+  brokenWebsites: number;
+  needsAi: number;
+  hotRequests: number;
+  qualifiedTotal: number;
+  manualOutreachCount: number;
+}
+
+/**
+ * Single shared selector query/calculator used by Home, Businesses Found,
+ * filter tabs, and sidebar. Guarantees they can never disagree.
+ */
+export function getUnifiedBusinessCounts(
+  rawBusinesses: BusinessEntity[],
+  options?: { showDemo?: boolean }
+): UnifiedBusinessCounts {
+  const showDemo = options?.showDemo ?? false;
+  const businesses = rawBusinesses.filter(b => (showDemo ? true : !isDemoOrSandboxRecord(b)));
+  const total = businesses.length;
+
+  const foundToday = businesses.filter(b => isCreatedToday(b.createdAt)).length;
+
+  const needsWebsites = businesses.filter(b => {
+    const hasDomain = Boolean(b.domain && b.domain.trim().length > 0);
+    const status = b.websiteCheck?.status;
+    return !hasDomain || status === 'apparently_absent' || status === 'social_only';
+  }).length;
+
+  const brokenWebsites = businesses.filter(b => {
+    const status = b.websiteCheck?.status;
+    return status === 'parked' || status === 'broken';
+  }).length;
+
+  const needsAi = businesses.filter(b => b.pipelineType === 'ai_software_opportunities').length;
+
+  const hotRequests = businesses.filter(
+    b => (b.heatScore || 0) >= 75 || b.sourceProvider === 'hacker_news' || b.sourceProvider === 'reddit'
+  ).length;
+
+  const qualifiedTotal = businesses.filter(b => b.qualificationStatus === 'qualified').length;
+  const manualOutreachCount = needsWebsites;
+
+  return {
+    total,
+    foundToday,
+    needsWebsites,
+    brokenWebsites,
+    needsAi,
+    hotRequests,
+    qualifiedTotal,
+    manualOutreachCount,
+  };
 }
 
 /**
@@ -80,6 +160,11 @@ export function isRealVerifiedSentEmail(draft: any, isGmailConnected: boolean = 
 
 export interface HomeDashboardStats {
   totalBusinesses: number;
+  foundToday: number;
+  needsWebsites: number;
+  brokenWebsites: number;
+  needsAi: number;
+  hotRequests: number;
   qualifiedTotal: number;
   eligibleEmailContacts: number;
   sentCount: number;
@@ -96,8 +181,8 @@ export interface HomeDashboardStats {
  * Computes consistent Home dashboard statistics and activity timeline.
  * Ensures that:
  * 1. Only real records are counted unless showDemo is true.
- * 2. Manual outreach is a strict subset of businesses found.
- * 3. No card can exceed totalBusinesses.
+ * 2. Found today = real businesses created today by discovery.
+ * 3. Opportunities are counted only when they belong to a real, existing business record.
  * 4. With no real data, all numbers are 0 and timeline says:
  *    "Nothing yet. Start by connecting your services."
  */
@@ -109,12 +194,9 @@ export function computeHomeStats(params: {
 }): HomeDashboardStats {
   const { businesses: rawBusinesses, drafts: rawDrafts, isGmailConnected, showDemo = false } = params;
 
-  // Filter businesses: if !showDemo, exclude all sandbox/demo records
+  // Use the shared selector query
+  const counts = getUnifiedBusinessCounts(rawBusinesses, { showDemo });
   const businesses = rawBusinesses.filter(b => (showDemo ? true : !isDemoOrSandboxRecord(b)));
-  const totalBusinesses = businesses.length;
-
-  // Qualified is a strict subset of filtered businesses
-  const qualifiedTotal = businesses.filter(b => b.qualificationStatus === 'qualified').length;
 
   // Eligible ready-for-email contacts is a strict subset of filtered businesses
   const eligibleEmailContacts = businesses.filter(b => {
@@ -122,14 +204,6 @@ export function computeHomeStats(params: {
     const hasWebsite = b.domain && b.domain.length > 0;
     const webStatus = b.websiteCheck?.status;
     return Boolean(hasWebsite && webStatus !== 'broken' && webStatus !== 'parked');
-  }).length;
-
-  // Manual outreach is businesses with no email or social-only (strict subset of filtered businesses)
-  const manualOutreachCount = businesses.filter(b => {
-    const hasDomain = Boolean(b.domain && b.domain.length > 0);
-    const webStatus = b.websiteCheck?.status;
-    const isNoWeb = !hasDomain || webStatus === 'apparently_absent' || webStatus === 'social_only';
-    return isNoWeb;
   }).length;
 
   // Filter drafts: if !showDemo, exclude all sandbox/demo drafts
@@ -157,32 +231,36 @@ export function computeHomeStats(params: {
 
   // Timeline sentences
   let timelineSentences: string[] = [];
-  const hasAnyActivity = totalBusinesses > 0 || sentCount > 0 || manualOutreachCount > 0 || blockedDraftsCount > 0;
+  const hasAnyActivity = counts.total > 0 || sentCount > 0 || counts.manualOutreachCount > 0 || blockedDraftsCount > 0;
 
   if (!hasAnyActivity) {
     timelineSentences = ['Nothing yet. Start by connecting your services.'];
   } else {
     timelineSentences = [
-      `Discovered ${totalBusinesses} businesses across target global markets.`,
-      `${manualOutreachCount} businesses have no website or only social media.`,
+      `Discovered ${counts.total} businesses across target global markets.`,
+      `${counts.manualOutreachCount} businesses have no website or only social media.`,
       `Verified ${eligibleEmailContacts} businesses matching 8-point strict safety rules.`,
       `Sent ${sentCount} emails confirmed in Gmail with verified message IDs.`,
-      `${manualOutreachCount} businesses waiting for manual phone or social media outreach.`,
+      `${counts.manualOutreachCount} businesses waiting for manual phone or social media outreach.`,
     ];
   }
 
   return {
-    totalBusinesses,
-    qualifiedTotal: Math.min(qualifiedTotal, totalBusinesses),
-    eligibleEmailContacts: Math.min(eligibleEmailContacts, totalBusinesses),
-    sentCount: Math.min(sentCount, totalBusinesses || sentCount),
-    confirmedDeliveries: Math.min(confirmedDeliveries, totalBusinesses || confirmedDeliveries),
-    repliesCount: Math.min(repliesCount, totalBusinesses || repliesCount),
-    manualOutreachCount: Math.min(manualOutreachCount, totalBusinesses),
+    totalBusinesses: counts.total,
+    foundToday: counts.foundToday,
+    needsWebsites: counts.needsWebsites,
+    brokenWebsites: counts.brokenWebsites,
+    needsAi: counts.needsAi,
+    hotRequests: counts.hotRequests,
+    qualifiedTotal: Math.min(counts.qualifiedTotal, counts.total),
+    eligibleEmailContacts: Math.min(eligibleEmailContacts, counts.total),
+    sentCount: Math.min(sentCount, counts.total || sentCount),
+    confirmedDeliveries: Math.min(confirmedDeliveries, counts.total || confirmedDeliveries),
+    repliesCount: Math.min(repliesCount, counts.total || repliesCount),
+    manualOutreachCount: Math.min(counts.manualOutreachCount, counts.total),
     blockedDraftsCount,
     timelineSentences,
     isGmailConnected,
     showDemo,
   };
 }
-

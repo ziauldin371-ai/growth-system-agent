@@ -85,6 +85,25 @@ export default async function HomePage(props: PageProps) {
   const sentPct = totalActivity > 0 ? Math.round((stats.sentCount / totalActivity) * 100) : 0;
   const repliesPct = totalActivity > 0 ? Math.max(0, 100 - foundPct - sentPct) : 0;
 
+  // Determine Home greeting summary sentence
+  let greetingSummary = 'Nothing yet. Start by connecting your services or launching a new business search.';
+  if (lastRun?.status === 'skipped') {
+    const reason = lastRun.reason || 'Waiting for the business finder to be set up';
+    if (
+      reason.toLowerCase().includes('google places') ||
+      reason.toLowerCase().includes('finder') ||
+      reason.toLowerCase().includes('key missing')
+    ) {
+      greetingSummary = 'Waiting for the business finder to be set up.';
+    } else {
+      greetingSummary = `Last scheduled run was skipped (${reason}).`;
+    }
+  } else if (lastRun?.status === 'failed') {
+    greetingSummary = `The last scheduled run failed: ${lastRun.error || 'Please check logs'}.`;
+  } else if (stats.totalBusinesses > 0 || stats.sentCount > 0) {
+    greetingSummary = `Everything is running smoothly. ${stats.totalBusinesses} opportunities found, ${stats.sentCount} emails sent via Gmail, and ${stats.repliesCount} replies received.`;
+  }
+
   return (
     <div className="flex flex-col w-full gap-5 pb-12">
       {/* Demo Banner */}
@@ -213,9 +232,7 @@ export default async function HomePage(props: PageProps) {
             Good morning, Zia! <span className="inline-block hover:rotate-12 transition-transform cursor-default">👋</span>
           </h1>
           <p className="font-body-md text-sm text-on-surface-variant max-w-2xl leading-relaxed">
-            {stats.totalBusinesses > 0 || stats.sentCount > 0
-              ? `Everything is running smoothly. ${stats.totalBusinesses} opportunities found, ${stats.sentCount} emails sent via Gmail, and ${stats.repliesCount} replies received.`
-              : 'Nothing yet. Start by connecting your services or launching a new business search.'}
+            {greetingSummary}
           </p>
         </div>
 
@@ -255,15 +272,15 @@ export default async function HomePage(props: PageProps) {
           </div>
           <div className="flex flex-col">
             <span className="text-2xl sm:text-3xl text-on-surface font-bold">
-              {stats.totalBusinesses}
+              {stats.foundToday}
             </span>
             <span className="text-xs text-on-surface-variant line-clamp-1">
-              Needs websites
+              {stats.needsWebsites > 0 ? `${stats.needsWebsites} need websites` : 'Needs websites'}
             </span>
           </div>
           <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-secondary-container/20 text-secondary w-fit text-[11px] font-semibold">
             <span className="material-symbols-outlined text-[12px]">check_circle</span>
-            <span>{stats.totalBusinesses > 0 ? 'Good' : '0 Leads'}</span>
+            <span>{stats.foundToday > 0 ? `${stats.foundToday} Today` : '0 Leads Today'}</span>
           </div>
         </div>
 
