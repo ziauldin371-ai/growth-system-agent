@@ -1930,6 +1930,10 @@ ziauldin371@gmail.com`,
     this.persistState();
   }
   // Platform Trackers & Targets
+  public getPlatformTracker(platformId: string): PlatformTrackerEntity | undefined {
+    return this.platformTrackers.get(platformId);
+  }
+
   public getPlatformTrackers(): Record<string, PlatformTrackerEntity> {
     const res: Record<string, PlatformTrackerEntity> = {};
     for (const [k, v] of Array.from(this.platformTrackers.entries())) {

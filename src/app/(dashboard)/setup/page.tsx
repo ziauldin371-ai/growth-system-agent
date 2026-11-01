@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/language-context';
 import { useToast } from '@/components/ui/toast-context';
-import { PlatformsRegistryView } from '@/components/platforms/platforms-registry-view';
+import { PlatformsDirectoryView } from '@/components/platforms/platforms-directory-view';
 import { LeadSourcesView } from '@/components/platforms/lead-sources-view';
 import { VettedApplicationsView } from '@/components/platforms/vetted-applications-view';
 
@@ -164,7 +164,7 @@ function SetupContent() {
             Setup &amp; Platforms Engine
           </h1>
           <p className="text-xs sm:text-sm text-on-surface-variant mt-1">
-            Manage credentials, all 89 client acquisition platforms, lead sources &amp; credit budgets, and vetted talent applications.
+            Manage credentials, client acquisition platforms (68 verified + 7 local channels), lead sources &amp; credit budgets, and vetted talent applications.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -200,7 +200,7 @@ function SetupContent() {
           }`}
         >
           <span className="material-symbols-outlined text-[18px]">hub</span>
-          <span>Platforms Registry (89)</span>
+          <span>Find Clients on Platforms (68 + 7)</span>
         </button>
 
         <button
@@ -380,7 +380,7 @@ function SetupContent() {
       )}
 
       {/* Tab 2: Platforms Registry */}
-      {activeTab === 'platforms' && <PlatformsRegistryView />}
+      {activeTab === 'platforms' && <PlatformsDirectoryView />}
 
       {/* Tab 3: Lead Sources & Budgets */}
       {activeTab === 'lead_sources' && <LeadSourcesView />}

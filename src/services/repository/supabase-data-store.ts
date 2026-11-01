@@ -1422,6 +1422,11 @@ export class SupabaseDataStore implements IDataStore {
     } catch {}
   }
   // Platform Trackers & Targets
+  public async getPlatformTracker(platformId: string): Promise<PlatformTrackerEntity | undefined> {
+    const trackers = await this.getPlatformTrackers();
+    return trackers[platformId];
+  }
+
   public async getPlatformTrackers(): Promise<Record<string, PlatformTrackerEntity>> {
     const supabase = this.getClient(false);
     if (!supabase) return this.fallback.getPlatformTrackers();

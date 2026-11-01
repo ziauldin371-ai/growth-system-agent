@@ -1734,3 +1734,11 @@ export const CLIENT_PLATFORMS: PlatformItem[] = [
 export const TOTAL_CLIENT_PLATFORMS = CLIENT_PLATFORMS.length; // 68
 export const TOTAL_LOCAL_CHANNELS = LOCAL_BUSINESS_CHANNELS.length; // 7
 export const TOTAL_RECONCILED = TOTAL_CLIENT_PLATFORMS + TOTAL_LOCAL_CHANNELS; // 75
+
+export function getPlatformById(id: string): PlatformItem | undefined {
+  return CLIENT_PLATFORMS.find((p) => p.id === id);
+}
+
+export function getPlatformsByGroup(group: string): PlatformItem[] {
+  return CLIENT_PLATFORMS.filter((p) => p.group === group);
+}

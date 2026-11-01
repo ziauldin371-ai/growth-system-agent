@@ -1,93 +1,78 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dataStore } from '@/services/repository/data-store';
-import { PlatformEntity } from '@/types';
-import crypto from 'crypto';
+import { CLIENT_PLATFORMS, LOCAL_BUSINESS_CHANNELS } from '@/data/platforms-registry';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const category = searchParams.get('category') || undefined;
-    const priority = searchParams.get('priority') || undefined;
-    const pitchMode = searchParams.get('pitchMode') || undefined;
-    const countryEligibility = searchParams.get('countryEligibility') || undefined;
-    const myAccountStatus = searchParams.get('myAccountStatus') || undefined;
-    const search = searchParams.get('search') || undefined;
+    const group = searchParams.get('group');
+    const priority = searchParams.get('priority');
+    const status = searchParams.get('status');
+    const search = searchParams.get('search')?.toLowerCase().trim();
 
-    const platforms = await dataStore.getPlatforms({
-      category,
-      priority,
-      pitchMode,
-      countryEligibility,
-      myAccountStatus,
-      search,
+    // Load trackers, daily target, and profile in parallel
+    const [trackers, dailyTarget, profile] = await Promise.all([
+      dataStore.getPlatformTrackers(),
+      dataStore.getDailyTarget(),
+      dataStore.getOperatorProfile(),
+    ]);
+
+    let platforms = CLIENT_PLATFORMS.map((p) => {
+      const trk = trackers[p.id];
+      return {
+        ...p,
+        tracker: trk || {
+          platformId: p.id,
+          status: 'not_started',
+          myProfileUrl: null,
+          notes: null,
+          lastActionDate: null,
+          followUpDate: null,
+          checklist: {
+            headline: false,
+            bio: false,
+            portfolio: false,
+            rates: false,
+            skills: false,
+            verification: false,
+            payout: false,
+          },
+          customPitch: null,
+        },
+      };
     });
+
+    if (group && group !== 'all') {
+      platforms = platforms.filter((p) => p.group === group);
+    }
+    if (priority && priority !== 'all') {
+      platforms = platforms.filter((p) => p.priority.toLowerCase() === priority.toLowerCase());
+    }
+    if (status && status !== 'all') {
+      platforms = platforms.filter((p) => (p.tracker?.status || 'not_started') === status);
+    }
+    if (search) {
+      platforms = platforms.filter(
+        (p) =>
+          p.name.toLowerCase().includes(search) ||
+          p.howClientsFound.toLowerCase().includes(search) ||
+          p.groupName.toLowerCase().includes(search) ||
+          p.whatISend.toLowerCase().includes(search)
+      );
+    }
 
     return NextResponse.json({
       success: true,
       total: platforms.length,
       platforms,
+      trackers,
+      dailyTarget,
+      profile,
+      localChannels: LOCAL_BUSINESS_CHANNELS,
     });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
-
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json();
-    if (!body.name || !body.url || !body.category) {
-      return NextResponse.json({ success: false, error: 'Name, URL, and category are required' }, { status: 400 });
-    }
-
-    const id = body.id || body.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') || `platform_${Date.now()}`;
-    const platform: PlatformEntity = {
-      id,
-      name: body.name,
-      category: body.category,
-      url: body.url,
-      officialTermsUrl: body.officialTermsUrl || `${body.url.replace(/\/+$/, '')}/terms`,
-      howToGetClients: body.howToGetClients || 'Browse projects or apply directly',
-      aiMlRelevance: body.aiMlRelevance || 'AI/ML software solutions',
-      pitchMode: body.pitchMode || 'proposal',
-      integrationMode: body.integrationMode || 'manual_link',
-      priority: body.priority || 'Medium',
-      costAccessNotes: body.costAccessNotes || 'Verify current terms before use',
-      practicalNote: body.practicalNote || 'Added by operator via dashboard',
-      countryEligibilityStatus: body.countryEligibilityStatus || 'needs_check',
-      myAccountStatus: body.myAccountStatus || 'none',
-      lastVerified: body.lastVerified || null,
-      isActive: body.isActive !== false,
-      notes: body.notes || 'Verify current terms before use',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    await dataStore.savePlatform(platform);
-    return NextResponse.json({ success: true, platform });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
-  }
-}
-
-export async function PATCH(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const { id, action, updates, verifiedAt } = body;
-    if (!id) {
-      return NextResponse.json({ success: false, error: 'Platform ID is required' }, { status: 400 });
-    }
-
-    if (action === 'verify_terms') {
-      const updated = await dataStore.verifyPlatformTerms(id, verifiedAt);
-      return NextResponse.json({ success: true, platform: updated });
-    }
-
-    const updated = await dataStore.updatePlatform(id, updates || {});
-    return NextResponse.json({ success: true, platform: updated });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
-  }
-}
-

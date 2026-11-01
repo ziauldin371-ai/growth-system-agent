@@ -139,6 +139,7 @@ export interface IDataStore {
   recordPlatformSpend(spend: PlatformSpendLogEntity): void | Promise<void>;
   // Platform Trackers & Targets
   getPlatformTrackers(): Record<string, PlatformTrackerEntity> | Promise<Record<string, PlatformTrackerEntity>>;
+  getPlatformTracker(platformId: string): PlatformTrackerEntity | undefined | Promise<PlatformTrackerEntity | undefined>;
   savePlatformTracker(tracker: Partial<PlatformTrackerEntity> & { platformId: string }): PlatformTrackerEntity | Promise<PlatformTrackerEntity>;
   getDailyTarget(dateStr?: string): PlatformDailyTargetEntity | Promise<PlatformDailyTargetEntity>;
   incrementDailyProposals(dateStr?: string): PlatformDailyTargetEntity | Promise<PlatformDailyTargetEntity>;
