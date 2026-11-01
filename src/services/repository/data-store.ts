@@ -25,8 +25,16 @@ import {
   PlatformTrackerEntity,
   PlatformDailyTargetEntity,
   OperatorProfileEntity,
+  ClientRequestEntity,
+  RequestPitchEntity,
+  RequestChannelEntity,
+  RequestEventEntity,
+  LeadSourceEntity,
+  RequestStatus,
+  SourceStatus,
 } from '@/types';
 import { DEFAULT_OPERATOR_PROFILE } from '@/services/ai/platform-pitch-templates';
+import { SEED_LEAD_SOURCES } from '@/data/lead-sources-registry';
 import { IDataStore } from './interface';
 import { normalizeBusinessName, normalizeEmail } from '../crm/normalization';
 import { normalizeDomain } from '../website/verifier';
@@ -60,6 +68,11 @@ export class DataStore implements IDataStore {
   private demoModeActive: boolean = false;
   private platformTrackers: Map<string, PlatformTrackerEntity> = new Map();
   private platformDailyTargets: Map<string, PlatformDailyTargetEntity> = new Map();
+  private clientRequests: Map<string, ClientRequestEntity> = new Map();
+  private requestPitches: Map<string, RequestPitchEntity[]> = new Map();
+  private requestChannels: Map<string, RequestChannelEntity[]> = new Map();
+  private requestEvents: Map<string, RequestEventEntity[]> = new Map();
+  private leadSources: Map<string, LeadSourceEntity> = new Map();
   private operatorProfile: OperatorProfileEntity = {
     ...DEFAULT_OPERATOR_PROFILE,
     id: 'default',
@@ -79,6 +92,7 @@ export class DataStore implements IDataStore {
     this.persistenceFilePath = customPersistencePath || path.join(dataDir, 'data_store_persistence.json');
     this.seedPlatforms();
     this.seedInitialData();
+    this.seedLeadSources();
     this.loadPersistedState();
   }
 
@@ -2026,6 +2040,187 @@ ziauldin371@gmail.com`,
     return { ...this.operatorProfile };
   }
 
+  private seedLeadSources(): void {
+    if (typeof SEED_LEAD_SOURCES !== 'undefined' && Array.isArray(SEED_LEAD_SOURCES)) {
+      for (const src of SEED_LEAD_SOURCES) {
+        if (!this.leadSources.has(src.id)) {
+          this.leadSources.set(src.id, { ...src });
+        }
+      }
+    }
+  }
+
+  // Client Requests & Lead Sources
+  public getClientRequests(filters?: {
+    platform?: string;
+    status?: string;
+    minScore?: number;
+    hasEmail?: boolean;
+    search?: string;
+    limit?: number;
+    offset?: number;
+  }): ClientRequestEntity[] {
+    let list = Array.from(this.clientRequests.values());
+
+    if (filters?.platform && filters.platform !== 'all') {
+      list = list.filter(r => r.sourcePlatform === filters.platform);
+    }
+    if (filters?.status && filters.status !== 'all') {
+      list = list.filter(r => r.status === filters.status);
+    }
+    if (filters?.minScore !== undefined) {
+      list = list.filter(r => r.matchScore >= filters.minScore!);
+    }
+    if (filters?.hasEmail) {
+      list = list.filter(r => {
+        const channels = this.requestChannels.get(r.id) || [];
+        return channels.some(c => c.type === 'email');
+      });
+    }
+    if (filters?.search) {
+      const q = filters.search.toLowerCase();
+      list = list.filter(r =>
+        (r.companyName && r.companyName.toLowerCase().includes(q)) ||
+        (r.personName && r.personName.toLowerCase().includes(q)) ||
+        (r.needSummary && r.needSummary.toLowerCase().includes(q)) ||
+        (r.quote && r.quote.toLowerCase().includes(q)) ||
+        (r.sourcePlatform && r.sourcePlatform.toLowerCase().includes(q))
+      );
+    }
+
+    list.sort((a, b) => {
+      const dateA = new Date(a.foundAt || a.createdAt || 0).getTime();
+      const dateB = new Date(b.foundAt || b.createdAt || 0).getTime();
+      if (dateB !== dateA) return dateB - dateA;
+      return b.matchScore - a.matchScore;
+    });
+
+    const offset = filters?.offset || 0;
+    const limit = filters?.limit || 100;
+    const paged = list.slice(offset, offset + limit);
+
+    return paged.map(r => ({
+      ...r,
+      pitches: this.requestPitches.get(r.id) || [],
+      channels: this.requestChannels.get(r.id) || [],
+    }));
+  }
+
+  public getClientRequestById(id: string): ClientRequestEntity | null {
+    const r = this.clientRequests.get(id);
+    if (!r) return null;
+    return {
+      ...r,
+      pitches: this.requestPitches.get(id) || [],
+      channels: this.requestChannels.get(id) || [],
+    };
+  }
+
+  public saveClientRequest(request: ClientRequestEntity): void {
+    const existing = this.clientRequests.get(request.id);
+    const updated: ClientRequestEntity = {
+      ...existing,
+      ...request,
+      updatedAt: new Date().toISOString(),
+    };
+    this.clientRequests.set(request.id, updated);
+
+    if (request.pitches && request.pitches.length > 0) {
+      this.requestPitches.set(request.id, request.pitches);
+    }
+    if (request.channels && request.channels.length > 0) {
+      this.requestChannels.set(request.id, request.channels);
+    }
+
+    this.persistState();
+  }
+
+  public updateClientRequestStatus(id: string, status: RequestStatus): boolean {
+    const existing = this.clientRequests.get(id);
+    if (!existing) return false;
+    existing.status = status;
+    existing.updatedAt = new Date().toISOString();
+    this.clientRequests.set(id, existing);
+    this.recordRequestEvent({
+      id: 'evt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+      requestId: id,
+      eventType: status === 'contacted' ? 'contacted' : status === 'skipped' ? 'skipped' : 'viewed',
+      createdAt: new Date().toISOString(),
+    });
+    this.persistState();
+    return true;
+  }
+
+  public saveRequestPitch(pitch: RequestPitchEntity): void {
+    const list = this.requestPitches.get(pitch.requestId) || [];
+    const idx = list.findIndex(p => p.id === pitch.id || (p.channelType === pitch.channelType && p.variant === pitch.variant));
+    if (idx >= 0) {
+      list[idx] = pitch;
+    } else {
+      list.push(pitch);
+    }
+    this.requestPitches.set(pitch.requestId, list);
+    this.persistState();
+  }
+
+  public saveRequestChannel(channel: RequestChannelEntity): void {
+    const list = this.requestChannels.get(channel.requestId) || [];
+    const idx = list.findIndex(c => c.id === channel.id || (c.type === channel.type && c.value === channel.value));
+    if (idx >= 0) {
+      list[idx] = channel;
+    } else {
+      list.push(channel);
+    }
+    this.requestChannels.set(channel.requestId, list);
+    this.persistState();
+  }
+
+  public recordRequestEvent(event: RequestEventEntity): void {
+    const list = this.requestEvents.get(event.requestId) || [];
+    list.push(event);
+    this.requestEvents.set(event.requestId, list);
+    this.persistState();
+  }
+
+  public getLeadSources(filters?: { accessTier?: string; category?: string; status?: string }): LeadSourceEntity[] {
+    let list = Array.from(this.leadSources.values());
+    if (filters?.accessTier && filters.accessTier !== 'all') {
+      list = list.filter(s => s.accessTier === filters.accessTier);
+    }
+    if (filters?.category && filters.category !== 'all') {
+      list = list.filter(s => s.category === filters.category);
+    }
+    if (filters?.status && filters.status !== 'all') {
+      list = list.filter(s => s.status === filters.status);
+    }
+    return list;
+  }
+
+  public getLeadSourceById(id: string): LeadSourceEntity | null {
+    return this.leadSources.get(id) || null;
+  }
+
+  public saveLeadSource(source: LeadSourceEntity): void {
+    this.leadSources.set(source.id, {
+      ...source,
+      updatedAt: new Date().toISOString(),
+    });
+    this.persistState();
+  }
+
+  public updateLeadSourceStatus(id: string, status: SourceStatus, lastChecked?: string, lastError?: string): void {
+    const src = this.leadSources.get(id);
+    if (!src) return;
+    src.status = status;
+    if (lastChecked) src.lastChecked = lastChecked;
+    if (status === 'verified_api' || status === 'manual_only') {
+      src.lastSuccess = lastChecked || new Date().toISOString();
+    }
+    if (lastError) src.notes = lastError;
+    src.updatedAt = new Date().toISOString();
+    this.leadSources.set(id, src);
+    this.persistState();
+  }
 }
 
 import { SupabaseDataStore } from './supabase-data-store';

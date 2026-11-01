@@ -223,7 +223,7 @@ export default function RunAndSchedulePage() {
                 Last run: skipped, reason: {lastRun.reason || 'Google Places key is missing'}
               </p>
               <p className="text-xs text-on-surface-variant mt-0.5">
-                The autonomous hunter safely bypassed this cycle. No mock data was generated or counted.
+                The autonomous hunter safely skipped this cycle. No mock data was generated or counted.
               </p>
             </div>
           </div>

@@ -13,6 +13,7 @@ const PUBLIC_PATHS = [
   '/api/cron/scheduled-run',
   '/api/auth/gmail/callback',
   '/api/health',
+  '/capture',
 ];
 
 export async function middleware(req: NextRequest) {

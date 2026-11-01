@@ -21,6 +21,13 @@ import {
   PlatformTrackerEntity,
   PlatformDailyTargetEntity,
   OperatorProfileEntity,
+  ClientRequestEntity,
+  RequestPitchEntity,
+  RequestChannelEntity,
+  RequestEventEntity,
+  LeadSourceEntity,
+  RequestStatus,
+  SourceStatus,
 } from '@/types';
 import { IDataStore } from './interface';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
@@ -1716,6 +1723,471 @@ export class SupabaseDataStore implements IDataStore {
       this.fallback.saveDiscoveryCache(key, results);
     }
   }
+
+  // --- Client Requests & Sources ---
+  public async getClientRequests(filters?: {
+    platform?: string;
+    status?: string;
+    minScore?: number;
+    hasEmail?: boolean;
+    search?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<ClientRequestEntity[]> {
+    const supabase = this.getClient(false);
+    if (!supabase) return this.fallback.getClientRequests(filters);
+
+    try {
+      let query = supabase.from('client_requests').select('*');
+
+      if (filters?.platform && filters.platform !== 'all') {
+        query = query.eq('source_platform', filters.platform);
+      }
+      if (filters?.status && filters.status !== 'all') {
+        query = query.eq('status', filters.status);
+      }
+      if (filters?.minScore !== undefined) {
+        query = query.gte('match_score', filters.minScore);
+      }
+      if (filters?.search) {
+        query = query.or(`company_name.ilike.%${filters.search}%,person_name.ilike.%${filters.search}%,need_summary.ilike.%${filters.search}%,quote.ilike.%${filters.search}%`);
+      }
+
+      const limit = filters?.limit || 100;
+      const offset = filters?.offset || 0;
+      query = query.range(offset, offset + limit - 1).order('found_at', { ascending: false });
+
+      const { data, error } = await query;
+      if (error || !data) {
+        return this.fallback.getClientRequests(filters);
+      }
+
+      const requestIds = data.map((r: any) => r.id);
+      let pitchesMap = new Map<string, RequestPitchEntity[]>();
+      let channelsMap = new Map<string, RequestChannelEntity[]>();
+
+      if (requestIds.length > 0) {
+        try {
+          const [pitchesRes, channelsRes] = await Promise.all([
+            supabase.from('request_pitches').select('*').in('request_id', requestIds),
+            supabase.from('request_channels').select('*').in('request_id', requestIds),
+          ]);
+          if (pitchesRes.data) {
+            for (const p of pitchesRes.data) {
+              const list = pitchesMap.get(p.request_id) || [];
+              list.push({
+                id: p.id,
+                requestId: p.request_id,
+                channelType: p.channel_type,
+                variant: p.variant,
+                subject: p.subject,
+                text: p.text,
+                editedText: p.edited_text,
+                readAloudPassed: p.read_aloud_passed,
+                generatedAt: p.generated_at,
+              });
+              pitchesMap.set(p.request_id, list);
+            }
+          }
+          if (channelsRes.data) {
+            for (const c of channelsRes.data) {
+              const list = channelsMap.get(c.request_id) || [];
+              list.push({
+                id: c.id,
+                requestId: c.request_id,
+                type: c.type,
+                label: c.label,
+                value: c.value,
+                verified: c.verified,
+                publicSourceUrl: c.public_source_url,
+                createdAt: c.created_at,
+              });
+              channelsMap.set(c.request_id, list);
+            }
+          }
+        } catch {
+          // non-critical join failure
+        }
+      }
+
+      let results: ClientRequestEntity[] = data.map((r: any) => ({
+        id: r.id,
+        sourcePlatform: r.source_platform,
+        sourceUrl: r.source_url,
+        sourcePostId: r.source_post_id,
+        postUrl: r.post_url,
+        quote: r.quote,
+        needSummary: r.need_summary,
+        matchScore: r.match_score,
+        serviceFit: r.service_fit,
+        status: r.status,
+        foundAt: r.found_at,
+        personName: r.person_name,
+        companyName: r.company_name,
+        platformUsername: r.platform_username,
+        platformProfileUrl: r.platform_profile_url,
+        companyWebsite: r.company_website,
+        companyProfileUrl: r.company_profile_url,
+        budget: r.budget,
+        urgencySignals: r.urgency_signals,
+        captureMethod: r.capture_method,
+        companyId: r.company_id,
+        evidence: r.evidence,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+        pitches: pitchesMap.get(r.id) || [],
+        channels: channelsMap.get(r.id) || [],
+      }));
+
+      if (filters?.hasEmail) {
+        results = results.filter(r => r.channels && r.channels.some(c => c.type === 'email'));
+      }
+
+      return results;
+    } catch {
+      return this.fallback.getClientRequests(filters);
+    }
+  }
+
+  public async getClientRequestById(id: string): Promise<ClientRequestEntity | null> {
+    const supabase = this.getClient(false);
+    if (!supabase) return this.fallback.getClientRequestById(id);
+
+    try {
+      const { data, error } = await supabase
+        .from('client_requests')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (error || !data) return this.fallback.getClientRequestById(id);
+
+      const [pitchesRes, channelsRes] = await Promise.all([
+        supabase.from('request_pitches').select('*').eq('request_id', id),
+        supabase.from('request_channels').select('*').eq('request_id', id),
+      ]);
+
+      const pitches: RequestPitchEntity[] = (pitchesRes.data || []).map((p: any) => ({
+        id: p.id,
+        requestId: p.request_id,
+        channelType: p.channel_type,
+        variant: p.variant,
+        subject: p.subject,
+        text: p.text,
+        editedText: p.edited_text,
+        readAloudPassed: p.read_aloud_passed,
+        generatedAt: p.generated_at,
+      }));
+
+      const channels: RequestChannelEntity[] = (channelsRes.data || []).map((c: any) => ({
+        id: c.id,
+        requestId: c.request_id,
+        type: c.type,
+        label: c.label,
+        value: c.value,
+        verified: c.verified,
+        publicSourceUrl: c.public_source_url,
+        createdAt: c.created_at,
+      }));
+
+      return {
+        id: data.id,
+        sourcePlatform: data.source_platform,
+        sourceUrl: data.source_url,
+        sourcePostId: data.source_post_id,
+        postUrl: data.post_url,
+        quote: data.quote,
+        needSummary: data.need_summary,
+        matchScore: data.match_score,
+        serviceFit: data.service_fit,
+        status: data.status,
+        foundAt: data.found_at,
+        personName: data.person_name,
+        companyName: data.company_name,
+        platformUsername: data.platform_username,
+        platformProfileUrl: data.platform_profile_url,
+        companyWebsite: data.company_website,
+        companyProfileUrl: data.company_profile_url,
+        budget: data.budget,
+        urgencySignals: data.urgency_signals,
+        captureMethod: data.capture_method,
+        companyId: data.company_id,
+        evidence: data.evidence,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+        pitches,
+        channels,
+      };
+    } catch {
+      return this.fallback.getClientRequestById(id);
+    }
+  }
+
+  public async saveClientRequest(request: ClientRequestEntity): Promise<void> {
+    if (this.fallback) {
+      await this.fallback.saveClientRequest(request);
+    }
+    const supabase = this.getClient(true);
+    if (!supabase) return;
+
+    try {
+      await supabase.from('client_requests').upsert({
+        id: request.id,
+        source_platform: request.sourcePlatform,
+        source_url: request.sourceUrl,
+        source_post_id: request.sourcePostId || null,
+        post_url: request.postUrl,
+        quote: request.quote,
+        need_summary: request.needSummary,
+        match_score: request.matchScore,
+        service_fit: request.serviceFit,
+        status: request.status,
+        found_at: request.foundAt || new Date().toISOString(),
+        person_name: request.personName || null,
+        company_name: request.companyName || null,
+        platform_username: request.platformUsername || null,
+        platform_profile_url: request.platformProfileUrl || null,
+        company_website: request.companyWebsite || null,
+        company_profile_url: request.companyProfileUrl || null,
+        budget: request.budget || null,
+        urgency_signals: request.urgencySignals || null,
+        capture_method: request.captureMethod || 'auto_feed',
+        company_id: request.companyId || null,
+        evidence: request.evidence || [],
+        updated_at: new Date().toISOString(),
+      });
+
+      if (request.pitches && request.pitches.length > 0) {
+        for (const p of request.pitches) {
+          await this.saveRequestPitch(p);
+        }
+      }
+      if (request.channels && request.channels.length > 0) {
+        for (const c of request.channels) {
+          await this.saveRequestChannel(c);
+        }
+      }
+    } catch (e) {
+      // fallback already saved
+    }
+  }
+
+  public async updateClientRequestStatus(id: string, status: RequestStatus): Promise<boolean> {
+    if (this.fallback) {
+      await this.fallback.updateClientRequestStatus(id, status);
+    }
+    const supabase = this.getClient(true);
+    if (!supabase) return true;
+
+    try {
+      await supabase
+        .from('client_requests')
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq('id', id);
+      return true;
+    } catch {
+      return true;
+    }
+  }
+
+  public async saveRequestPitch(pitch: RequestPitchEntity): Promise<void> {
+    if (this.fallback) {
+      await this.fallback.saveRequestPitch(pitch);
+    }
+    const supabase = this.getClient(true);
+    if (!supabase) return;
+
+    try {
+      await supabase.from('request_pitches').upsert({
+        id: pitch.id,
+        request_id: pitch.requestId,
+        channel_type: pitch.channelType,
+        variant: pitch.variant,
+        subject: pitch.subject || null,
+        text: pitch.text,
+        edited_text: pitch.editedText || null,
+        read_aloud_passed: pitch.readAloudPassed ?? true,
+        generated_at: pitch.generatedAt || new Date().toISOString(),
+      });
+    } catch {
+      // fallback saved
+    }
+  }
+
+  public async saveRequestChannel(channel: RequestChannelEntity): Promise<void> {
+    if (this.fallback) {
+      await this.fallback.saveRequestChannel(channel);
+    }
+    const supabase = this.getClient(true);
+    if (!supabase) return;
+
+    try {
+      await supabase.from('request_channels').upsert({
+        id: channel.id,
+        request_id: channel.requestId,
+        type: channel.type,
+        label: channel.label,
+        value: channel.value,
+        verified: channel.verified ?? false,
+        public_source_url: channel.publicSourceUrl || null,
+        created_at: channel.createdAt || new Date().toISOString(),
+      });
+    } catch {
+      // fallback saved
+    }
+  }
+
+  public async recordRequestEvent(event: RequestEventEntity): Promise<void> {
+    if (this.fallback) {
+      await this.fallback.recordRequestEvent(event);
+    }
+    const supabase = this.getClient(true);
+    if (!supabase) return;
+
+    try {
+      await supabase.from('request_events').insert({
+        id: event.id,
+        request_id: event.requestId,
+        event_type: event.eventType,
+        notes: event.notes || null,
+        created_at: event.createdAt || new Date().toISOString(),
+      });
+    } catch {
+      // fallback saved
+    }
+  }
+
+  public async getLeadSources(filters?: { accessTier?: string; category?: string; status?: string }): Promise<LeadSourceEntity[]> {
+    const supabase = this.getClient(false);
+    if (!supabase) return this.fallback.getLeadSources(filters);
+
+    try {
+      let query = supabase.from('lead_sources').select('*');
+      if (filters?.accessTier && filters.accessTier !== 'all') {
+        query = query.eq('access_tier', filters.accessTier);
+      }
+      if (filters?.category && filters.category !== 'all') {
+        query = query.eq('category', filters.category);
+      }
+      if (filters?.status && filters.status !== 'all') {
+        query = query.eq('status', filters.status);
+      }
+
+      const { data, error } = await query;
+      if (error || !data || data.length === 0) {
+        return this.fallback.getLeadSources(filters);
+      }
+
+      return data.map((s: any) => ({
+        id: s.id,
+        name: s.name,
+        domain: s.domain,
+        category: s.category,
+        accessTier: s.access_tier,
+        method: s.method,
+        termsNote: s.terms_note,
+        status: s.status,
+        lastChecked: s.last_checked,
+        lastSuccess: s.last_success,
+        notes: s.notes,
+        pitchStyle: s.pitch_style,
+        channelRules: s.channel_rules,
+        createdAt: s.created_at,
+        updatedAt: s.updated_at,
+      }));
+    } catch {
+      return this.fallback.getLeadSources(filters);
+    }
+  }
+
+  public async getLeadSourceById(id: string): Promise<LeadSourceEntity | null> {
+    const supabase = this.getClient(false);
+    if (!supabase) return this.fallback.getLeadSourceById(id);
+
+    try {
+      const { data, error } = await supabase
+        .from('lead_sources')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (error || !data) return this.fallback.getLeadSourceById(id);
+
+      return {
+        id: data.id,
+        name: data.name,
+        domain: data.domain,
+        category: data.category,
+        accessTier: data.access_tier,
+        method: data.method,
+        termsNote: data.terms_note,
+        status: data.status,
+        lastChecked: data.last_checked,
+        lastSuccess: data.last_success,
+        notes: data.notes,
+        pitchStyle: data.pitch_style,
+        channelRules: data.channel_rules,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+      };
+    } catch {
+      return this.fallback.getLeadSourceById(id);
+    }
+  }
+
+  public async saveLeadSource(source: LeadSourceEntity): Promise<void> {
+    if (this.fallback) {
+      await this.fallback.saveLeadSource(source);
+    }
+    const supabase = this.getClient(true);
+    if (!supabase) return;
+
+    try {
+      await supabase.from('lead_sources').upsert({
+        id: source.id,
+        name: source.name,
+        domain: source.domain,
+        category: source.category,
+        access_tier: source.accessTier,
+        method: source.method,
+        terms_note: source.termsNote,
+        status: source.status,
+        last_checked: source.lastChecked || null,
+        last_success: source.lastSuccess || null,
+        notes: source.notes || null,
+        pitch_style: source.pitchStyle,
+        channel_rules: source.channelRules || {},
+        updated_at: new Date().toISOString(),
+      });
+    } catch {
+      // fallback saved
+    }
+  }
+
+  public async updateLeadSourceStatus(id: string, status: SourceStatus, lastChecked?: string, lastError?: string): Promise<void> {
+    if (this.fallback) {
+      await this.fallback.updateLeadSourceStatus(id, status, lastChecked, lastError);
+    }
+    const supabase = this.getClient(true);
+    if (!supabase) return;
+
+    try {
+      const updates: any = {
+        status,
+        updated_at: new Date().toISOString(),
+      };
+      if (lastChecked) updates.last_checked = lastChecked;
+      if (status === 'verified_api' || status === 'manual_only') {
+        updates.last_success = lastChecked || new Date().toISOString();
+      }
+      if (lastError) updates.notes = lastError;
+
+      await supabase.from('lead_sources').update(updates).eq('id', id);
+    } catch {
+      // fallback saved
+    }
+  }
+
 
 }
 

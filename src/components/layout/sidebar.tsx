@@ -18,10 +18,10 @@ export function Sidebar() {
       activeExact: true,
     },
     {
-      href: '/platforms',
-      label: t('nav.platforms', 'Find Clients on Platforms'),
-      description: t('nav.platforms_sub', 'Upwork, Fiverr, Toptal and more'),
-      icon: 'hub',
+      href: '/client-requests',
+      label: t('nav.client_requests', 'Client Requests'),
+      description: t('nav.client_requests_sub', 'People & companies that need your skills'),
+      icon: 'radar',
     },
     {
       href: '/businesses',

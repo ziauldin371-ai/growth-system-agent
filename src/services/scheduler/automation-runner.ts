@@ -1,3 +1,4 @@
+import { runClientRequestsScan } from '../client-requests/request-pipeline';
 import { dataStore } from '../repository/data-store';
 import { discoveryService } from '../discovery/discovery-service';
 import { verifyWebsite } from '../website/verifier';
@@ -117,8 +118,12 @@ export class AutomationRunner {
         return result;
       }
 
-      // 5. Pre-flight Check: Google Places API Key (in production or when explicitly configured)
-      if ((process.env.NODE_ENV === 'production' || process.env.REQUIRE_LIVE_DISCOVERY === 'true') && (!process.env.GOOGLE_PLACES_API_KEY || !process.env.GOOGLE_PLACES_API_KEY.trim())) {
+      // 5. Pre-flight Check: Google Places API Key or OSM
+      const providerSetting = (process.env.DISCOVERY_PROVIDER || '').trim().toLowerCase();
+      const isPlacesRequired = providerSetting === 'google' || providerSetting === 'google_places' || (!providerSetting && (process.env.NODE_ENV === 'production' || process.env.REQUIRE_LIVE_DISCOVERY === 'true'));
+      const hasPlacesKey = Boolean(process.env.GOOGLE_PLACES_API_KEY && process.env.GOOGLE_PLACES_API_KEY.trim());
+
+      if (isPlacesRequired && !hasPlacesKey && providerSetting !== 'osm' && providerSetting !== 'openstreetmap') {
         const result: ScheduledRunResult = {
           runId,
           status: 'skipped',
@@ -578,6 +583,16 @@ export class AutomationRunner {
               });
             }
           }
+        }
+      }
+
+      // 8.5 Scan Client Requests (Tier A public feeds)
+      if (process.env.NODE_ENV !== 'test' && !process.env.VITEST) {
+        try {
+          const clientRequestsScan = await runClientRequestsScan({ limitPerSource: 10 });
+          console.log(`[SCHEDULER] Client Requests scan completed: ${clientRequestsScan.newLeadsCreated} new leads created`);
+        } catch (reqErr: any) {
+          console.warn('[SCHEDULER] Client Requests scan notice (non-fatal):', reqErr?.message);
         }
       }
 

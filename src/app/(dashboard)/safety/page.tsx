@@ -257,7 +257,7 @@ export default function SafetyPage() {
             </div>
 
             <p className="text-xs text-on-surface-variant leading-relaxed">
-              Direct Google OAuth connection. Inbox placement cannot be guaranteed by any automated provider.
+              Direct Google OAuth connection. Inbox placement cannot be assured by any automated provider.
             </p>
 
             <button

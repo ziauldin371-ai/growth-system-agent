@@ -246,11 +246,11 @@ export default async function HomePage(props: PageProps) {
             <span className="truncate">Find Leads</span>
           </Link>
           <Link
-            href="/platforms"
+            href="/client-requests"
             className="min-h-[44px] px-2 py-2 rounded-xl bg-secondary-container text-on-secondary-container font-semibold text-[11px] shadow-md flex items-center justify-center gap-1 active:opacity-90 transition-opacity"
           >
-            <span className="material-symbols-outlined text-[16px]">hub</span>
-            <span className="truncate">Platforms (68)</span>
+            <span className="material-symbols-outlined text-[16px]">radar</span>
+            <span className="truncate">Client Requests</span>
           </Link>
           <Link
             href="/contact-manually"
@@ -532,7 +532,7 @@ export default async function HomePage(props: PageProps) {
 
             <p className="text-xs text-on-surface-variant leading-relaxed">
               Growth System automatically pauses for 2-5 minutes between emails to stay within safe human sending limits.
-              Inbox placement cannot be guaranteed by any automated provider.
+              Inbox placement cannot be assured by any automated provider.
             </p>
 
             <div className="flex items-center justify-between pt-1 text-xs">

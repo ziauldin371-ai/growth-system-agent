@@ -735,3 +735,98 @@ export interface OperatorProfileEntity {
   demoModeEnabled: boolean;
   updatedAt?: string;
 }
+
+
+// ==============================================================================
+// Client Requests (Opportunity Radar) & Lead Sources Entities
+// ==============================================================================
+
+export type SourceAccessTier = 'tier_a_auto' | 'tier_b_manual' | 'tier_c_link' | 'expert_network_excluded';
+export type SourceMethod = 'official_api' | 'public_rss' | 'manual_capture' | 'link_only' | 'excluded';
+export type SourceStatus = 'not_checked' | 'verified_api' | 'manual_only' | 'blocked' | 'failed';
+export type SourcePitchStyle = 'marketplace_application' | 'talent_network_summary' | 'startup_hiring_note' | 'community_reply' | 'cold_email';
+
+export interface LeadSourceEntity {
+  id: string;
+  name: string;
+  domain: string;
+  category: string;
+  accessTier: SourceAccessTier;
+  method: SourceMethod;
+  termsNote: string;
+  status: SourceStatus;
+  lastChecked?: string | null;
+  lastSuccess?: string | null;
+  notes?: string | null;
+  pitchStyle: SourcePitchStyle;
+  channelRules: {
+    maxLength?: number;
+    allowOffPlatformContact?: boolean;
+    note?: string;
+  };
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export type RequestStatus = 'new' | 'contacted' | 'skipped' | 'remind_later';
+export type RequestCaptureMethod = 'auto_feed' | 'paste' | 'screenshot' | 'bookmarklet' | 'csv_import';
+
+export interface RequestChannelEntity {
+  id: string;
+  requestId: string;
+  type: 'email' | 'platform_message' | 'contact_form' | 'phone' | 'social';
+  label: string;
+  value: string;
+  verified: boolean;
+  publicSourceUrl?: string | null;
+  createdAt?: string;
+}
+
+export interface RequestPitchEntity {
+  id: string;
+  requestId: string;
+  channelType: 'email' | 'platform_message' | 'follow_up';
+  variant: string;
+  subject?: string | null;
+  text: string;
+  editedText?: string | null;
+  readAloudPassed: boolean;
+  generatedAt: string;
+}
+
+export interface RequestEventEntity {
+  id: string;
+  requestId: string;
+  eventType: 'created' | 'viewed' | 'copied' | 'edited' | 'contacted' | 'skipped' | 'reminded';
+  notes?: string | null;
+  createdAt: string;
+}
+
+export interface ClientRequestEntity {
+  id: string;
+  sourcePlatform: string;
+  sourceUrl: string;
+  sourcePostId?: string | null;
+  postUrl: string;
+  quote: string;
+  needSummary: string;
+  matchScore: number; // 0 - 100
+  serviceFit: string;
+  status: RequestStatus;
+  foundAt: string;
+  personName?: string | null;
+  companyName?: string | null;
+  platformUsername?: string | null;
+  platformProfileUrl?: string | null;
+  companyWebsite?: string | null;
+  companyProfileUrl?: string | null;
+  budget?: string | null;
+  urgencySignals?: string | null;
+  captureMethod: RequestCaptureMethod;
+  companyId?: string | null;
+  evidence: Array<{ claim: string; sourceUrl: string; date?: string }>;
+  channels?: RequestChannelEntity[];
+  pitches?: RequestPitchEntity[];
+  createdAt?: string;
+  updatedAt?: string;
+}

@@ -21,10 +21,17 @@ import {
   PlatformSpendLogEntity,
   PlatformTrackerEntity,
   PlatformDailyTargetEntity,
-  OperatorProfileEntity
+  OperatorProfileEntity,
+  ClientRequestEntity,
+  RequestPitchEntity,
+  RequestChannelEntity,
+  RequestEventEntity,
+  LeadSourceEntity,
+  RequestStatus,
+  SourceStatus
 } from '@/types';
 
-export interface IDataStore {
+export interface IDataStore extends IClientRequestsStore {
   // Businesses
   getBusinesses(filter?: {
     pipeline?: PipelineType | 'all';
@@ -152,3 +159,27 @@ export interface IDataStore {
   hasDemoData?(): boolean | Promise<boolean>;
 }
 
+
+// Client Requests Methods
+export interface IClientRequestsStore {
+  getClientRequests(filters?: {
+    platform?: string;
+    status?: string;
+    minScore?: number;
+    hasEmail?: boolean;
+    search?: string;
+    limit?: number;
+    offset?: number;
+  }): ClientRequestEntity[] | Promise<ClientRequestEntity[]>;
+  getClientRequestById(id: string): (ClientRequestEntity | null) | Promise<ClientRequestEntity | null>;
+  saveClientRequest(request: ClientRequestEntity): void | Promise<void>;
+  updateClientRequestStatus(id: string, status: RequestStatus): boolean | Promise<boolean>;
+  saveRequestPitch(pitch: RequestPitchEntity): void | Promise<void>;
+  saveRequestChannel(channel: RequestChannelEntity): void | Promise<void>;
+  recordRequestEvent(event: RequestEventEntity): void | Promise<void>;
+
+  getLeadSources(filters?: { accessTier?: string; category?: string; status?: string }): LeadSourceEntity[] | Promise<LeadSourceEntity[]>;
+  getLeadSourceById(id: string): (LeadSourceEntity | null) | Promise<LeadSourceEntity | null>;
+  saveLeadSource(source: LeadSourceEntity): void | Promise<void>;
+  updateLeadSourceStatus(id: string, status: SourceStatus, lastChecked?: string, lastError?: string): void | Promise<void>;
+}

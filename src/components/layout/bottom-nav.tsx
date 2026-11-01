@@ -53,7 +53,7 @@ export function BottomNav({ onOpenHelp }: { onOpenHelp?: () => void }) {
   ];
 
   const isMoreActive =
-    pathname.startsWith('/platforms') ||
+    pathname.startsWith('/client-requests') ||
     pathname.startsWith('/safety') ||
     pathname.startsWith('/setup') ||
     pathname.startsWith('/run-and-schedule');
@@ -139,16 +139,16 @@ export function BottomNav({ onOpenHelp }: { onOpenHelp?: () => void }) {
 
             <div className="grid grid-cols-1 gap-2">
               <Link
-                href="/platforms"
+                href="/client-requests"
                 onClick={() => setShowMoreMenu(false)}
                 className="flex items-center justify-between p-3 rounded-xl bg-surface-container-low hover:bg-surface-container-high text-on-surface transition-colors min-h-[44px]"
               >
                 <div className="flex items-center gap-3">
-                  <span className="material-symbols-outlined text-primary text-[22px]">hub</span>
+                  <span className="material-symbols-outlined text-primary text-[22px]">radar</span>
                   <div>
-                    <div className="font-label-lg text-xs font-semibold">Find Clients on Platforms</div>
+                    <div className="font-label-lg text-xs font-semibold">Client Requests</div>
                     <div className="font-label-md text-[11px] text-on-surface-variant">
-                      Upwork, Fiverr, Toptal and 65+ more
+                      Opportunity Radar for your skills
                     </div>
                   </div>
                 </div>
