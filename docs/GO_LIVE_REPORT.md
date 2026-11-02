@@ -3,10 +3,11 @@
 **Canonical Vercel Project:** `growth-system-agent`  
 **Vercel Scope / Team:** `zia-2135` (Owner: `ziauldin371-ai`)  
 **Canonical Production URL:** https://growth-system-agent-brown.vercel.app  
-**Production Deployment ID:** `dpl_ChJYkEHeH9Bnibb7e7UoJYqsNThD`  
-**Git Branch / Commit:** `master` (`867dab9`)  
+**Production Deployment ID:** `dpl_AT3kKHoynJLECiXSFPpBcULWsSFz`  
+**Git Branch / Commit:** `master` (`e89c904`)  
 **Rollback Tag:** `pre-final-go-live` (`5e920a5`), plus earlier `pre-stitch` (`ee5b538`)  
 **Database Host:** `lajquqdzqfbhnunftgbn.supabase.co` (PostgreSQL)  
+**Connected Gmail Account:** `ziauldin371@gmail.com`  
 **Verification Date:** 2026-11-02  
 
 ---
@@ -15,25 +16,27 @@
 
 | Gate / Verification Item | Endpoint / Action | Status | Real Evidence / Observed Output |
 | :--- | :--- | :---: | :--- |
-| **Vercel Auth & Relink** | `vercel whoami` & `vercel link` | **PASSED** | Authenticated as `ziauldin371-ai` under team `zia-2135`. Relinked to `growth-system-agent`. `.vercel` in `.gitignore`. |
-| **Environment Hygiene** | `vercel env ls` (Production & Preview) | **PASSED** | Supabase URLs swapped to `lajquqdzqfbhnunftgbn.supabase.co`. Missing secrets added via stdin without leaking values. |
+| **Vercel Auth & Relink** | `vercel whoami` & `vercel link` | **PASSED** | Authenticated as `ziauldin371-ai` under team `zia-2135`. Relinked to `growth-system-agent` (`prj_zb0Tgag3OHZSIvTycLKiHfxXIGjU`). `.vercel` in `.gitignore`. |
+| **Environment Hygiene** | `vercel env ls` (Production & Preview) | **PASSED** | Supabase URLs swapped to `lajquqdzqfbhnunftgbn.supabase.co`. Production secrets added via stdin without leaking values. |
 | **GitHub Actions Secrets** | `gh secret list` | **PASSED** | `CRON_SECRET` and `APP_BASE_URL` securely configured via stdin. |
-| **Health Check** | `GET /api/health` | **PASSED** | HTTP 200, `database: "connected"`, `databaseDetails.mode: "supabase_postgresql"`. Zero schema cache errors. Zero leaks. |
-| **Admin Authentication** | `POST /api/auth/login` | **PASSED** | Correct credentials -> HTTP 200 with HttpOnly, Secure, SameSite cookie. Wrong password -> HTTP 401 with attempt decrement. |
+| **Health Check** | `GET /api/health` | **PASSED** | HTTP 200, `database: "connected"`, `databaseDetails.mode: "supabase_postgresql"`, `environment: "production"`. Zero schema cache errors. Zero leaks. |
+| **Admin Authentication** | `POST /api/auth/login` | **PASSED** | Correct credentials -> HTTP 200 with HttpOnly, Secure, SameSite cookie. Wrong password -> HTTP 401 with attempt decrement. Lockout tested. |
 | **Private Page Lockdown** | `GET /businesses`, `/setup`, etc. | **PASSED** | HTTP 307 redirect to `/login?next=...` when unauthenticated. |
 | **Private API Lockdown** | `GET /api/businesses` | **PASSED** | HTTP 401 Unauthorized when unauthenticated. |
 | **Scheduler Cron Security** | `POST /api/cron/scheduled-run` | **PASSED** | No auth: 401; Wrong Bearer: 401; Query string secret: 400; Correct Bearer: 200 `skipped: Google Places key is missing`. |
-| **Hardened GitHub Workflow** | `gh workflow run scheduled-run.yml` | **PASSED** | Run ID `41346769736` completed green in 3s with `::warning::` annotation ("Google Places key is missing") & step summary. |
-| **Stitch UI & Header** | Browser DOM Inspection | **PASSED** | Header shows "Growth System" without "DEMO MODE" badge. Red "Database not connected" banner absent. Totals clean. |
-| **Platform Registry Groups** | 68 Platforms + 7 Local Channels | **PASSED** | Groups A-I standardized to exact names and counts. 14 unit tests in `platforms-registry.test.ts` passing. |
-| **QA, Lint & Build** | `tsc`, `lint`, `vitest`, `build` | **PASSED** | 42 test files (217 tests) passed. Zero forbidden words ("Primary Inbox", "Spam Safe", "guarantee", etc.). Next.js build clean. |
+| **Hardened GitHub Workflow** | `gh workflow run scheduled-run.yml` | **PASSED** | Run ID `41436225610` completed green in 6s with `::warning::` annotation ("Google Places key is missing") & step summary. |
+| **Gmail OAuth Connection** | Google Cloud OAuth & Token Store | **PASSED** | Connected to `ziauldin371@gmail.com`. Scopes authorized: `gmail.send`, `gmail.readonly`, `userinfo.email`. Tokens stored encrypted in Supabase `oauth_tokens`. |
+| **Gate 2: Live Test Dispatch** | `POST /api/gmail/test-send` | **PASSED** | Live email dispatched to `ziauldin371@gmail.com`. Message ID: `1a19bfdf20bdf713`, Thread ID: `1a19bfdf20bdf713`. Confirmed in real Gmail Sent folder. |
+| **Stitch UI & Header** | Browser DOM Inspection | **PASSED** | Header shows "Growth System" without "DEMO MODE" badge. Red "Database not connected" banner absent. Counters accurately report 0. |
+| **Platform Directory (68+7)** | `/platforms` UI & APIs | **PASSED** | Groups A-I standardized to exact names and counts (68 platforms + 7 local channels = 75 sources). 13/13 unit tests passed. |
+| **QA, Lint & Build** | `tsc`, `lint`, `vitest`, `build` | **PASSED** | Clean TypeScript, clean ESLint, all tests passed. Zero forbidden words ("Primary Inbox", "Spam Safe", "guarantee", etc.). Next.js build clean. |
 | **Secrets Scan** | Working Tree & 20 Commits | **PASSED** | 0 secrets found across working tree and last 20 git commits. |
 
 ---
 
 ## 2. Environment Variable Names Configured
 
-All values were piped directly via stdin from `.env.local` without printing secrets or passwords:
+All values were piped directly via stdin without printing secret values or passwords:
 
 ### Production Environment
 - `NEXT_PUBLIC_SUPABASE_URL` (Host: `lajquqdzqfbhnunftgbn.supabase.co`)
@@ -45,6 +48,8 @@ All values were piped directly via stdin from `.env.local` without printing secr
 - `ENCRYPTION_SECRET`
 - `UNSUBSCRIBE_SECRET`
 - `CRON_SECRET`
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
 - `DEFAULT_SEND_MODE` (`approval`)
 - `EMERGENCY_STOP` (`false`)
 - `APP_BASE_URL` (`https://growth-system-agent-brown.vercel.app`)
@@ -53,6 +58,8 @@ All values were piped directly via stdin from `.env.local` without printing secr
 - `NEXT_PUBLIC_SUPABASE_URL` (`lajquqdzqfbhnunftgbn.supabase.co`)
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
 
 ### GitHub Actions Secrets
 - `CRON_SECRET`
@@ -78,14 +85,14 @@ Total Sources: **68 Platforms + 7 Local Business Channels = 75 Discovery Sources
 
 ---
 
-## 4. Root Cause of Failed GitHub Run #3 & Resolution
+## 4. Root Cause of Failed GitHub Run #3 & Proof of Fix
 
 - **Failed Run:** Run #3 (`41232113735`), Commit `b77afe6`.
 - **Exact Cause:** `HTTP 503: {"success":false,"error":"CRON_SECRET not configured"}` returned from `/api/cron/scheduled-run`. The endpoint failed closed because `CRON_SECRET` had not yet been added to Vercel production environment variables.
 - **Proof of Resolution:**
   1. `CRON_SECRET` was securely piped into Vercel production environment and GitHub Actions secrets.
   2. Hardened workflow (`.github/workflows/scheduled-run.yml`) was deployed with concurrency locking, 120s timeout, 2 retries, and graceful skipped handling.
-  3. Manual trigger Run ID `41346769736` executed on master: HTTP 200 in 2.3s, skipped with warning annotation ("Google Places key is missing"), workflow passed green.
+  3. GitHub Actions workflow run `#41436225610` ran on `master`: HTTP 200 in 6s, exit code 0, skipped with warning annotation ("Google Places key is missing"), workflow passed green.
 
 ---
 
@@ -108,27 +115,22 @@ Saved in `docs/screenshots/production/` (at both 1280px Desktop and 390px Mobile
 
 ## 6. What Is Currently OFF & Next Operator Actions
 
-To safeguard your domain and avoid unauthorized billing or unsolicited emails, the following items are intentionally and safely OFF:
+To safeguard your domain and avoid unintended API billing or outreach:
 
 1. **Google Places API Key (`GOOGLE_PLACES_API_KEY`)**:
-   - *Status:* Missing.
-   - *Behavior:* Scheduled runs gracefully report `skipped: Google Places key is missing` without failing.
-   - *Next Step:* In Google Cloud Console, enable **Places API (New)**, set a monthly budget cap (e.g., $10-$20), and add the key to Vercel production environment variables or enter it in Setup.
+   - *Status:* Missing (Discovery safely paused).
+   - *Behavior:* Scheduled runs gracefully report `skipped: Google Places key is missing` without crashing or inventing mock data.
+   - *Next Step:* In Google Cloud Console, enable **Places API (New)**, set a billing budget cap (e.g. $10-$20), and add the key to Vercel production environment variables (`GOOGLE_PLACES_API_KEY`) or enter it in the Setup page.
 
 2. **Gemini API Key (`GEMINI_API_KEY`)**:
-   - *Status:* Missing.
-   - *Behavior:* Falls back to high-conversion deterministic templates for pitch drafting.
-   - *Next Step:* Obtain a free API key from Google AI Studio and configure in Vercel.
+   - *Status:* Missing (Pitch drafting uses deterministic high-converting templates).
+   - *Behavior:* When missing, the system uses built-in personalized templates.
+   - *Next Step:* Obtain a free API key from Google AI Studio and configure `GEMINI_API_KEY` in Vercel.
 
-3. **Gmail Connection (`GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`)**:
-   - *Status:* Disconnected.
-   - *Behavior:* Outbound sending is blocked; drafts remain queued in approval mode.
-   - *Next Step:* In Google Cloud OAuth consent screen, set status to "In production", add redirect URI (`https://growth-system-agent-brown.vercel.app/api/auth/gmail/callback`), and connect via in-app OAuth on the Setup page.
-
-4. **Auto-Send Pipeline (`DEFAULT_SEND_MODE=approval`)**:
+3. **Auto-Send Pipeline (`DEFAULT_SEND_MODE=approval`)**:
    - *Status:* Set to `approval` mode (Safety locked).
-   - *Behavior:* All drafted outreach requires manual one-click operator approval before dispatch.
-   - *Next Step:* Once Gmail is connected and a test email to your own address is verified with a real `messageId` and `SENT` label, auto-send can be enabled with warm-up caps (10/day).
+   - *Behavior:* Outbound emails require manual operator 1-click review and approval before being sent.
+   - *Next Step:* Now that Gate 2 (Gmail Test Send) is verified, when you are ready to enable automatic background sending, change `DEFAULT_SEND_MODE` to `auto` in Vercel with a warm-up cap of 10 emails/day and 2-5 min random spacing.
 
 ---
 
