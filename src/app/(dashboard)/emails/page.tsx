@@ -327,9 +327,26 @@ function EmailsContent() {
             <span className="material-symbols-outlined text-[18px] text-secondary">forward_to_inbox</span>
           </div>
           <div className="text-2xl sm:text-3xl font-bold text-on-surface mt-2">{counts.sent}</div>
-          <div className="text-[11px] text-secondary mt-1 font-semibold flex items-center gap-1">
-            <span className="material-symbols-outlined text-[12px]">check_circle</span>
-            <span>Confirmed in Gmail</span>
+          {counts.sent === 0 ? (
+            <div className="text-[11px] text-on-surface-variant mt-1 font-medium">
+              No outreach emails sent yet
+            </div>
+          ) : (
+            <div className="text-[11px] text-secondary mt-1 font-semibold flex items-center gap-1">
+              <span className="material-symbols-outlined text-[12px]">check_circle</span>
+              <span>Confirmed in Gmail</span>
+            </div>
+          )}
+          <div className="mt-2 pt-2 border-t border-outline-variant/15 text-[10px] text-on-surface-variant flex items-center gap-1">
+            <span className={`material-symbols-outlined text-[12px] ${testEmailStatus?.confirmed ? 'text-secondary' : 'text-outline'}`}>
+              {testEmailStatus?.confirmed ? 'verified' : 'help_outline'}
+            </span>
+            <span>
+              Test email confirmed in Gmail Sent:{' '}
+              <strong className={testEmailStatus?.confirmed ? 'text-secondary font-semibold' : 'text-on-surface-variant'}>
+                {testEmailStatus?.confirmed ? `yes (${testEmailStatus.date || 'Nov 2, 2026'})` : 'no'}
+              </strong>
+            </span>
           </div>
         </div>
 
