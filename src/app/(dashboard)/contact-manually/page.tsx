@@ -322,7 +322,7 @@ function ContactManuallyContent() {
         )}
       </div>
 
-      {/* Two-Pane Workspace on Laptop */}
+      {/* Two-Pane Layout on Laptop */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         {/* Left Pane: Priority Leads List */}
         <div className="lg:col-span-5 flex flex-col gap-3">
@@ -510,7 +510,7 @@ function ContactManuallyContent() {
               {/* Lead Header */}
               <div className="flex items-start justify-between gap-3 pb-3 border-b border-outline-variant/20">
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-primary tracking-wider">Active Workspace</span>
+                  <span className="text-[10px] uppercase font-bold text-primary tracking-wider">Active Panel</span>
                   <h2 className="text-lg font-bold text-on-surface mt-0.5">{selectedLead.name}</h2>
                   <p className="text-xs text-on-surface-variant">
                     {[selectedLead.city, selectedLead.industry].filter(Boolean).join(' · ')}

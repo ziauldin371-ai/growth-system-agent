@@ -208,7 +208,7 @@ function SetupContent() {
       statusLabel: isAutoSendActive ? 'Auto-Send Active (10/day Warmup Cap)' : 'Approval Mode Active (Safe - Human in the Loop)',
       envVar: 'DEFAULT_SEND_MODE=approval, EMERGENCY_STOP=false',
       docLink: '/safety',
-      howToGet: 'Keep DEFAULT_SEND_MODE=approval in production. You can switch on auto-send after first-run tests verify 100% deliverability.',
+      howToGet: 'Keep DEFAULT_SEND_MODE=approval in production. You can switch on auto-send after first-run tests verify live deliverability.',
       howToGetUrdu: 'Production mein DEFAULT_SEND_MODE=approval rakhna behtareen aur safe tareeqa hai.',
       whereToPut: 'Vercel Production Environment Variables',
     },

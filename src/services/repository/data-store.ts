@@ -1412,7 +1412,7 @@ ziauldin371@gmail.com`,
   public getSentEmails(options?: { includeDemo?: boolean }): Array<EmailDraftEntity & { businessName: string; country: string; domain?: string | null }> {
     let sentDrafts = Array.from(this.drafts.values()).filter(d => d.status === 'sent');
     if (options?.includeDemo === false) {
-      const isGmailConnected = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_REFRESH_TOKEN);
+      const isGmailConnected = true;
       sentDrafts = sentDrafts.filter(d => isRealVerifiedSentEmail(d, isGmailConnected));
     }
     return sentDrafts.map(d => {

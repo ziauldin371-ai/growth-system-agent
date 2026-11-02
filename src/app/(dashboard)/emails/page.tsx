@@ -43,10 +43,24 @@ function EmailsContent() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [bannerNotice, setBannerNotice] = useState<string | null>(null);
   const [showMobilePreview, setShowMobilePreview] = useState(false);
+  const [testEmailStatus, setTestEmailStatus] = useState<{ confirmed: boolean; date: string | null; messageId: string | null } | null>(null);
 
   const loadEmails = useCallback(async () => {
     setIsLoading(true);
     try {
+      // Fetch Gmail connection & test email status
+      try {
+        const statusRes = await fetch('/api/auth/gmail/status');
+        if (statusRes.ok) {
+          const statusData = await statusRes.json();
+          if (statusData.testEmail) {
+            setTestEmailStatus(statusData.testEmail);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load gmail status:', err);
+      }
+
       const res = await fetch(`/api/leads/sent?demo=${showDemo}`);
       const data = await res.json();
 
@@ -263,11 +277,11 @@ function EmailsContent() {
                 Outreach &amp; Email Queue
               </h1>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary-container/20 text-secondary font-semibold">
-                Connected
+                Gmail API connected
               </span>
             </div>
             <p className="text-xs text-on-surface-variant mt-0.5">
-              Sender: <strong className="font-mono text-on-surface">ziauldin371@gmail.com</strong> (Primary Google Workspace)
+              Sender: <strong className="font-mono text-on-surface">ziauldin371@gmail.com</strong>
             </p>
           </div>
         </div>

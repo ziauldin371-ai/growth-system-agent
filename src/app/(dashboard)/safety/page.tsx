@@ -250,7 +250,7 @@ export default function SafetyPage() {
               <div className="flex flex-col sm:items-end text-xs text-on-surface-variant">
                 <span className="text-secondary flex items-center gap-1 font-bold">
                   <span className="material-symbols-outlined text-[14px]">verified</span>
-                  <span>Google Workspace Connected</span>
+                  <span>Gmail API Connected</span>
                 </span>
                 <span>Warm-up status: safe pacing</span>
               </div>

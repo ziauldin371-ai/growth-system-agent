@@ -259,7 +259,7 @@ export default function DeliverabilityPage() {
               {/* Actionable DNS Snippets */}
               {dnsGuide && (
                 <div className="p-4 rounded-xl bg-slate-950 border border-slate-800/80 space-y-3 text-xs">
-                  <div className="font-semibold text-slate-200">Recommended DNS Records for Google Workspace:</div>
+                  <div className="font-semibold text-slate-200">Recommended DNS Records for Custom Domain & Google:</div>
                   <div className="space-y-2">
                     <div className="p-2.5 rounded bg-slate-900 border border-slate-800 flex items-center justify-between font-mono text-[11px] text-slate-300">
                       <span>{dnsGuide.spfTemplate}</span>
@@ -350,7 +350,7 @@ export default function DeliverabilityPage() {
               <h2 className="text-base font-semibold text-white">Honest Seed Placement Probes</h2>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
-              Dispatches real probe emails to your configured test inboxes (Gmail, Outlook, Yahoo, Workspace). Zero simulated results.
+              Dispatches real probe emails to your configured test inboxes (Gmail, Outlook, Yahoo, Custom Domains). Zero simulated results.
             </p>
           </div>
 

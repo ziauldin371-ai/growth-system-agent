@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
       success: true,
       health,
       guide: {
-        recommendedProvider: 'Google Workspace with custom branded domain',
+        recommendedProvider: 'Custom branded domain with SPF/DKIM/DMARC alignment',
         spfTemplate: `v=spf1 include:_spf.google.com ~all`,
         dmarcTemplate: `v=DMARC1; p=none; rua=mailto:dmarc-reports@${domain}; pct=100; sp=none; aspf=r;`,
         dkimGuidance: 'Configure 2048-bit DKIM key inside Google Admin Console',
