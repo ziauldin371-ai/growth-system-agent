@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { dataStore } from '@/services/repository/data-store';
 import { isDemoOrSandboxRecord, computeHomeStats } from '@/services/repository/demo-guard';
+import { tokenStore } from '@/services/repository/token-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +15,9 @@ export default async function HomePage(props: PageProps) {
 
   // Status flags
   const isEmergencyStop = process.env.EMERGENCY_STOP === 'true';
-  const isGmailConfigured = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_REFRESH_TOKEN);
+  const senderEmail = (process.env.ADMIN_EMAIL || 'ziauldin371@gmail.com').toLowerCase();
+  const oauthToken = await tokenStore.getToken(senderEmail, 'gmail');
+  const isGmailConfigured = Boolean((oauthToken && oauthToken.status === 'active') || (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_REFRESH_TOKEN));
   const isPlacesConfigured = Boolean(process.env.GOOGLE_PLACES_API_KEY);
   const isSupabaseConfigured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL);
   const isProduction = process.env.NODE_ENV === 'production';

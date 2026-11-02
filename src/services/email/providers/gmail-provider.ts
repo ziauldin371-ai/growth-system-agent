@@ -13,6 +13,18 @@ export class GmailProvider implements IEmailProvider {
   public readonly senderEmail = 'ziauldin371@gmail.com';
   public readonly senderName = 'Zia Ul Din | AI & Automation Solutions';
 
+  public async isConfiguredAsync(): Promise<boolean> {
+    const stored = await tokenStore.getToken(this.senderEmail, 'gmail');
+    if (stored && stored.status === 'active') {
+      return true;
+    }
+    return Boolean(
+      process.env.GOOGLE_CLIENT_ID &&
+      process.env.GOOGLE_CLIENT_SECRET &&
+      process.env.GOOGLE_REFRESH_TOKEN
+    );
+  }
+
   public isConfigured(): boolean {
     const raw = tokenStore.getRawRecord(this.senderEmail, 'gmail');
     if (raw && raw.status === 'active') {
@@ -124,7 +136,8 @@ export class GmailProvider implements IEmailProvider {
   }
 
   public async send(payload: SendEmailPayload): Promise<SendEmailResponse> {
-    if (!this.isConfigured()) {
+    const ready = await this.isConfiguredAsync();
+    if (!ready) {
       return {
         success: false,
         provider: this.id,
@@ -279,7 +292,8 @@ export class GmailProvider implements IEmailProvider {
     error?: string;
     checklist?: any;
   }> {
-    if (!this.isConfigured()) {
+    const ready = await this.isConfiguredAsync();
+    if (!ready) {
       return {
         success: false,
         error: 'Cannot dispatch live test email: Gmail OAuth credentials are not fully configured in environment.',
