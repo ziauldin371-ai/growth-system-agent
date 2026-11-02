@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { emailService } from '@/services/email/email-service';
 import { GmailProvider } from '@/services/email/providers/gmail-provider';
 
 export async function POST(req: NextRequest) {
@@ -8,13 +7,14 @@ export async function POST(req: NextRequest) {
     const recipientEmail = body.recipientEmail || 'ziauldin371@gmail.com';
 
     const gmailProvider = new GmailProvider();
+    const isReady = await gmailProvider.isConfiguredAsync();
 
-    if (!gmailProvider.isConfigured()) {
+    if (!isReady) {
       return NextResponse.json({
         success: false,
         isConfigured: false,
         message: 'Gmail API is not yet configured. Please configure Google OAuth2 credentials to send live test emails.',
-        checklist: gmailProvider.getSetupChecklist(),
+        checklist: await gmailProvider.getSetupChecklistAsync(),
       });
     }
 
@@ -36,9 +36,9 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   const gmailProvider = new GmailProvider();
+  const isReady = await gmailProvider.isConfiguredAsync();
   return NextResponse.json({
-    isConfigured: gmailProvider.isConfigured(),
-    checklist: gmailProvider.getSetupChecklist(),
+    isConfigured: isReady,
+    checklist: await gmailProvider.getSetupChecklistAsync(),
   });
 }
-

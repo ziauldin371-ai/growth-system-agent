@@ -251,6 +251,39 @@ export class GmailProvider implements IEmailProvider {
   /**
    * Actionable setup checklist for administrator verification.
    */
+  public async getSetupChecklistAsync() {
+    const isConfigured = await this.isConfiguredAsync();
+    const stored = await tokenStore.getToken(this.senderEmail, 'gmail');
+    const hasToken = Boolean(stored && stored.status === 'active');
+    return {
+      senderEmail: this.senderEmail,
+      senderName: this.senderName,
+      isConfigured,
+      checks: [
+        {
+          key: 'GOOGLE_CLIENT_ID',
+          label: 'Google OAuth Client ID',
+          configured: Boolean(process.env.GOOGLE_CLIENT_ID),
+          helpText: 'From Google Cloud Console > APIs & Services > Credentials (OAuth 2.0 Client ID)',
+        },
+        {
+          key: 'GOOGLE_CLIENT_SECRET',
+          label: 'Google OAuth Client Secret',
+          configured: Boolean(process.env.GOOGLE_CLIENT_SECRET),
+          helpText: 'Client Secret paired with the Web Client ID',
+        },
+        {
+          key: 'GMAIL_OAUTH_TOKEN',
+          label: 'Authorized Gmail OAuth Token',
+          configured: hasToken || Boolean(process.env.GOOGLE_REFRESH_TOKEN),
+          helpText: 'Connected via in-app OAuth or GOOGLE_REFRESH_TOKEN',
+        },
+      ],
+      requiredScope: 'https://www.googleapis.com/auth/gmail.send',
+      sentFolderUrl: 'https://mail.google.com/mail/u/0/#sent',
+    };
+  }
+
   public getSetupChecklist() {
     return {
       senderEmail: this.senderEmail,
