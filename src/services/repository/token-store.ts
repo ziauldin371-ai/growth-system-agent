@@ -193,29 +193,39 @@ export class TokenStore {
       };
     }
 
+    let accessToken = '';
+    let refreshToken = '';
+
     try {
-      const accessToken = decryptToken(
+      accessToken = decryptToken(
         record.encryptedAccessToken.cipherText,
         record.encryptedAccessToken.iv,
         record.encryptedAccessToken.authTag
       );
+    } catch {
+      // Access tokens are short-lived and will be renewed using the persistent refresh token
+    }
 
-      const refreshToken = decryptToken(
+    try {
+      refreshToken = decryptToken(
         record.encryptedRefreshToken.cipherText,
         record.encryptedRefreshToken.iv,
         record.encryptedRefreshToken.authTag
       );
-
-      return {
-        accessToken,
-        refreshToken,
-        status: record.status,
-        expiresAt: record.expiresAt,
-      };
     } catch (decryptErr) {
-      console.error('Failed to decrypt stored tokens:', decryptErr);
+      console.error('Failed to decrypt stored refresh token:', decryptErr);
+    }
+
+    if (!refreshToken && !accessToken) {
       return null;
     }
+
+    return {
+      accessToken: accessToken || refreshToken,
+      refreshToken: refreshToken || accessToken,
+      status: record.status,
+      expiresAt: record.expiresAt,
+    };
   }
 
   /**
