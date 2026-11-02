@@ -170,3 +170,4 @@ ON public.request_events FOR ALL TO authenticated USING (true) WITH CHECK (true)
 GRANT ALL ON TABLE public.request_events TO service_role;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.request_events TO authenticated;
 REVOKE ALL ON TABLE public.request_events FROM anon;
+

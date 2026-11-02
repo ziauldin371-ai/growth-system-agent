@@ -1,45 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
-import { verifySessionToken } from '@/lib/security/session';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
-  // 1. Authenticate: Session Cookie or Authorization Bearer header
-  let isAuthenticated = false;
-
-  const sessionCookie = req.cookies.get('growth_agent_session')?.value || req.cookies.get('admin_session')?.value;
-  if (sessionCookie) {
-    const verified = await verifySessionToken(sessionCookie);
-    if (verified.valid) {
-      isAuthenticated = true;
-    }
-  }
-
-  if (!isAuthenticated) {
-    const authHeader = req.headers.get('authorization') || '';
-    if (authHeader.startsWith('Bearer ')) {
-      const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-      const adminPassword = process.env.ADMIN_PASSWORD;
-      const cronSecret = process.env.CRON_SECRET;
-      if (
-        (adminPassword && token === adminPassword) ||
-        (cronSecret && token === cronSecret)
-      ) {
-        isAuthenticated = true;
-      }
-    }
-  }
-
-  if (!isAuthenticated) {
-    return NextResponse.json(
-      { success: false, error: 'Unauthorized: Authentication required to inspect system readiness.' },
-      { status: 401 }
-    );
-  }
-
-  // 2. Check each required production service
   let isDbConnected = false;
+
   const supabase = getSupabaseAdmin();
   if (supabase) {
     try {
@@ -55,10 +21,14 @@ export async function GET(req: NextRequest) {
   const isAdminConfigured = Boolean(process.env.ADMIN_PASSWORD && process.env.ADMIN_PASSWORD.trim().length > 0);
   const isGmailConfigured = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_REFRESH_TOKEN);
   const isPlacesConfigured = Boolean(process.env.GOOGLE_PLACES_API_KEY && process.env.GOOGLE_PLACES_API_KEY.trim().length > 0);
+  const isGeoapifyConfigured = Boolean(process.env.GEOAPIFY_API_KEY && process.env.GEOAPIFY_API_KEY.trim().length > 0);
   const isGeminiConfigured = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim().length > 0);
   const isSchedulerSecretConfigured = Boolean(process.env.CRON_SECRET && process.env.CRON_SECRET.trim().length > 0);
   const isAddressConfigured = Boolean(process.env.PHYSICAL_MAILING_ADDRESS && process.env.PHYSICAL_MAILING_ADDRESS.trim().length > 0);
   const sendMode = process.env.DEFAULT_SEND_MODE || 'approval';
+
+  const discoveryProvider = (process.env.DISCOVERY_PROVIDER || (isPlacesConfigured ? 'google' : 'osm')).toLowerCase();
+  const isDiscoveryReady = discoveryProvider === 'osm' || isPlacesConfigured || isGeoapifyConfigured;
 
   const missing: string[] = [];
   const configured: string[] = [];
@@ -66,7 +36,7 @@ export async function GET(req: NextRequest) {
   if (isDbConnected) configured.push('database'); else missing.push('database');
   if (isAdminConfigured) configured.push('admin_auth'); else missing.push('admin_auth');
   if (isSchedulerSecretConfigured) configured.push('scheduler_secret'); else missing.push('scheduler_secret');
-  if (isPlacesConfigured) configured.push('places_key'); else missing.push('places_key');
+  if (isDiscoveryReady) configured.push('places_key'); else missing.push('places_key');
   if (isGeminiConfigured) configured.push('gemini_key'); else missing.push('gemini_key');
   if (isGmailConfigured) configured.push('gmail'); else missing.push('gmail');
   if (isAddressConfigured) configured.push('mailing_address'); else missing.push('mailing_address');
@@ -79,11 +49,17 @@ export async function GET(req: NextRequest) {
     status: isFullyReady ? 'ready' : 'not_ready',
     missing,
     configured,
+    discovery: {
+      activeProvider: isPlacesConfigured && discoveryProvider !== 'osm' ? 'google_places' : (isGeoapifyConfigured && discoveryProvider === 'geoapify' ? 'geoapify' : 'osm'),
+      isOsmActive: !isPlacesConfigured || discoveryProvider === 'osm',
+      isGoogleConfigured: isPlacesConfigured,
+      isGeoapifyConfigured,
+    },
     services: {
       database: isDbConnected ? 'connected' : 'missing',
       admin_auth: isAdminConfigured ? 'configured' : 'missing',
       scheduler_secret: isSchedulerSecretConfigured ? 'configured' : 'missing',
-      places_key: isPlacesConfigured ? 'configured' : 'missing',
+      places_key: isDiscoveryReady ? 'configured' : 'missing',
       gemini_key: isGeminiConfigured ? 'configured' : 'missing',
       gmail: isGmailConfigured ? 'configured' : 'missing',
       mailing_address: isAddressConfigured ? 'configured' : 'missing',

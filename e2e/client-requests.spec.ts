@@ -75,3 +75,4 @@ test.describe('Client Requests (Opportunity Radar) E2E', () => {
     await expect(page.locator('textarea')).toHaveValue(/Looking for an n8n workflow specialist/);
   });
 });
+
