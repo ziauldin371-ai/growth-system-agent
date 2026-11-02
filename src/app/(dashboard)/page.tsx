@@ -34,6 +34,10 @@ export default async function HomePage(props: PageProps) {
   const { businesses: rawBusinesses } = await dataStore.getBusinesses({ limit: 100, includeDemo: showDemo });
   const rawDrafts = await dataStore.getDrafts({ limit: 100, includeDemo: showDemo });
   const lastRun = await dataStore.getLastSchedulerRun();
+  const clientRequests = await dataStore.getClientRequests({ limit: 100 });
+  const strongMatches = clientRequests.filter(r => (r.matchScore || 0) >= 60);
+  const strongMatchesCount = strongMatches.length;
+  const totalRequestsCount = clientRequests.length;
 
   // Compute strictly consistent stats
   const stats = computeHomeStats({
@@ -267,25 +271,30 @@ export default async function HomePage(props: PageProps) {
 
       {/* Row of 4 Number Cards (2 cols on mobile, 4 cols on tablet & laptop) */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {/* Card 1: Found Today */}
-        <div className="rounded-2xl p-4 bg-surface-container shadow-sm flex flex-col justify-between gap-3 border border-outline-variant/20 hover:border-outline-variant/40 transition-colors">
+        {/* Card 1: Client Requests */}
+        <Link
+          href="/client-requests"
+          className="rounded-2xl p-4 bg-surface-container shadow-sm flex flex-col justify-between gap-3 border border-outline-variant/20 hover:border-primary/50 hover:bg-surface-container-high transition-all group"
+        >
           <div className="flex items-center justify-between">
-            <span className="font-label-md text-xs text-on-surface-variant truncate">Found Today</span>
-            <span className="material-symbols-outlined text-[20px] text-secondary">domain</span>
+            <span className="font-label-md text-xs text-on-surface-variant group-hover:text-primary transition-colors truncate font-semibold">
+              Client Requests
+            </span>
+            <span className="material-symbols-outlined text-[20px] text-primary">radar</span>
           </div>
           <div className="flex flex-col">
             <span className="text-2xl sm:text-3xl text-on-surface font-bold">
-              {stats.foundToday}
+              {strongMatchesCount > 0 ? strongMatchesCount : totalRequestsCount}
             </span>
             <span className="text-xs text-on-surface-variant line-clamp-1">
-              {stats.needsWebsites > 0 ? `${stats.needsWebsites} need websites` : 'Needs websites'}
+              {strongMatchesCount > 0 ? `${strongMatchesCount} strong matches today` : 'Professional platform needs'}
             </span>
           </div>
-          <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-secondary-container/20 text-secondary w-fit text-[11px] font-semibold">
-            <span className="material-symbols-outlined text-[12px]">check_circle</span>
-            <span>{stats.foundToday > 0 ? `${stats.foundToday} Today` : '0 Leads Today'}</span>
+          <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary-container/20 text-primary w-fit text-[11px] font-semibold">
+            <span className="material-symbols-outlined text-[12px]">verified</span>
+            <span>{strongMatchesCount > 0 ? `${strongMatchesCount} High Fit` : `${totalRequestsCount} Total Leads`}</span>
           </div>
-        </div>
+        </Link>
 
         {/* Card 2: Sent Safely */}
         <div className="rounded-2xl p-4 bg-surface-container shadow-sm flex flex-col justify-between gap-3 border border-outline-variant/20 hover:border-outline-variant/40 transition-colors">
@@ -343,10 +352,15 @@ export default async function HomePage(props: PageProps) {
           </div>
         </div>
 
-        {/* Card 4: Direct Contact */}
-        <div className="rounded-2xl p-4 bg-surface-container shadow-sm flex flex-col justify-between gap-3 border border-outline-variant/20 hover:border-outline-variant/40 transition-colors">
+        {/* Card 4: Local Business Contacts */}
+        <Link
+          href="/contact-manually"
+          className="rounded-2xl p-4 bg-surface-container shadow-sm flex flex-col justify-between gap-3 border border-outline-variant/20 hover:border-outline-variant/40 hover:bg-surface-container-high transition-all group"
+        >
           <div className="flex items-center justify-between">
-            <span className="font-label-md text-xs text-on-surface-variant truncate">Direct Contact</span>
+            <span className="font-label-md text-xs text-on-surface-variant group-hover:text-tertiary transition-colors truncate">
+              Local Business Contacts
+            </span>
             <span className="material-symbols-outlined text-[20px] text-outline">contact_phone</span>
           </div>
           <div className="flex flex-col">
@@ -354,14 +368,14 @@ export default async function HomePage(props: PageProps) {
               {stats.manualOutreachCount}
             </span>
             <span className="text-xs text-on-surface-variant line-clamp-1">
-              No email found
+              Shops & clinics (no email)
             </span>
           </div>
           <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant w-fit text-[11px] font-semibold">
-            <span className="material-symbols-outlined text-[12px]">info</span>
-            <span>Call or DM</span>
+            <span className="material-symbols-outlined text-[12px]">call</span>
+            <span>Call or Message</span>
           </div>
-        </div>
+        </Link>
       </section>
 
       {/* Main Laptop 2-Column Split Layout */}

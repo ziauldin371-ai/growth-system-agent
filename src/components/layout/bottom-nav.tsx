@@ -30,6 +30,13 @@ export function BottomNav({ onOpenHelp }: { onOpenHelp?: () => void }) {
       exact: true,
     },
     {
+      href: '/client-requests',
+      label: 'Requests',
+      sublabel: 'Client Needs',
+      icon: 'radar',
+      exact: false,
+    },
+    {
       href: '/businesses',
       label: 'Found',
       sublabel: 'Businesses',
@@ -43,17 +50,10 @@ export function BottomNav({ onOpenHelp }: { onOpenHelp?: () => void }) {
       icon: 'outgoing_mail',
       exact: false,
     },
-    {
-      href: '/contact-manually',
-      label: 'Direct',
-      sublabel: 'WhatsApp & Calls',
-      icon: 'call',
-      exact: false,
-    },
   ];
 
   const isMoreActive =
-    pathname.startsWith('/client-requests') ||
+    pathname.startsWith('/contact-manually') ||
     pathname.startsWith('/safety') ||
     pathname.startsWith('/setup') ||
     pathname.startsWith('/run-and-schedule');
@@ -103,7 +103,7 @@ export function BottomNav({ onOpenHelp }: { onOpenHelp?: () => void }) {
           >
             <span className="material-symbols-outlined text-[20px]">menu_open</span>
             <span className="font-label-md text-[11px] leading-tight">More</span>
-            <span className="font-label-badge text-[9px] opacity-70 leading-none">Setup & Rules</span>
+            <span className="font-label-badge text-[9px] opacity-70 leading-none">Contacts & Setup</span>
           </button>
         </div>
       </nav>
@@ -139,16 +139,16 @@ export function BottomNav({ onOpenHelp }: { onOpenHelp?: () => void }) {
 
             <div className="grid grid-cols-1 gap-2">
               <Link
-                href="/client-requests"
+                href="/contact-manually"
                 onClick={() => setShowMoreMenu(false)}
                 className="flex items-center justify-between p-3 rounded-xl bg-surface-container-low hover:bg-surface-container-high text-on-surface transition-colors min-h-[44px]"
               >
                 <div className="flex items-center gap-3">
-                  <span className="material-symbols-outlined text-primary text-[22px]">radar</span>
+                  <span className="material-symbols-outlined text-tertiary text-[22px]">call</span>
                   <div>
-                    <div className="font-label-lg text-xs font-semibold">Client Requests</div>
+                    <div className="font-label-lg text-xs font-semibold">Local Business Contacts</div>
                     <div className="font-label-md text-[11px] text-on-surface-variant">
-                      Opportunity Radar for your skills
+                      Shops and clinics with no email: call or message them
                     </div>
                   </div>
                 </div>

@@ -552,11 +552,9 @@ export function ClientRequestsView() {
                     <h3 className="font-bold text-sm text-on-surface truncate">
                       {req.companyName || req.personName || 'Public Request (Not named)'}
                     </h3>
-                    {req.platformUsername && (
-                      <span className="text-[11px] text-on-surface-variant font-mono">
-                        @{req.platformUsername}
-                      </span>
-                    )}
+                    <span className="text-[11px] text-on-surface-variant font-mono">
+                      {req.platformUsername ? `@${req.platformUsername}` : '@Not shown'}
+                    </span>
                   </div>
 
                   {/* Plain English Need */}
@@ -1196,13 +1194,7 @@ export function ClientRequestsView() {
                             : 'bg-slate-900 text-slate-400'
                         }`}
                       >
-                        {src.accessTier === 'tier_a_auto'
-                          ? 'Tier A (Auto API)'
-                          : src.accessTier === 'tier_b_manual'
-                          ? 'Tier B (Manual Assist)'
-                          : src.accessTier === 'expert_network_excluded'
-                          ? 'Excluded (Expert Network)'
-                          : 'Tier C (Link)'}
+                        {src.accessTier === 'tier_a_auto' ? 'Automatic' : src.accessTier === 'expert_network_excluded' ? 'Excluded (Expert Network)' : 'Manual capture'}
                       </span>
                     </div>
                     <p className="text-[11px] text-on-surface-variant">{src.termsNote}</p>

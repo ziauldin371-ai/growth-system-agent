@@ -159,6 +159,29 @@ function ContactManuallyContent() {
 
   return (
     <div className="flex flex-col w-full gap-5 pb-12">
+      {/* Dedicated Notice: Local Shops vs Professional Client Requests */}
+      <div className="rounded-2xl p-4 sm:p-5 bg-gradient-to-r from-primary-container/20 via-surface-container to-surface-container border border-primary/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-primary-container text-on-primary-container flex items-center justify-center shrink-0 shadow-sm">
+            <span className="material-symbols-outlined text-[22px]">info</span>
+          </div>
+          <div className="space-y-0.5">
+            <div className="text-sm font-bold text-on-surface">
+              Looking for companies needing AI, Automation or Web work?
+            </div>
+            <p className="text-xs text-on-surface-variant max-w-2xl leading-relaxed">
+              This page is only for local shops and clinics found by Find Businesses Now. For professional platforms and companies that need AI, automation or web work, go to Client Requests.
+            </p>
+          </div>
+        </div>
+        <Link
+          href="/client-requests"
+          className="px-4 py-2 rounded-xl bg-primary text-on-primary hover:bg-primary-hover font-semibold text-xs flex items-center gap-1.5 shrink-0 shadow-sm transition-all"
+        >
+          <span className="material-symbols-outlined text-[16px]">radar</span>
+          <span>Go to Client Requests</span>
+        </Link>
+      </div>
       {/* Demo Notice */}
       {showDemo && (
         <div className="rounded-xl p-3.5 sm:p-4 bg-tertiary-container/20 border border-tertiary/40 flex items-center justify-between gap-3 text-tertiary shadow-sm">
@@ -194,7 +217,7 @@ function ContactManuallyContent() {
               </span>
             </div>
             <p className="text-xs text-on-surface-variant mt-0.5">
-              Local businesses found by discovery with no email: reach out via WhatsApp, phone, website contact form, or social profiles.
+              Shops and clinics with no email: call or message them.
             </p>
           </div>
 

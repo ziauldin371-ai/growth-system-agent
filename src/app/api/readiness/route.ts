@@ -5,6 +5,18 @@ import { tokenStore } from '@/services/repository/token-store';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
+  const authHeader = req.headers.get('authorization');
+  const sessionCookie = req.cookies.get('growth_agent_session')?.value;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+
+  const isBearerValid = Boolean(authHeader && adminPassword && authHeader === `Bearer ${adminPassword}`);
+  if (!isBearerValid && !sessionCookie) {
+    return NextResponse.json(
+      { success: false, error: 'Unauthorized: Authentication required' },
+      { status: 401 }
+    );
+  }
+
   let isDbConnected = false;
 
   const supabase = getSupabaseAdmin();
@@ -31,7 +43,6 @@ export async function GET(req: NextRequest) {
   const sendMode = process.env.DEFAULT_SEND_MODE || 'approval';
 
   const discoveryProvider = (process.env.DISCOVERY_PROVIDER || (isPlacesConfigured ? 'google' : 'osm')).toLowerCase();
-  const isDiscoveryReady = discoveryProvider === 'osm' || isPlacesConfigured || isGeoapifyConfigured;
 
   const missing: string[] = [];
   const configured: string[] = [];
@@ -39,7 +50,7 @@ export async function GET(req: NextRequest) {
   if (isDbConnected) configured.push('database'); else missing.push('database');
   if (isAdminConfigured) configured.push('admin_auth'); else missing.push('admin_auth');
   if (isSchedulerSecretConfigured) configured.push('scheduler_secret'); else missing.push('scheduler_secret');
-  if (isDiscoveryReady) configured.push('places_key'); else missing.push('places_key');
+  if (isPlacesConfigured) configured.push('places_key'); else missing.push('places_key');
   if (isGeminiConfigured) configured.push('gemini_key'); else missing.push('gemini_key');
   if (isGmailConfigured) configured.push('gmail'); else missing.push('gmail');
   if (isAddressConfigured) configured.push('mailing_address'); else missing.push('mailing_address');
@@ -59,15 +70,14 @@ export async function GET(req: NextRequest) {
       isGeoapifyConfigured,
     },
     services: {
-      database: isDbConnected ? 'connected' : 'missing',
+      database: isDbConnected ? 'configured' : 'missing',
       admin_auth: isAdminConfigured ? 'configured' : 'missing',
       scheduler_secret: isSchedulerSecretConfigured ? 'configured' : 'missing',
-      places_key: isDiscoveryReady ? 'configured' : 'missing',
+      places_key: isPlacesConfigured ? 'configured' : 'missing',
       gemini_key: isGeminiConfigured ? 'configured' : 'missing',
       gmail: isGmailConfigured ? 'configured' : 'missing',
       mailing_address: isAddressConfigured ? 'configured' : 'missing',
-      auto_send: sendMode === 'auto_send' ? 'active' : 'approval_mode',
+      sendMode,
     },
-    checkedAt: new Date().toISOString(),
   });
 }

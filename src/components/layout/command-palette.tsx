@@ -80,6 +80,17 @@ export function CommandPalette({
       },
     },
     {
+      id: 'page-client-requests',
+      category: 'Pages',
+      title: 'Client Requests',
+      subtitle: 'Companies and people that need your skills (Wellfound, Contra, Hacker News and more)',
+      icon: 'radar',
+      action: () => {
+        router.push('/client-requests');
+        onClose();
+      },
+    },
+    {
       id: 'page-businesses',
       category: 'Pages',
       title: 'Businesses Found',
@@ -104,8 +115,8 @@ export function CommandPalette({
     {
       id: 'page-manual',
       category: 'Pages',
-      title: 'Contact Manually (Calls & Social)',
-      subtitle: 'Phone scripts and direct channel pitches',
+      title: 'Local Business Contacts',
+      subtitle: 'Shops and clinics with no email: call or message them',
       icon: 'call',
       action: () => {
         router.push('/contact-manually');

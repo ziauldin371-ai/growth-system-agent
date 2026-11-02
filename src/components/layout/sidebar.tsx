@@ -20,13 +20,13 @@ export function Sidebar() {
     {
       href: '/client-requests',
       label: t('nav.client_requests', 'Client Requests'),
-      description: t('nav.client_requests_sub', 'People & companies that need your skills'),
+      description: t('nav.client_requests_sub', 'Companies and people that need your skills (Wellfound, Contra, Hacker News and more)'),
       icon: 'radar',
     },
     {
       href: '/businesses',
       label: t('nav.businesses', 'Businesses Found'),
-      description: t('nav.businesses_sub', 'No website, broken & hot leads'),
+      description: t('nav.businesses_sub', 'Browse discovered companies'),
       icon: 'storefront',
     },
     {
@@ -36,16 +36,16 @@ export function Sidebar() {
       icon: 'outgoing_mail',
     },
     {
-      href: '/contact-manually',
-      label: t('nav.manual', 'Local Business Contacts'),
-      description: t('nav.manual_sub', 'WhatsApp, social & phone for local leads'),
-      icon: 'call',
-    },
-    {
       href: '/run-and-schedule',
       label: t('nav.schedule', 'Run & Schedule'),
       description: t('nav.schedule_sub', 'Find leads now & auto runs'),
       icon: 'play_circle',
+    },
+    {
+      href: '/contact-manually',
+      label: t('nav.manual', 'Local Business Contacts'),
+      description: t('nav.manual_sub', 'Shops and clinics with no email: call or message them'),
+      icon: 'call',
     },
     {
       href: '/safety',
@@ -88,7 +88,7 @@ export function Sidebar() {
         </Link>
       </div>
 
-      {/* Primary 7 Navigation Links */}
+      {/* Navigation Links */}
       <nav className="flex-1 px-2 lg:px-3 py-4 space-y-1.5 overflow-y-auto">
         {NAV_ITEMS.map((item) => {
           const isActive = item.activeExact

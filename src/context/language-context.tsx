@@ -15,14 +15,22 @@ const DICTIONARY: Record<string, { en: string; ur: string }> = {
   // Navigation
   'nav.home': { en: 'Home', ur: 'Home' },
   'nav.home_sub': { en: 'Today at a glance', ur: 'Aaj ka mukammal jaiza' },
+  'nav.client_requests': { en: 'Client Requests', ur: 'Client Requests' },
+  'nav.client_requests_sub': {
+    en: 'Companies and people that need your skills (Wellfound, Contra, Hacker News and more)',
+    ur: 'Companiyan aur log jinhein aap ki mahaarat darkaar hai (Wellfound, Contra, Hacker News waghera)'
+  },
   'nav.businesses': { en: 'Businesses Found', ur: 'Miley Huay Karobaar' },
   'nav.businesses_sub': { en: 'Browse discovered companies', ur: 'Talaash shuda companiyan dekhein' },
   'nav.emails': { en: 'Emails', ur: 'Emails' },
   'nav.emails_sub': { en: 'Sent, waiting & blocked', ur: 'Bheji gayi, tayyar aur ruki hui emails' },
-  'nav.manual': { en: 'Direct Leads (Social & Calls)', ur: 'WhatsApp & Social Leads' },
-  'nav.manual_sub': { en: 'AI-found: WhatsApp, LinkedIn & Phone', ur: 'AI ke daryaft karda WhatsApp, LinkedIn aur Phone' },
   'nav.schedule': { en: 'Run & Schedule', ur: 'Chalaayein Aur Waqt' },
   'nav.schedule_sub': { en: 'Find leads now & auto runs', ur: 'Abhi talaash karein aur automatic schedule' },
+  'nav.manual': { en: 'Local Business Contacts', ur: 'Muqami Karobaari Raabtay' },
+  'nav.manual_sub': {
+    en: 'Shops and clinics with no email: call or message them',
+    ur: 'Dukaanein aur clinics jin ki email nahi: call ya message karein'
+  },
   'nav.safety': { en: 'Safety', ur: 'Hifazat Aur Qawaneen' },
   'nav.safety_sub': { en: 'Limits, stop button & compliance', ur: 'Hudoor, rukaawat aur qanooni hifazat' },
   'nav.setup': { en: 'Setup', ur: 'Tanzim Aur Connection' },
@@ -47,7 +55,7 @@ const DICTIONARY: Record<string, { en: string; ur: string }> = {
   'metric.ready': { en: 'Ready to contact', ur: 'Raabtay ke liye tayyar' },
   'metric.sent': { en: 'Emails sent (Gmail)', ur: 'Bheji gayi emails (Gmail)' },
   'metric.replies': { en: 'Replies received', ur: 'Miley huay jawabaat' },
-  'metric.manual': { en: 'Contact manually', ur: 'Bina email: khud raabta' },
+  'metric.manual': { en: 'Local Business Contacts', ur: 'Muqami Karobaari Raabtay' },
   'metric.blocked': { en: 'Blocked emails', ur: 'Ruki hui emails' },
   'metric.next_run': { en: 'Next automatic run', ur: 'Agla automatic run' },
 
